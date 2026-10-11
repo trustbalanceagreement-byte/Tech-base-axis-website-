@@ -242,7 +242,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
       setMediaTab('url');
     } else if (proj.videoUrl) {
       setMediaTab('video');
-    } else if (proj.imageUrl && proj.imageUrl.startsWith('http') && !proj.imageUrl.startsWith('/uploads')) {
+    } else if (proj.imageUrl && proj.imageUrl.startsWith('http') && !proj.imageUrl.startsWith('/uploads') && !proj.imageUrl.includes('supabase.co')) {
       setMediaTab('url');
     } else {
       setMediaTab('photo');
@@ -421,7 +421,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
         detectedMediaSource = 'instagram_embed';
       } else if (finalVideoUrl && extractYouTubeId(finalVideoUrl)) {
         detectedMediaSource = 'youtube_embed';
-      } else if (finalVideoUrl && (formMediaSource === 'uploaded_video' || formStoragePath || finalVideoUrl.startsWith('/uploads'))) {
+      } else if (finalVideoUrl && (formMediaSource === 'uploaded_video' || formStoragePath || finalVideoUrl.startsWith('/uploads') || finalVideoUrl.includes('supabase.co'))) {
         detectedMediaSource = 'uploaded_video';
       } else if (finalVideoUrl) {
         detectedMediaSource = 'external_video';

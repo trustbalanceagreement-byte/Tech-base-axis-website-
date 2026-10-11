@@ -22,6 +22,7 @@ import {
   handleCreateRazorpayOrder,
   handleVerifyRazorpaySignature
 } from './server/razorpayHelper';
+import { handleSupabaseUploadStream } from './server/supabaseHelper';
 
 function onesignalDevApiPlugin(): Plugin {
   return {
@@ -170,6 +171,9 @@ function onesignalDevApiPlugin(): Plugin {
           res.end(JSON.stringify({ error: err?.message || 'Failed to write raw stream' }));
         });
       };
+
+      // Supabase Storage upload endpoint (guaranteed bucket persistence + public CDN URL)
+      server.middlewares.use('/api/supabase/upload', handleSupabaseUploadStream);
 
       server.middlewares.use('/api/upload-raw', handleRawStreamUpload);
       server.middlewares.use('/api/upload/raw', handleRawStreamUpload);

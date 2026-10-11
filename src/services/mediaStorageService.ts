@@ -1,4 +1,5 @@
 import { storage, ref, uploadBytesResumable, getDownloadURL, db, collection, getDocs } from '../lib/firebase';
+import { uploadFileToSupabase } from '../lib/supabaseClient';
 
 export interface UploadProgressInfo {
   percent: number;
@@ -11,7 +12,7 @@ export interface UploadProgressInfo {
 
 export interface UploadResult {
   url: string;
-  provider: 'firebase' | 'server';
+  provider: 'supabase' | 'firebase' | 'server';
   filename: string;
   storagePath: string;
   mimeType: string;
@@ -150,7 +151,30 @@ export async function uploadMediaToCloud(
   const filename = `${Date.now()}_${sanitizedName}`;
   const storagePath = `projects/${projectId}/media/${filename}`;
 
-  // 1. PRIMARY: Instant direct binary stream to server (super fast, no memory blowup, instant response)
+  // 1. PRIMARY: Instant upload to Supabase Storage Bucket ('Tech Base Axis Storege')
+  // Generates global public CDN URL for instant playback and permanent worldwide availability
+  try {
+    const supaResult = await uploadFileToSupabase(file, {
+      folder,
+      filename,
+      projectId
+    });
+
+    if (supaResult && supaResult.url) {
+      return {
+        url: supaResult.url,
+        provider: 'supabase',
+        filename: supaResult.filename || filename,
+        storagePath: supaResult.fullPath || `${folder}/${filename}`,
+        mimeType: file.type || (folder === 'images' ? 'image/jpeg' : 'video/mp4'),
+        fileSizeBytes: file.size
+      };
+    }
+  } catch (supaErr) {
+    console.warn('[Supabase Storage Upload] Notice, attempting stream fallback:', supaErr);
+  }
+
+  // 2. SECONDARY: Fast stream upload to local/server storage
   try {
     const rawResult = await new Promise<UploadResult>((resolve, reject) => {
       const xhr = new XMLHttpRequest();

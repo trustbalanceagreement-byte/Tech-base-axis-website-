@@ -13,6 +13,7 @@ import {
   handleCreateRazorpayOrder, 
   handleVerifyRazorpaySignature 
 } from "./server/razorpayHelper.ts";
+import { handleSupabaseUploadStream } from "./server/supabaseHelper.ts";
 
 const app = express();
 app.use(express.json({ limit: "200mb" }));
@@ -308,6 +309,9 @@ app.post("/api/projects", (req, res) => {
     res.status(500).json({ error: err?.message || "Failed to save projects" });
   }
 });
+
+// POST /api/supabase/upload - Direct stream upload to Supabase Storage Bucket ('Tech Base Axis Storege')
+app.post("/api/supabase/upload", handleSupabaseUploadStream);
 
 // POST /api/upload-raw or /api/upload/raw - Ultra-fast raw binary stream upload for instant photo/video saving
 app.post(["/api/upload-raw", "/api/upload/raw"], (req, res) => {
