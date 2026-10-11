@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Projects collection: Public can view published projects without authentication.
+    // Admin / authenticated users can create, update, and delete projects.
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

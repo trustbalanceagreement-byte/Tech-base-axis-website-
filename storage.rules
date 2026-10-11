@@ -1,0 +1,16 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Media files under projects/ can be publicly read so visitors can view uploaded videos & photos.
+    // Allow writes for media files.
+    match /projects/{allPaths=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

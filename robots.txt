@@ -1,0 +1,24 @@
+# ==========================================
+# Tech Base Axis - Search Engine Robots Policy
+# Website: https://www.tbaonline.online
+# ==========================================
+
+# Allow all major search engines (Googlebot, Bingbot, Applebot, DuckDuckBot, Yandex, etc.)
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# Explicitly permit major search engine crawlers
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+
+# Official XML Sitemap Location
+Sitemap: https://www.tbaonline.online/sitemap.xml
