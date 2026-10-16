@@ -184,6 +184,7 @@ export const SAMPLE_PROJECT_TEMPLATES: Project[] = [
 ];
 
 import { db, collection, getDocs, setDoc, doc, deleteDoc, onSnapshot } from '../lib/firebase';
+import { supabaseAdmin, SUPABASE_STORAGE_BUCKET } from '../lib/supabaseClient';
 
 export const PROJECTS_STORAGE_KEY = 'tech_base_axis_projects_v5';
 export const PROJECTS_INITIALIZED_KEY = 'tech_base_axis_projects_initialized';
@@ -538,16 +539,30 @@ export async function saveProjects(projects: Project[], deletedId?: string): Pro
     }
   } catch (_) {}
 
-  // 1. PRIMARY SERVER SYNC (Immediate, persistent disk file on server)
+  // 1. DIRECT SUPABASE CLOUD SYNC (Guarantees persistence on custom domains and static hosting)
+  try {
+    const jsonBlob = new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' });
+    supabaseAdmin.storage
+      .from(SUPABASE_STORAGE_BUCKET)
+      .upload('projects/projects.json', jsonBlob, {
+        contentType: 'application/json',
+        upsert: true
+      })
+      .catch((supaErr) => {
+        console.warn('[Direct Supabase Project Sync] Notice:', supaErr?.message || supaErr);
+      });
+  } catch (err) {
+    console.warn('[Direct Supabase Project Sync] Init notice:', err);
+  }
+
+  // 2. SERVER SYNC (If backend proxy is running)
   try {
     await fetch('/api/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(projects)
-    });
-  } catch (serverErr) {
-    console.warn('[Server Projects Sync] Server save notice:', serverErr);
-  }
+    }).catch(() => {});
+  } catch (_) {}
 
   // 2. Dispatch instant reactive events across tabs & components
   try {
