@@ -371,115 +371,151 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
       return;
     }
 
-    setIsPublishing(true);
+    // Capture file references and IDs before resetting form
+    const videoFileToUpload = pendingVideoFileRef.current;
+    const imageFileToUpload = pendingImageFileRef.current;
+    const inFlightUploadPromise = activeUploadPromiseRef.current;
+    const targetProjectId = formId || editingProject?.id || `proj-${Date.now()}`;
+    const isNew = isCreatingNew;
 
-    try {
-      // If upload is in progress in background, wait for it
-      if (activeUploadPromiseRef.current) {
+    let finalVideoUrl = formVideoUrl;
+    let finalImageUrl = formImageUrl;
+
+    const parsedTech = formTechStack
+      .split(',')
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    // Identify exact mediaSource
+    let detectedMediaSource: Project['mediaSource'] = formMediaSource;
+    if (finalVideoUrl && extractInstagramId(finalVideoUrl)) {
+      detectedMediaSource = 'instagram_embed';
+    } else if (finalVideoUrl && extractYouTubeId(finalVideoUrl)) {
+      detectedMediaSource = 'youtube_embed';
+    } else if (finalVideoUrl && (formMediaSource === 'uploaded_video' || formStoragePath || finalVideoUrl.startsWith('/uploads') || finalVideoUrl.includes('supabase.co'))) {
+      detectedMediaSource = 'uploaded_video';
+    } else if (finalVideoUrl) {
+      detectedMediaSource = 'external_video';
+    } else if (finalImageUrl) {
+      detectedMediaSource = 'uploaded_photo';
+    }
+
+    let detectedMediaType: Project['mediaType'] = 'image';
+    if (finalImageUrl && finalVideoUrl) {
+      detectedMediaType = 'both';
+    } else if (finalVideoUrl) {
+      detectedMediaType = 'video';
+    } else if (finalImageUrl) {
+      detectedMediaType = 'image';
+    }
+
+    const updatedProject: Project = {
+      id: targetProjectId,
+      title: formTitle.trim(),
+      subtitle: formSubtitle.trim() || 'Engineered by Tech Base Axis',
+      category: formCategory,
+      status: formStatus,
+      year: formYear.trim() || '2026',
+      featured: formFeatured,
+      description: formDescription.trim() || 'High-performance production architecture built for scale.',
+      fullOverview: formFullOverview.trim() || formDescription.trim() || 'Production system architecture overview.',
+      architectureHighlights: formHighlights.length > 0 ? formHighlights : ['High-availability fault tolerant infrastructure'],
+      metrics: formMetrics.length > 0 ? formMetrics : [{ label: 'Uptime', value: '99.99%' }],
+      techStack: parsedTech.length > 0 ? parsedTech : ['TypeScript', 'React 19', 'Tailwind CSS'],
+      demoUrl: formDemoUrl.trim() || undefined,
+      githubUrl: formGithubUrl.trim() || undefined,
+      imageUrl: finalImageUrl.trim() || undefined,
+      videoUrl: finalVideoUrl.trim() || undefined,
+      mediaType: detectedMediaType,
+      mediaSource: detectedMediaSource,
+      storagePath: formStoragePath || undefined,
+      mimeType: formMimeType || undefined,
+      fileSizeBytes: formFileSizeBytes || undefined,
+      fileName: formFileName || videoFileToUpload?.name || undefined,
+      createdAt: editingProject?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    // 1. INSTANT ZERO-DELAY PUBLISH (0ms):
+    // Save to app state and close modal instantly so the admin NEVER waits on video upload
+    if (isNew) {
+      onCreateProject(updatedProject);
+      showToast(`New project "${updatedProject.title}" published! Live on website.`);
+    } else {
+      onUpdateProject(updatedProject);
+      showToast(`Project "${updatedProject.title}" updated! Live on website.`);
+    }
+
+    // Modal closes immediately
+    resetFormState();
+    setIsModalOpen(false);
+
+    // 2. SILENT NON-BLOCKING BACKGROUND SYNC:
+    // If media is still uploading or has pending file, stream it to Supabase Cloud Storage in the background
+    // and seamlessly update the project with the permanent global CDN URL without blocking the user
+    if (videoFileToUpload || (finalVideoUrl.startsWith('blob:') && inFlightUploadPromise)) {
+      (async () => {
         try {
-          await activeUploadPromiseRef.current;
-        } catch (_) {}
-      }
-
-      let finalVideoUrl = formVideoUrl;
-      let finalImageUrl = formImageUrl;
-
-      // If video is still blob URL, do a quick upload now
-      if (finalVideoUrl.startsWith('blob:') && pendingVideoFileRef.current) {
-        try {
-          const res = await uploadMediaToCloud(pendingVideoFileRef.current, { folder: 'videos' });
-          if (res && res.url) {
-            finalVideoUrl = res.url;
-            setFormVideoUrl(res.url);
-            setFormMediaSource('uploaded_video');
-            setFormStoragePath(res.storagePath);
+          let cloudRes: any = null;
+          if (inFlightUploadPromise) {
+            try {
+              cloudRes = await inFlightUploadPromise;
+            } catch (_) {}
           }
-        } catch (_) {}
-      }
-
-      // If image is still blob URL, do a quick upload now
-      if (finalImageUrl.startsWith('blob:') && pendingImageFileRef.current) {
-        try {
-          const res = await uploadMediaToCloud(pendingImageFileRef.current, { folder: 'images' });
-          if (res && res.url) {
-            finalImageUrl = res.url;
-            setFormImageUrl(res.url);
-            setFormMediaSource('uploaded_photo');
-            setFormStoragePath(res.storagePath);
+          if ((!cloudRes || !cloudRes.url || cloudRes.url.startsWith('blob:')) && videoFileToUpload) {
+            try {
+              cloudRes = await uploadMediaToCloud(videoFileToUpload, { folder: 'videos', projectId: targetProjectId });
+            } catch (_) {}
           }
-        } catch (_) {}
-      }
 
-      const parsedTech = formTechStack
-        .split(',')
-        .map((t) => t.trim())
-        .filter((t) => t.length > 0);
+          if (cloudRes && cloudRes.url && !cloudRes.url.startsWith('blob:')) {
+            const upgradedProject: Project = {
+              ...updatedProject,
+              videoUrl: cloudRes.url,
+              mediaSource: 'uploaded_video',
+              storagePath: cloudRes.storagePath || updatedProject.storagePath,
+              mimeType: cloudRes.mimeType || updatedProject.mimeType,
+              fileSizeBytes: cloudRes.fileSizeBytes || updatedProject.fileSizeBytes,
+              fileName: videoFileToUpload?.name || updatedProject.fileName,
+              updatedAt: new Date().toISOString()
+            };
+            onUpdateProject(upgradedProject);
+          }
+        } catch (syncErr) {
+          console.warn('Background project video upload sync note:', syncErr);
+        }
+      })();
+    }
 
-      // Identify exact mediaSource
-      let detectedMediaSource: Project['mediaSource'] = formMediaSource;
-      if (finalVideoUrl && extractInstagramId(finalVideoUrl)) {
-        detectedMediaSource = 'instagram_embed';
-      } else if (finalVideoUrl && extractYouTubeId(finalVideoUrl)) {
-        detectedMediaSource = 'youtube_embed';
-      } else if (finalVideoUrl && (formMediaSource === 'uploaded_video' || formStoragePath || finalVideoUrl.startsWith('/uploads') || finalVideoUrl.includes('supabase.co'))) {
-        detectedMediaSource = 'uploaded_video';
-      } else if (finalVideoUrl) {
-        detectedMediaSource = 'external_video';
-      } else if (finalImageUrl) {
-        detectedMediaSource = 'uploaded_photo';
-      }
+    if (imageFileToUpload || (finalImageUrl.startsWith('blob:') && inFlightUploadPromise)) {
+      (async () => {
+        try {
+          let cloudRes: any = null;
+          if (inFlightUploadPromise) {
+            try {
+              cloudRes = await inFlightUploadPromise;
+            } catch (_) {}
+          }
+          if ((!cloudRes || !cloudRes.url || cloudRes.url.startsWith('blob:')) && imageFileToUpload) {
+            try {
+              cloudRes = await uploadMediaToCloud(imageFileToUpload, { folder: 'images', projectId: targetProjectId });
+            } catch (_) {}
+          }
 
-      let detectedMediaType: Project['mediaType'] = 'image';
-      if (finalImageUrl && finalVideoUrl) {
-        detectedMediaType = 'both';
-      } else if (finalVideoUrl) {
-        detectedMediaType = 'video';
-      } else if (finalImageUrl) {
-        detectedMediaType = 'image';
-      }
-
-      const updatedProject: Project = {
-        id: formId || `proj-${Date.now()}`,
-        title: formTitle.trim(),
-        subtitle: formSubtitle.trim() || 'Engineered by Tech Base Axis',
-        category: formCategory,
-        status: formStatus,
-        year: formYear.trim() || '2026',
-        featured: formFeatured,
-        description: formDescription.trim() || 'High-performance production architecture built for scale.',
-        fullOverview: formFullOverview.trim() || formDescription.trim() || 'Production system architecture overview.',
-        architectureHighlights: formHighlights.length > 0 ? formHighlights : ['High-availability fault tolerant infrastructure'],
-        metrics: formMetrics.length > 0 ? formMetrics : [{ label: 'Uptime', value: '99.99%' }],
-        techStack: parsedTech.length > 0 ? parsedTech : ['TypeScript', 'React 19', 'Tailwind CSS'],
-        demoUrl: formDemoUrl.trim() || undefined,
-        githubUrl: formGithubUrl.trim() || undefined,
-        imageUrl: finalImageUrl.trim() || undefined,
-        videoUrl: finalVideoUrl.trim() || undefined,
-        mediaType: detectedMediaType,
-        mediaSource: detectedMediaSource,
-        storagePath: formStoragePath || undefined,
-        mimeType: formMimeType || undefined,
-        fileSizeBytes: formFileSizeBytes || undefined,
-        fileName: formFileName || undefined,
-        createdAt: editingProject?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      if (isCreatingNew) {
-        onCreateProject(updatedProject);
-        showToast(`New project "${updatedProject.title}" published! Live on website.`);
-      } else {
-        onUpdateProject(updatedProject);
-        showToast(`Project "${updatedProject.title}" updated! Live on website.`);
-      }
-
-      resetFormState();
-      setIsModalOpen(false);
-    } catch (err: any) {
-      console.error('Publish error:', err);
-      showToast('Error saving project. Please try again.');
-    } finally {
-      setIsPublishing(false);
+          if (cloudRes && cloudRes.url && !cloudRes.url.startsWith('blob:')) {
+            const upgradedProject: Project = {
+              ...updatedProject,
+              imageUrl: cloudRes.url,
+              mediaSource: 'uploaded_photo',
+              storagePath: cloudRes.storagePath || updatedProject.storagePath,
+              updatedAt: new Date().toISOString()
+            };
+            onUpdateProject(upgradedProject);
+          }
+        } catch (syncErr) {
+          console.warn('Background project photo upload sync note:', syncErr);
+        }
+      })();
     }
   };
 

@@ -307,7 +307,9 @@ export function subscribeToLiveActivity(
         emitMerged();
       }
     }, (err) => {
-      console.warn('Firestore user_activity listener notice:', err);
+      if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+        console.warn('Firestore user_activity listener notice:', err);
+      }
     });
 
     const eventsQuery = query(collection(db, 'activity_events'), orderBy('timestamp', 'desc'), limit(100));
@@ -317,10 +319,14 @@ export function subscribeToLiveActivity(
         emitMerged();
       }
     }, (err) => {
-      console.warn('Firestore activity_events listener notice:', err);
+      if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+        console.warn('Firestore activity_events listener notice:', err);
+      }
     });
-  } catch (err) {
-    console.warn('Could not set up Firestore onSnapshot listener:', err);
+  } catch (err: any) {
+    if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+      console.warn('Could not set up Firestore onSnapshot listener:', err);
+    }
   }
 
   // 3. Fast fallback interval polling every 4 seconds from Server API

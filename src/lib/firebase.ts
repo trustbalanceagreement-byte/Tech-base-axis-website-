@@ -19,16 +19,23 @@ import {
 } from 'firebase/storage';
 import { 
   getFirestore, 
+  initializeFirestore,
+  setLogLevel,
   collection, 
   doc, 
   getDocs, 
   setDoc, 
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  limit
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  orderBy, 
+  limit 
 } from 'firebase/firestore';
+
+// Suppress Firestore transient connection retry logs in console/error boundaries
+try {
+  setLogLevel('silent');
+} catch (_) {}
 
 const firebaseConfig = {
   apiKey: "AIzaSyB8or3ZTFZ3cJcEZxd1Mkwc6KzVdKfKW0w",
@@ -44,7 +51,17 @@ export const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getA
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const storage = getStorage(app);
-export const db = getFirestore(app);
+
+// Initialize Firestore with auto-detect long-polling to prevent connection drops in proxy/browser environments
+export const db = (() => {
+  try {
+    return initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true
+    });
+  } catch (_) {
+    return getFirestore(app);
+  }
+})();
 
 export {
   signInWithEmailAndPassword,

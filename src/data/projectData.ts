@@ -441,10 +441,15 @@ export function subscribeToPublicProjects(callback: (projects: Project[]) => voi
         }
       }
     }, (err) => {
-      console.warn('[Cloud Firestore Sync] Live snapshot listener notice:', err);
+      // Graceful offline fallback: when backend is unavailable or offline, Supabase CDN + Server handle state smoothly
+      if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+        console.warn('[Cloud Firestore Sync] Live snapshot listener notice:', err?.message || err);
+      }
     });
-  } catch (err) {
-    console.warn('[Cloud Firestore Sync] onSnapshot setup notice:', err);
+  } catch (err: any) {
+    if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+      console.warn('[Cloud Firestore Sync] onSnapshot setup notice:', err?.message || err);
+    }
   }
 
   // 3. Local reactive event listener for instant 0ms single-tab updates

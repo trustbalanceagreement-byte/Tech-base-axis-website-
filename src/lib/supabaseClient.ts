@@ -53,7 +53,36 @@ export async function uploadFileToSupabase(
   const filePath = `${folder}/${filename}`;
   const contentType = options.contentType || file.type || (folder === 'videos' ? 'video/mp4' : 'image/jpeg');
 
-  // 1. Try direct upload via Supabase client with anon key
+  // 1. PRIMARY FASTEST PATH: Server-side stream upload to Supabase Storage
+  // (Uses Service Role key which bypasses RLS and writes directly to Supabase bucket with zero delay)
+  try {
+    const response = await fetch(`/api/supabase/upload?filename=${encodeURIComponent(filename)}&folder=${encodeURIComponent(folder)}&contentType=${encodeURIComponent(contentType)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType,
+        'x-filename': filename,
+        'x-folder': folder
+      },
+      body: file
+    });
+
+    if (response.ok) {
+      const json = await response.json();
+      if (json && json.url) {
+        return {
+          url: json.url,
+          fullPath: json.fullPath || `${SUPABASE_STORAGE_BUCKET}/${filePath}`,
+          filename: json.filename || filename,
+          bucket: SUPABASE_STORAGE_BUCKET,
+          provider: 'supabase'
+        };
+      }
+    }
+  } catch (serverErr) {
+    console.warn('[Supabase Server Stream] Upload note, trying direct client:', serverErr);
+  }
+
+  // 2. Direct upload via Supabase client with anon key
   try {
     const { data, error } = await supabase.storage
       .from(SUPABASE_STORAGE_BUCKET)
@@ -79,35 +108,6 @@ export async function uploadFileToSupabase(
     }
   } catch (clientErr) {
     console.warn('[Supabase Client Upload] Client attempt note:', clientErr);
-  }
-
-  // 2. PRIMARY RELIABLE PATH: Server-side high-speed stream upload to Supabase
-  // (Uses Service Role key which bypasses RLS and writes directly to Supabase bucket)
-  try {
-    const response = await fetch(`/api/supabase/upload?filename=${encodeURIComponent(filename)}&folder=${encodeURIComponent(folder)}&contentType=${encodeURIComponent(contentType)}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': contentType,
-        'x-filename': filename,
-        'x-folder': folder
-      },
-      body: file
-    });
-
-    if (response.ok) {
-      const json = await response.json();
-      if (json && json.url) {
-        return {
-          url: json.url,
-          fullPath: json.fullPath || `${SUPABASE_STORAGE_BUCKET}/${filePath}`,
-          filename: json.filename || filename,
-          bucket: SUPABASE_STORAGE_BUCKET,
-          provider: 'supabase'
-        };
-      }
-    }
-  } catch (serverErr) {
-    console.warn('[Supabase Server Stream] Upload note:', serverErr);
   }
 
   // 3. Fallback: Fast stream upload to local/server endpoint
