@@ -51,11 +51,14 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 
   const filteredProjects = sourceProjects.filter((project) => {
     const matchesCategory = selectedCategory === 'All' || project.category === selectedCategory;
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return matchesCategory;
+
     const matchesSearch = 
-      project.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.subtitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.techStack.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      (project.title || '').toLowerCase().includes(q) ||
+      (project.subtitle || '').toLowerCase().includes(q) ||
+      (project.description || '').toLowerCase().includes(q) ||
+      (Array.isArray(project.techStack) && project.techStack.some(t => typeof t === 'string' && t.toLowerCase().includes(q)));
     return matchesCategory && matchesSearch;
   });
 

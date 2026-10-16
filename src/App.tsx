@@ -229,6 +229,7 @@ function AppShell() {
                     handleNavigate('projects');
                   }}
                   onSelectPackage={handleSelectPackage}
+                  projects={projects}
                 />
               )}
 

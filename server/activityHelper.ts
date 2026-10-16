@@ -451,14 +451,7 @@ export function getProjectsList(): any[] {
   } catch (err) {
     console.error('Error reading projects file:', err);
   }
-  // Auto-seed default projects ONLY if file does not exist at all on initial run
-  try {
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    fs.writeFileSync(projectsFilePath, JSON.stringify(DEFAULT_PROJECTS_LIST, null, 2), 'utf8');
-  } catch (_) {}
-  return DEFAULT_PROJECTS_LIST;
+  return [];
 }
 
 export function saveProjectsList(projects: any[]): boolean {

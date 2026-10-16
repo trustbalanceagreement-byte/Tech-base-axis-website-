@@ -22,7 +22,11 @@ import {
   handleCreateRazorpayOrder,
   handleVerifyRazorpaySignature
 } from './server/razorpayHelper';
-import { handleSupabaseUploadStream } from './server/supabaseHelper';
+import { 
+  handleSupabaseUploadStream,
+  syncProjectsToSupabase,
+  getProjectsFromSupabase
+} from './server/supabaseHelper';
 
 function onesignalDevApiPlugin(): Plugin {
   return {
@@ -73,13 +77,30 @@ function onesignalDevApiPlugin(): Plugin {
       });
 
       // Public and Admin Projects Sync
-      server.middlewares.use('/api/projects', (req, res) => {
+      server.middlewares.use('/api/projects', async (req, res) => {
         if (req.method === 'GET') {
           try {
             const list = getProjectsList();
+            if (Array.isArray(list) && list.length > 0) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify(list));
+              return;
+            }
+
+            // Fallback to Supabase cloud storage bucket
+            const supaList = await getProjectsFromSupabase();
+            if (Array.isArray(supaList) && supaList.length > 0) {
+              saveProjectsList(supaList);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify(supaList));
+              return;
+            }
+
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 200;
-            res.end(JSON.stringify(list));
+            res.end(JSON.stringify([]));
           } catch (err: any) {
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 500;
@@ -95,6 +116,7 @@ function onesignalDevApiPlugin(): Plugin {
             try {
               const projects = JSON.parse(body || '[]');
               saveProjectsList(projects);
+              syncProjectsToSupabase(projects).catch(() => {});
               res.setHeader('Content-Type', 'application/json');
               res.statusCode = 200;
               res.end(JSON.stringify({ success: true, count: projects.length }));

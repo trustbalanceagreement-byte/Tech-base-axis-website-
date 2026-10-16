@@ -13,7 +13,11 @@ import {
   handleCreateRazorpayOrder, 
   handleVerifyRazorpaySignature 
 } from "./server/razorpayHelper.ts";
-import { handleSupabaseUploadStream } from "./server/supabaseHelper.ts";
+import { 
+  handleSupabaseUploadStream, 
+  syncProjectsToSupabase, 
+  getProjectsFromSupabase 
+} from "./server/supabaseHelper.ts";
 
 const app = express();
 app.use(express.json({ limit: "200mb" }));
@@ -279,15 +283,25 @@ app.post("/api/activity/event", (req, res) => {
 });
 
 // GET /api/projects - Shared public projects list for all live visitors
-app.get("/api/projects", (_req, res) => {
+app.get("/api/projects", async (_req, res) => {
   try {
     if (fs.existsSync(projectsFilePath)) {
       const raw = fs.readFileSync(projectsFilePath, "utf8");
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         return res.status(200).json(parsed);
       }
     }
+
+    // If local file is empty or missing, fetch from Supabase cloud storage bucket
+    const supaProjects = await getProjectsFromSupabase();
+    if (Array.isArray(supaProjects) && supaProjects.length > 0) {
+      try {
+        fs.writeFileSync(projectsFilePath, JSON.stringify(supaProjects, null, 2), "utf8");
+      } catch (_) {}
+      return res.status(200).json(supaProjects);
+    }
+
     return res.status(200).json([]);
   } catch (err: any) {
     console.error("Error reading projects:", err);
@@ -301,6 +315,8 @@ app.post("/api/projects", (req, res) => {
     const projects = req.body;
     if (Array.isArray(projects)) {
       fs.writeFileSync(projectsFilePath, JSON.stringify(projects, null, 2), "utf8");
+      // Cloud persistence to Supabase bucket
+      syncProjectsToSupabase(projects).catch(() => {});
       return res.status(200).json({ success: true, count: projects.length });
     }
     res.status(400).json({ error: "Expected an array of projects" });

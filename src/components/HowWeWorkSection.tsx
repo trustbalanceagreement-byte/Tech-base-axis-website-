@@ -550,30 +550,7 @@ export const HowWeWorkSection: React.FC<HowWeWorkSectionProps> = ({ onNavigate }
                         <div className="absolute bottom-0 inset-x-0 h-80 sm:h-96 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none z-10" />
                         <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none z-30" />
 
-                        {/* Top Stage & Category Badge */}
-                        <div className="relative z-20 flex items-center justify-between w-full">
-                          <div className="px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-neutral-700/80 text-[11px] font-mono text-neutral-300 flex items-center gap-2 shadow-lg">
-                            <span className="w-2 h-2 rounded-full bg-[#e61e2b] animate-pulse" />
-                            <span className="font-bold text-white uppercase tracking-wider">{service.category}</span>
-                            <span className="text-neutral-500">|</span>
-                            <span className="text-neutral-400 font-semibold">{service.stepNumber}</span>
-                          </div>
 
-                          {/* Subtle Slide Indicators */}
-                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-neutral-800">
-                            {SERVICES_DATA.map((_, sIdx) => (
-                              <button
-                                key={sIdx}
-                                type="button"
-                                onClick={() => handleStepClick(sIdx)}
-                                className={`h-1.5 rounded-full transition-all cursor-pointer ${
-                                  sIdx === activeStep ? 'w-4 bg-[#e61e2b]' : 'w-1.5 bg-neutral-600'
-                                }`}
-                                aria-label={`Stage ${sIdx + 1}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
 
                         {/* Bottom Content Panel Overlaid on Photo */}
                         <div className="relative z-20 p-3 sm:p-5 bg-black/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/10 mb-1 sm:mb-2 shadow-2xl">

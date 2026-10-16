@@ -7,6 +7,7 @@ import { AboutSection } from './AboutSection';
 import { HowWeWorkSection } from './HowWeWorkSection';
 import { StaggerTestimonials, TestimonialItem, INITIAL_TESTIMONIALS } from './ui/stagger-testimonials';
 import { ReviewModal, NewReviewData } from './ReviewModal';
+import { ProjectMediaPlayer } from './ProjectMediaPlayer';
 import { 
   Terminal, 
   Cpu, 
@@ -17,6 +18,7 @@ import {
   Layers,
   ChevronRight,
   ExternalLink,
+  ArrowUpRight,
   Github,
   Mail,
   MapPin,
@@ -42,12 +44,14 @@ interface HomeSectionProps {
   onNavigate: (section: NavSection) => void;
   onSelectProject: (project: Project) => void;
   onSelectPackage?: (pkg: ServicePackage) => void;
+  projects?: Project[];
 }
 
 export const HomeSection: React.FC<HomeSectionProps> = ({
   onNavigate,
   onSelectProject,
-  onSelectPackage
+  onSelectPackage,
+  projects = []
 }) => {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>(() => {
@@ -221,6 +225,156 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         onNavigate={onNavigate} 
         onExplorePackages={() => onNavigate('packages')} 
       />
+
+      {/* ============================================================ */}
+      {/* PRESENTATION PANEL: FEATURED PROJECTS & LIVE ARCHITECTURES    */}
+      {/* ============================================================ */}
+      <motion.section 
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.12 }}
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="relative w-full max-w-7xl mx-auto px-1.5 sm:px-6 lg:px-8"
+      >
+        <div className="bg-[#0e0e11] rounded-xl sm:rounded-2xl border border-neutral-800/80 overflow-hidden shadow-2xl">
+          <div className="px-4 sm:px-10 py-8 lg:py-12 space-y-6 sm:space-y-8">
+            
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-neutral-800/70 pb-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#e61e2b] font-semibold">
+                  <span className="w-2 h-0.5 bg-[#e61e2b]" />
+                  <span>PRODUCTION ARCHITECTURES & LIVE SHOWCASE</span>
+                </div>
+                <h2 className="font-display text-3xl sm:text-4xl md:text-5xl text-white font-black tracking-tight uppercase">
+                  Featured Projects
+                </h2>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => onNavigate('projects')}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-neutral-900 hover:bg-[#e61e2b] text-neutral-300 hover:text-white font-mono text-xs font-semibold border border-neutral-800 hover:border-red-500/50 transition-all cursor-pointer self-start sm:self-auto"
+              >
+                <span>Explore All Projects</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Projects Grid or Clean Placeholder */}
+            {projects.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                {projects.slice(0, 4).map((proj) => (
+                  <div
+                    key={proj.id}
+                    className="obsidian-card rounded-2xl border border-neutral-800 p-4 sm:p-6 flex flex-col justify-between hover:border-neutral-700 transition-all group"
+                  >
+                    <div>
+                      {/* Top Meta */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-neutral-900 text-neutral-300 border border-neutral-800">
+                            {proj.category}
+                          </span>
+                          <span className="text-[10px] font-mono text-neutral-500">{proj.year}</span>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-900 text-[#e61e2b] border border-red-600/30 font-semibold">
+                          {proj.status}
+                        </span>
+                      </div>
+
+                      {/* Media Player Showcase */}
+                      {(proj.imageUrl || proj.videoUrl) ? (
+                        <div className="mb-4 rounded-xl overflow-hidden border border-neutral-800 bg-black">
+                          <ProjectMediaPlayer
+                            imageUrl={proj.imageUrl}
+                            videoUrl={proj.videoUrl}
+                            title={proj.title}
+                            compact={true}
+                          />
+                        </div>
+                      ) : (
+                        <div className="mb-4 p-8 rounded-xl bg-neutral-900/60 border border-neutral-800 text-center text-xs font-mono text-neutral-500 flex flex-col items-center gap-2">
+                          <Layers className="w-6 h-6 text-neutral-600" />
+                          <span>Production Architecture</span>
+                        </div>
+                      )}
+
+                      {/* Title & Subtitle */}
+                      <h3 className="text-xl font-bold text-white mb-1 group-hover:text-red-400 transition-colors">
+                        {proj.title}
+                      </h3>
+                      <div className="text-xs font-mono text-[#e61e2b] mb-2">{proj.subtitle}</div>
+                      <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed line-clamp-2 mb-4">
+                        {proj.description}
+                      </p>
+
+                      {/* Tech Stack */}
+                      <div className="flex flex-wrap gap-1.5 mb-5">
+                        {Array.isArray(proj.techStack) && proj.techStack.slice(0, 5).map((t, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 rounded text-[10px] font-mono bg-neutral-950 text-neutral-300 border border-neutral-800"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-3 border-t border-neutral-800/80 flex items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onSelectProject(proj)}
+                        className="flex-1 py-2 px-3 rounded-xl bg-[#e61e2b] hover:bg-red-500 text-white text-xs font-mono font-bold flex items-center justify-center gap-1.5 shadow-md shadow-red-600/20 transition-all cursor-pointer"
+                      >
+                        <span>View Architecture Specs</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+
+                      {proj.demoUrl && (
+                        <a
+                          href={proj.demoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 transition-colors"
+                          title="Live Demo"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+
+                      {proj.githubUrl && (
+                        <a
+                          href={proj.githubUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 transition-colors"
+                          title="Source Code"
+                        >
+                          <Github className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 sm:p-12 rounded-xl bg-neutral-900/40 border border-dashed border-neutral-800 text-center space-y-3">
+                <Layers className="w-8 h-8 text-neutral-500 mx-auto" />
+                <div className="text-sm font-mono text-neutral-300 font-semibold">
+                  Publish projects from Admin Dashboard to showcase live architectures here.
+                </div>
+                <p className="text-xs text-neutral-500 font-mono max-w-md mx-auto">
+                  All published media, videos, and production architectures immediately reflect across the portfolio.
+                </p>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </motion.section>
 
       {/* ============================================================ */}
       {/* PRESENTATION PANEL 3: "MY SKILLS" (PROGRAMMING & TECH STACK) */}

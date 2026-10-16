@@ -251,17 +251,29 @@ export function sanitizeProjectForFirestore(proj: Project): Record<string, any> 
   return clean;
 }
 
+export const SUPABASE_PROJECTS_URL = 'https://httjpsskqtgjtmjgrjgs.supabase.co/storage/v1/object/public/Tech%20Base%20Axis%20Storege/projects/projects.json';
+
 /**
- * Fetches public projects with Cloud Firestore as the authoritative source of truth.
+ * Fetches public projects with Supabase Cloud CDN and server as authoritative sources of truth.
  * Ensures all visitors in Incognito mode, separate phones, laptops, and custom domains
  * view the identical published projects without requiring admin authentication.
  */
 export async function fetchPublicProjects(): Promise<Project[]> {
-  // 1. Check local persistent storage first for instant authoritative read
-  const local = loadSavedProjects();
-  if (local.length > 0) {
-    return local;
-  }
+  // 1. Fetch directly from global Supabase Cloud CDN (public, global, 100% available without auth)
+  try {
+    const supaRes = await fetch(`${SUPABASE_PROJECTS_URL}?t=${Date.now()}`, { cache: 'no-cache' });
+    if (supaRes.ok) {
+      const supaProjects = await supaRes.json();
+      if (Array.isArray(supaProjects) && supaProjects.length > 0) {
+        const published = supaProjects.filter((p: Project) => p.status !== 'Draft');
+        try {
+          localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(published));
+          localStorage.removeItem('tba_projects_explicitly_cleared');
+        } catch (_) {}
+        return published;
+      }
+    }
+  } catch (_) {}
 
   // 2. Fetch from /api/projects server backend
   try {
@@ -272,13 +284,20 @@ export async function fetchPublicProjects(): Promise<Project[]> {
         const published = serverProjects.filter((p: Project) => p.status !== 'Draft');
         try {
           localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(published));
+          localStorage.removeItem('tba_projects_explicitly_cleared');
         } catch (_) {}
         return published;
       }
     }
   } catch (_) {}
 
-  // 3. Fallback to Cloud Firestore 'projects' collection
+  // 3. Fallback to local persistent storage
+  const local = loadSavedProjects();
+  if (local.length > 0) {
+    return local;
+  }
+
+  // 4. Fallback to Cloud Firestore 'projects' collection
   try {
     const querySnapshot = await getDocs(collection(db, 'projects'));
     if (!querySnapshot.empty) {
@@ -300,6 +319,7 @@ export async function fetchPublicProjects(): Promise<Project[]> {
 
         try {
           localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(firestoreProjects));
+          localStorage.removeItem('tba_projects_explicitly_cleared');
         } catch (_) {}
 
         return firestoreProjects;
@@ -325,10 +345,10 @@ export function subscribeToPublicProjects(callback: (projects: Project[]) => voi
     if (!isMounted) return;
     if (!Array.isArray(incoming)) return;
 
-    const explicitlyCleared = localStorage.getItem('tba_projects_explicitly_cleared') === 'true';
-    if (explicitlyCleared) {
-      callback([]);
-      return;
+    if (incoming.length > 0) {
+      try {
+        localStorage.removeItem('tba_projects_explicitly_cleared');
+      } catch (_) {}
     }
 
     const currentSaved = loadSavedProjects();
@@ -347,7 +367,7 @@ export function subscribeToPublicProjects(callback: (projects: Project[]) => voi
       return;
     }
 
-    // Smart merge: Never let an older or partial remote sync erase locally published projects or video URLs
+    // Smart merge: Fresh incoming projects take priority, preserving local optimistic media URLs
     const savedMap = new Map<string, Project>();
     for (const p of currentSaved) {
       savedMap.set(p.id, p);
@@ -357,13 +377,13 @@ export function subscribeToPublicProjects(callback: (projects: Project[]) => voi
       const savedProj = savedMap.get(incProj.id);
       if (!savedProj) return incProj;
 
-      // Preserve media URLs if saved has them
-      const preservedVideo = savedProj.videoUrl || incProj.videoUrl;
-      const preservedImage = savedProj.imageUrl || incProj.imageUrl;
+      // Preserve media URLs if incoming is missing them or vice versa
+      const preservedVideo = incProj.videoUrl || savedProj.videoUrl;
+      const preservedImage = incProj.imageUrl || savedProj.imageUrl;
 
       return {
-        ...incProj,
         ...savedProj,
+        ...incProj,
         videoUrl: preservedVideo,
         imageUrl: preservedImage
       };
@@ -450,19 +470,41 @@ export function subscribeToPublicProjects(callback: (projects: Project[]) => voi
     }
   } catch (_) {}
 
-  // 5. Polling server every 5 seconds as fallback for multi-device sync
+  // 5. Polling Supabase CDN & server every 3 seconds for instant multi-device live sync
   const intervalId = setInterval(() => {
     if (!isMounted) return;
-    fetch('/api/projects')
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (isMounted && Array.isArray(data)) {
-          const published = data.filter((p) => p.status !== 'Draft');
+    fetch(`${SUPABASE_PROJECTS_URL}?t=${Date.now()}`, { cache: 'no-cache' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((supaData) => {
+        if (isMounted && Array.isArray(supaData) && supaData.length > 0) {
+          const published = supaData.filter((p: Project) => p.status !== 'Draft');
           safeCallback(published);
+        } else if (isMounted) {
+          fetch('/api/projects')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (isMounted && Array.isArray(data) && data.length > 0) {
+                const published = data.filter((p) => p.status !== 'Draft');
+                safeCallback(published);
+              }
+            })
+            .catch(() => {});
         }
       })
-      .catch(() => {});
-  }, 5000);
+      .catch(() => {
+        if (isMounted) {
+          fetch('/api/projects')
+            .then((res) => (res.ok ? res.json() : null))
+            .then((data) => {
+              if (isMounted && Array.isArray(data) && data.length > 0) {
+                const published = data.filter((p) => p.status !== 'Draft');
+                safeCallback(published);
+              }
+            })
+            .catch(() => {});
+        }
+      });
+  }, 3000);
 
   return () => {
     isMounted = false;
