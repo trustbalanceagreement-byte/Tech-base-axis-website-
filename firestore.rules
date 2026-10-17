@@ -8,6 +8,15 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // User activity and real-time presence tracking
+    match /user_activity/{userId} {
+      allow read, write: if true;
+    }
+
+    match /activity_events/{eventId} {
+      allow read, write: if true;
+    }
+
     // Default deny for all other collections
     match /{document=**} {
       allow read, write: if false;

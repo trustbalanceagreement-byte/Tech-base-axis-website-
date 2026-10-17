@@ -104,6 +104,36 @@ export function loadActivityStore(): ActivityStore {
     };
   }
 
+  if (!store.users['agnikx4@gmail.com']) {
+    store.users['agnikx4@gmail.com'] = {
+      id: 'k2kv6msCjrfiO5FQJGxTSXprZPQ2',
+      email: 'agnikx4@gmail.com',
+      name: 'Agnik Das',
+      photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocLPJ1k2cuxcWkkSMlg3dQssRmk-77R-MvoI2X-l9p9PmrLY7IF2=s96-c',
+      role: 'client',
+      createdAt: '2026-10-16T19:34:37.880Z',
+      lastLoginAt: '2026-10-16T19:34:37.880Z',
+      lastLogoutAt: null,
+      lastActiveAt: '2026-10-16T19:34:37.880Z',
+      device: 'Mobile / Linux armv81'
+    };
+  }
+
+  if (!store.users['rohankundu454@gmail.com']) {
+    store.users['rohankundu454@gmail.com'] = {
+      id: '3tPaiYcf1CdGE9p0IXLD0hDCtLp1',
+      email: 'rohankundu454@gmail.com',
+      name: 'Rohan Kundu',
+      photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocJva7fRVe5QCiTFH3QgcTTaZZQuAaqby1jL335BRCxy4A_1PA=s96-c',
+      role: 'client',
+      createdAt: '2026-10-16T17:42:23.000Z',
+      lastLoginAt: '2026-10-16T17:42:23.000Z',
+      lastLogoutAt: '2026-10-16T17:43:30.295Z',
+      lastActiveAt: '2026-10-16T17:44:39.088Z',
+      device: 'Mobile / Linux armv81'
+    };
+  }
+
   if (!Array.isArray(store.events) || store.events.length === 0) {
     store.events = [
       {
@@ -266,6 +296,37 @@ export function recordActivityEvent(payload: {
 
   saveActivityStore(store);
   return { success: true, timestamp: nowIso };
+}
+
+export function deleteActivityUser(keyOrId: string): boolean {
+  try {
+    const store = loadActivityStore();
+    const searchKey = (keyOrId || '').toLowerCase().trim();
+    let foundKey: string | null = null;
+
+    for (const [key, user] of Object.entries(store.users)) {
+      if (
+        key.toLowerCase() === searchKey ||
+        user.id === keyOrId ||
+        user.email.toLowerCase() === searchKey
+      ) {
+        foundKey = key;
+        break;
+      }
+    }
+
+    if (foundKey) {
+      delete store.users[foundKey];
+      store.events = store.events.filter(
+        (e) => e.email?.toLowerCase() !== searchKey && e.userId !== keyOrId
+      );
+      saveActivityStore(store);
+      return true;
+    }
+  } catch (err) {
+    console.error('Error deleting activity user:', err);
+  }
+  return false;
 }
 
 export const DEFAULT_PROJECTS_LIST = [

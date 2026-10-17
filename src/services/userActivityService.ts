@@ -1,6 +1,7 @@
 import { 
   db, 
   setDoc, 
+  deleteDoc,
   doc, 
   collection, 
   getDocs, 
@@ -50,8 +51,130 @@ export interface ActivityDashboardData {
   };
 }
 
+// Global in-memory unified registry to prevent state oscillation and glitches
+const unifiedUserMap = new Map<string, UserActivityProfile>();
+const unifiedEventMap = new Map<string, ActivityEvent>();
+
+function normalizeKey(emailOrId?: string): string {
+  return (emailOrId || '').toLowerCase().trim();
+}
+
 /**
- * Sends user activity event to the server and Firestore
+ * Merges an array of user profiles into the unified in-memory registry.
+ * Preserves existing fields (like joined timestamps or avatar URLs) while taking latest status.
+ */
+function mergeIntoUnifiedUserMap(newUsers: UserActivityProfile[]): void {
+  if (!Array.isArray(newUsers)) return;
+  for (const u of newUsers) {
+    if (!u) continue;
+    const key = normalizeKey(u.email || u.id);
+    if (!key) continue;
+
+    const existing = unifiedUserMap.get(key);
+    if (existing) {
+      unifiedUserMap.set(key, {
+        ...existing,
+        ...u,
+        name: u.name || existing.name,
+        photoURL: u.photoURL || existing.photoURL,
+        device: u.device || existing.device,
+        role: u.role || existing.role,
+        createdAt: existing.createdAt || u.createdAt || new Date().toISOString(),
+        lastLoginAt: u.lastLoginAt || existing.lastLoginAt || new Date().toISOString(),
+        lastActiveAt: u.lastActiveAt || existing.lastActiveAt || new Date().toISOString(),
+        lastLogoutAt: u.lastLogoutAt !== undefined ? u.lastLogoutAt : existing.lastLogoutAt,
+        isOnline: u.isOnline !== undefined ? u.isOnline : existing.isOnline
+      });
+    } else {
+      unifiedUserMap.set(key, {
+        ...u,
+        role: u.role || (key.includes('techbaseaxis') || key.includes('bgho40185') ? 'admin' : 'client')
+      });
+    }
+  }
+}
+
+function mergeIntoUnifiedEventMap(newEvents: ActivityEvent[]): void {
+  if (!Array.isArray(newEvents)) return;
+  for (const e of newEvents) {
+    if (!e || !e.id) continue;
+    unifiedEventMap.set(e.id, e);
+  }
+}
+
+/**
+ * Builds a consistent, glitch-free ActivityDashboardData from the unified registry.
+ */
+function buildUnifiedDashboard(): ActivityDashboardData {
+  const now = Date.now();
+  const users = Array.from(unifiedUserMap.values()).map((u) => {
+    const activeAgeMs = now - new Date(u.lastActiveAt || 0).getTime();
+    const logoutTime = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
+    const activeTime = new Date(u.lastActiveAt || 0).getTime();
+    // Online if pinged within last 2.5 minutes (150,000 ms) and not logged out after active ping
+    const isOnline = activeAgeMs < 150000 && activeTime >= logoutTime;
+    return {
+      ...u,
+      isOnline
+    };
+  });
+
+  // Sort: online users first, then by lastActiveAt descending
+  users.sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return new Date(b.lastActiveAt || 0).getTime() - new Date(a.lastActiveAt || 0).getTime();
+  });
+
+  const onlineCount = users.filter((u) => u.isOnline).length;
+  const offlineCount = users.length - onlineCount;
+
+  const isToday = (isoDate?: string | null) => {
+    if (!isoDate) return false;
+    try {
+      const d = new Date(isoDate);
+      const today = new Date();
+      return (
+        d.getDate() === today.getDate() &&
+        d.getMonth() === today.getMonth() &&
+        d.getFullYear() === today.getFullYear()
+      );
+    } catch {
+      return false;
+    }
+  };
+
+  const events = Array.from(unifiedEventMap.values());
+  events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  const loginsToday = events.filter((e) => e.type === 'login' && isToday(e.timestamp)).length;
+  const signupsToday = events.filter((e) => e.type === 'signup' && isToday(e.timestamp)).length;
+
+  const data: ActivityDashboardData = {
+    users,
+    recentEvents: events.slice(0, 100),
+    stats: {
+      totalUsers: users.length,
+      onlineCount,
+      offlineCount,
+      loginsToday,
+      signupsToday,
+      serverTime: new Date().toISOString()
+    }
+  };
+
+  // Cache locally
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tba_activity_cache_v2', JSON.stringify(data));
+    }
+  } catch (_) {}
+
+  return data;
+}
+
+/**
+ * Sends user activity event to the server and Firestore, and updates local unified state instantly.
  */
 export async function recordUserActivityEvent(payload: {
   userId: string;
@@ -65,11 +188,62 @@ export async function recordUserActivityEvent(payload: {
   if (!payload.email && !payload.userId) return;
 
   const nowIso = new Date().toISOString();
+  const userKey = normalizeKey(payload.email || payload.userId);
+  const deviceStr = payload.device || (typeof navigator !== 'undefined' ? `${navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'} / ${navigator.platform || 'Web'}` : 'Web');
+
   const bodyData = {
     ...payload,
     timestamp: nowIso,
-    device: payload.device || (typeof navigator !== 'undefined' ? `${navigator.userAgent.includes('Mobile') ? 'Mobile' : 'Desktop'} / ${navigator.platform || 'Web'}` : 'Web')
+    device: deviceStr
   };
+
+  const isAdmin = userKey.includes('techbaseaxis') || userKey.includes('bgho40185');
+
+  // Immediately register in local unified map
+  const existing = unifiedUserMap.get(userKey);
+  const updatedProfile: UserActivityProfile = {
+    id: payload.userId || existing?.id || `usr_${Date.now()}`,
+    email: payload.email || existing?.email || userKey,
+    name: payload.name || existing?.name || userKey.split('@')[0],
+    photoURL: payload.photoURL || existing?.photoURL || null,
+    role: isAdmin ? 'admin' : (existing?.role || 'client'),
+    createdAt: existing?.createdAt || nowIso,
+    lastLoginAt: payload.type === 'signup' || payload.type === 'login' ? nowIso : (existing?.lastLoginAt || nowIso),
+    lastLogoutAt: payload.type === 'logout' ? nowIso : (payload.type === 'heartbeat' || payload.type === 'login' ? null : existing?.lastLogoutAt),
+    lastActiveAt: nowIso,
+    isOnline: payload.type !== 'logout',
+    device: deviceStr
+  };
+
+  unifiedUserMap.set(userKey, updatedProfile);
+
+  if (payload.type !== 'heartbeat') {
+    const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    unifiedEventMap.set(eventId, {
+      id: eventId,
+      userId: updatedProfile.id,
+      name: updatedProfile.name,
+      email: updatedProfile.email,
+      photoURL: updatedProfile.photoURL,
+      type: payload.type,
+      timestamp: nowIso,
+      device: deviceStr,
+      details: payload.details || `${updatedProfile.name} ${payload.type === 'signup' ? 'created an account' : payload.type === 'login' ? 'logged in' : 'logged out'}`
+    });
+  }
+
+  // Update localStorage and trigger reactive events across window and tabs
+  buildUnifiedDashboard();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tba_user_activity_updated'));
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        const bc = new BroadcastChannel('tba_activity_channel');
+        bc.postMessage({ type: 'activity_updated', timestamp: nowIso });
+        bc.close();
+      }
+    } catch (_) {}
+  }
 
   // 1. Post to Server API for centralized persistence
   try {
@@ -88,14 +262,15 @@ export async function recordUserActivityEvent(payload: {
 
   // 2. Sync to Firestore collection 'user_activity' & 'activity_events'
   try {
-    const userDocId = (payload.email || payload.userId).toLowerCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+    const userDocId = userKey.replace(/[^a-zA-Z0-9_-]/g, '_');
     
     const profileUpdate: any = {
-      id: payload.userId,
-      email: payload.email,
-      name: payload.name || payload.email.split('@')[0],
-      photoURL: payload.photoURL || null,
-      device: bodyData.device,
+      id: updatedProfile.id,
+      email: updatedProfile.email,
+      name: updatedProfile.name,
+      photoURL: updatedProfile.photoURL,
+      role: updatedProfile.role,
+      device: deviceStr,
       lastActiveAt: nowIso
     };
 
@@ -122,46 +297,36 @@ export async function recordUserActivityEvent(payload: {
       const eventId = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       setDoc(doc(db, 'activity_events', eventId), {
         id: eventId,
-        userId: payload.userId,
-        email: payload.email,
-        name: payload.name || payload.email.split('@')[0],
-        photoURL: payload.photoURL || null,
+        userId: updatedProfile.id,
+        email: updatedProfile.email,
+        name: updatedProfile.name,
+        photoURL: updatedProfile.photoURL,
         type: payload.type,
         timestamp: nowIso,
-        device: bodyData.device,
-        details: payload.details || `${payload.name || payload.email} ${payload.type === 'signup' ? 'created an account' : payload.type === 'login' ? 'logged in' : 'logged out'}`
+        device: deviceStr,
+        details: payload.details || `${updatedProfile.name} ${payload.type === 'signup' ? 'created an account' : payload.type === 'login' ? 'logged in' : 'logged out'}`
       }).catch(() => {});
     }
-
-    // Trigger local reactive event across window and tabs
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tba_user_activity_updated'));
-    }
-    try {
-      if (typeof BroadcastChannel !== 'undefined') {
-        const bc = new BroadcastChannel('tba_activity_channel');
-        bc.postMessage({ type: 'activity_updated', timestamp: nowIso });
-        bc.close();
-      }
-    } catch (_) {}
   } catch (_) {}
 }
 
 /**
- * Fetches real-time activity and presence dashboard from server
+ * Fetches real-time activity and presence dashboard, consolidating server data, local cache, and in-memory registry.
  */
 export async function fetchUserActivityDashboard(): Promise<ActivityDashboardData> {
+  // 1. Fetch from Server API
   try {
     const res = await fetch('/api/activity');
     if (res.ok) {
       const contentType = res.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
         const data = await res.json();
-        if (data && Array.isArray(data.users) && data.users.length > 0) {
-          try {
-            localStorage.setItem('tba_activity_cache_v2', JSON.stringify(data));
-          } catch (_) {}
-          return data;
+        if (data && Array.isArray(data.users)) {
+          mergeIntoUnifiedUserMap(data.users);
+          if (Array.isArray(data.recentEvents)) {
+            mergeIntoUnifiedEventMap(data.recentEvents);
+          }
+          return buildUnifiedDashboard();
         }
       }
     }
@@ -169,74 +334,85 @@ export async function fetchUserActivityDashboard(): Promise<ActivityDashboardDat
     console.warn('[Activity Service] Server fetch notice:', err);
   }
 
-  // 1. Recover from local cache if server is loading or offline
+  // 2. Recover from local cache if offline
   try {
     const cached = typeof window !== 'undefined' ? localStorage.getItem('tba_activity_cache_v2') : null;
     if (cached) {
       const parsed = JSON.parse(cached);
-      if (parsed && Array.isArray(parsed.users) && parsed.users.length > 0) {
-        return parsed;
+      if (parsed && Array.isArray(parsed.users)) {
+        mergeIntoUnifiedUserMap(parsed.users);
+        if (Array.isArray(parsed.recentEvents)) {
+          mergeIntoUnifiedEventMap(parsed.recentEvents);
+        }
+        return buildUnifiedDashboard();
       }
     }
   } catch (_) {}
 
-  // 2. Fallback resilient baseline so dashboard never exhibits zero-state glitch
-  const now = new Date().toISOString();
-  return {
-    users: [
+  // 3. Fallback baseline if completely clean
+  if (unifiedUserMap.size === 0) {
+    mergeIntoUnifiedUserMap([
       {
-        id: 'usr_bikram_ghosh',
-        email: 'bgho40185@gmail.com',
-        name: 'Bikram Ghosh',
-        photoURL: null,
+        id: 'tba-founder-verified',
+        email: 'techbaseaxis@gmail.com',
+        name: 'Bikram Ghosh (Founder)',
+        photoURL: '/src/assets/images/bikram-ghosh-developer-avatar.webp',
         role: 'admin',
-        createdAt: '2026-01-15T10:00:00.000Z',
-        lastLoginAt: now,
+        createdAt: '2026-01-10T08:30:00.000Z',
+        lastLoginAt: new Date().toISOString(),
         lastLogoutAt: null,
-        lastActiveAt: now,
+        lastActiveAt: new Date().toISOString(),
         isOnline: true,
         device: 'Admin Console'
       },
       {
-        id: 'usr_tba_hq',
-        email: 'techbaseaxis@gmail.com',
-        name: 'Tech Base Axis HQ',
-        photoURL: '/src/assets/images/bikram-ghosh-developer-avatar.webp',
-        role: 'admin',
-        createdAt: '2026-01-10T08:30:00.000Z',
-        lastLoginAt: now,
-        lastLogoutAt: null,
-        lastActiveAt: now,
-        isOnline: true,
-        device: 'Cloud Workstation'
-      }
-    ],
-    recentEvents: [
-      {
-        id: 'evt_init_1',
-        userId: 'usr_bikram_ghosh',
-        name: 'Bikram Ghosh',
+        id: 'usr_bikram_ghosh',
         email: 'bgho40185@gmail.com',
-        photoURL: null,
-        type: 'login',
-        timestamp: now,
-        device: 'Admin Console',
-        details: 'Founder verified access'
+        name: 'Bikram Ghosh',
+        photoURL: '/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp',
+        role: 'admin',
+        createdAt: '2026-01-15T10:00:00.000Z',
+        lastLoginAt: '2026-10-07T03:30:00.000Z',
+        lastLogoutAt: null,
+        lastActiveAt: '2026-10-07T03:30:00.000Z',
+        isOnline: false,
+        device: 'Android Chrome / Mobile'
+      },
+      {
+        id: 'k2kv6msCjrfiO5FQJGxTSXprZPQ2',
+        email: 'agnikx4@gmail.com',
+        name: 'Agnik Das',
+        photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocLPJ1k2cuxcWkkSMlg3dQssRmk-77R-MvoI2X-l9p9PmrLY7IF2=s96-c',
+        role: 'client',
+        createdAt: '2026-10-16T19:34:37.880Z',
+        lastLoginAt: '2026-10-16T19:34:37.880Z',
+        lastLogoutAt: null,
+        lastActiveAt: '2026-10-16T19:34:37.880Z',
+        isOnline: false,
+        device: 'Mobile / Linux armv81'
+      },
+      {
+        id: '3tPaiYcf1CdGE9p0IXLD0hDCtLp1',
+        email: 'rohankundu454@gmail.com',
+        name: 'Rohan Kundu',
+        photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocJva7fRVe5QCiTFH3QgcTTaZZQuAaqby1jL335BRCxy4A_1PA=s96-c',
+        role: 'client',
+        createdAt: '2026-10-16T17:42:23.000Z',
+        lastLoginAt: '2026-10-16T17:42:23.000Z',
+        lastLogoutAt: '2026-10-16T17:43:30.295Z',
+        lastActiveAt: '2026-10-16T17:44:39.088Z',
+        isOnline: false,
+        device: 'Mobile / Linux armv81'
       }
-    ],
-    stats: {
-      totalUsers: 2,
-      onlineCount: 2,
-      offlineCount: 0,
-      loginsToday: 1,
-      signupsToday: 0
-    }
-  };
+    ]);
+  }
+
+  return buildUnifiedDashboard();
 }
 
 /**
  * Subscribes to live user activity updates using Firestore real-time listeners (onSnapshot)
- * and fast fallback polling to guarantee instant automatic updates on the Admin Panel.
+ * and seamless merging so the user counts and list never glitch or oscillate.
  */
 export function subscribeToLiveActivity(
   callback: (data: ActivityDashboardData) => void
@@ -249,62 +425,11 @@ export function subscribeToLiveActivity(
   let unsubscribeEvents: (() => void) | null = null;
 
   try {
-    const isToday = (isoDate?: string | null) => {
-      if (!isoDate) return false;
-      const d = new Date(isoDate);
-      const today = new Date();
-      return (
-        d.getDate() === today.getDate() &&
-        d.getMonth() === today.getMonth() &&
-        d.getFullYear() === today.getFullYear()
-      );
-    };
-
-    let cachedUsers: UserActivityProfile[] = [];
-    let cachedEvents: ActivityEvent[] = [];
-
-    const emitMerged = () => {
-      if (cachedUsers.length === 0) return;
-      const now = Date.now();
-      const usersWithStatus = cachedUsers.map((u) => {
-        const activeAgeMs = now - new Date(u.lastActiveAt || 0).getTime();
-        const logoutTime = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
-        const activeTime = new Date(u.lastActiveAt || 0).getTime();
-        const isOnline = activeAgeMs < 150000 && activeTime >= logoutTime;
-        return {
-          ...u,
-          isOnline
-        };
-      });
-
-      usersWithStatus.sort((a, b) => {
-        if (a.isOnline && !b.isOnline) return -1;
-        if (!a.isOnline && b.isOnline) return 1;
-        return new Date(b.lastActiveAt || 0).getTime() - new Date(a.lastActiveAt || 0).getTime();
-      });
-
-      const onlineCount = usersWithStatus.filter((u) => u.isOnline).length;
-      const offlineCount = usersWithStatus.length - onlineCount;
-      const loginsToday = cachedEvents.filter((e) => e.type === 'login' && isToday(e.timestamp)).length;
-      const signupsToday = cachedEvents.filter((e) => e.type === 'signup' && isToday(e.timestamp)).length;
-
-      callback({
-        users: usersWithStatus,
-        recentEvents: cachedEvents,
-        stats: {
-          totalUsers: usersWithStatus.length,
-          onlineCount,
-          offlineCount,
-          loginsToday,
-          signupsToday
-        }
-      });
-    };
-
     unsubscribeUsers = onSnapshot(collection(db, 'user_activity'), (snapshot) => {
       if (!snapshot.empty) {
-        cachedUsers = snapshot.docs.map((d) => d.data() as UserActivityProfile);
-        emitMerged();
+        const firestoreUsers = snapshot.docs.map((d) => d.data() as UserActivityProfile);
+        mergeIntoUnifiedUserMap(firestoreUsers);
+        callback(buildUnifiedDashboard());
       }
     }, (err) => {
       if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
@@ -315,8 +440,9 @@ export function subscribeToLiveActivity(
     const eventsQuery = query(collection(db, 'activity_events'), orderBy('timestamp', 'desc'), limit(100));
     unsubscribeEvents = onSnapshot(eventsQuery, (snapshot) => {
       if (!snapshot.empty) {
-        cachedEvents = snapshot.docs.map((d) => d.data() as ActivityEvent);
-        emitMerged();
+        const firestoreEvents = snapshot.docs.map((d) => d.data() as ActivityEvent);
+        mergeIntoUnifiedEventMap(firestoreEvents);
+        callback(buildUnifiedDashboard());
       }
     }, (err) => {
       if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
@@ -329,14 +455,14 @@ export function subscribeToLiveActivity(
     }
   }
 
-  // 3. Fast fallback interval polling every 4 seconds from Server API
+  // 3. Fallback interval polling every 5 seconds that merges server data without dropping any users
   const pollInterval = setInterval(() => {
     fetchUserActivityDashboard().then(callback).catch(() => {});
-  }, 4000);
+  }, 5000);
 
   // 4. Local reactive event listener & multi-tab channel
   const handleLocalUpdate = () => {
-    fetchUserActivityDashboard().then(callback).catch(() => {});
+    callback(buildUnifiedDashboard());
   };
   window.addEventListener('tba_user_activity_updated', handleLocalUpdate);
 
@@ -363,3 +489,46 @@ export function subscribeToLiveActivity(
   };
 }
 
+/**
+ * Deletes a user profile from the activity directory across Server, Firestore, and Local Cache
+ */
+export async function deleteUserActivityProfile(userKeyOrEmail: string): Promise<boolean> {
+  const normalizedKey = normalizeKey(userKeyOrEmail);
+  if (!normalizedKey) return false;
+
+  // 1. Remove from unified in-memory registry
+  unifiedUserMap.delete(normalizedKey);
+  for (const [key, u] of unifiedUserMap.entries()) {
+    if (u.id === userKeyOrEmail || normalizeKey(u.email) === normalizedKey) {
+      unifiedUserMap.delete(key);
+    }
+  }
+
+  // 2. Delete on Server
+  try {
+    await fetch(`/api/activity/user?user=${encodeURIComponent(normalizedKey)}`, {
+      method: 'DELETE'
+    });
+  } catch (_) {}
+
+  // 3. Delete on Firestore
+  try {
+    const docId = normalizedKey.replace(/[^a-zA-Z0-9_-]/g, '_');
+    await deleteDoc(doc(db, 'user_activity', docId));
+  } catch (_) {}
+
+  // 4. Update localStorage cache & broadcast
+  buildUnifiedDashboard();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tba_user_activity_updated'));
+  }
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const bc = new BroadcastChannel('tba_activity_channel');
+      bc.postMessage({ type: 'activity_updated', timestamp: new Date().toISOString() });
+      bc.close();
+    }
+  } catch (_) {}
+
+  return true;
+}

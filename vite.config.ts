@@ -14,6 +14,7 @@ import {
 import {
   getActivityDashboard,
   recordActivityEvent,
+  deleteActivityUser,
   getProjectsList,
   saveProjectsList,
   handleUpload
@@ -55,6 +56,35 @@ function onesignalDevApiPlugin(): Plugin {
             res.end(JSON.stringify({ error: err?.message || 'Failed to record event' }));
           }
         });
+      });
+
+      server.middlewares.use('/api/activity/user', (req, res) => {
+        if (req.method === 'DELETE' || req.method === 'POST') {
+          let body = '';
+          req.on('data', chunk => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const url = new URL(req.url || '', 'http://localhost');
+              const qUser = url.searchParams.get('user');
+              let parsedBody: any = {};
+              try { parsedBody = JSON.parse(body); } catch (_) {}
+              const userKey = qUser || parsedBody.user || parsedBody.email || parsedBody.userId;
+              if (userKey) {
+                deleteActivityUser(userKey);
+              }
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true }));
+            } catch (err: any) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 500;
+              res.end(JSON.stringify({ error: err?.message || 'Failed to delete user' }));
+            }
+          });
+          return;
+        }
+        res.statusCode = 405;
+        res.end(JSON.stringify({ error: 'Method not allowed' }));
       });
 
       server.middlewares.use('/api/activity', (req, res) => {

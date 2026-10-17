@@ -102,6 +102,30 @@ const loadActivityStore = (): ActivityStore => {
         lastLogoutAt: null,
         lastActiveAt: now,
         device: "Cloud Workstation"
+      },
+      "agnikx4@gmail.com": {
+        id: "k2kv6msCjrfiO5FQJGxTSXprZPQ2",
+        email: "agnikx4@gmail.com",
+        name: "Agnik Das",
+        photoURL: "https://lh3.googleusercontent.com/a/ACg8ocLPJ1k2cuxcWkkSMlg3dQssRmk-77R-MvoI2X-l9p9PmrLY7IF2=s96-c",
+        role: "client",
+        createdAt: "2026-10-16T19:34:37.880Z",
+        lastLoginAt: "2026-10-16T19:34:37.880Z",
+        lastLogoutAt: null,
+        lastActiveAt: "2026-10-16T19:34:37.880Z",
+        device: "Mobile / Linux armv81"
+      },
+      "rohankundu454@gmail.com": {
+        id: "3tPaiYcf1CdGE9p0IXLD0hDCtLp1",
+        email: "rohankundu454@gmail.com",
+        name: "Rohan Kundu",
+        photoURL: "https://lh3.googleusercontent.com/a/ACg8ocJva7fRVe5QCiTFH3QgcTTaZZQuAaqby1jL335BRCxy4A_1PA=s96-c",
+        role: "client",
+        createdAt: "2026-10-16T17:42:23.000Z",
+        lastLoginAt: "2026-10-16T17:42:23.000Z",
+        lastLogoutAt: "2026-10-16T17:43:30.295Z",
+        lastActiveAt: "2026-10-16T17:44:39.088Z",
+        device: "Mobile / Linux armv81"
       }
     },
     events: [
@@ -279,6 +303,40 @@ app.post("/api/activity/event", (req, res) => {
   } catch (err: any) {
     console.error("Error logging activity event:", err);
     res.status(500).json({ error: "Failed to record activity event" });
+  }
+});
+
+// DELETE /api/activity/user - Remove user from activity directory
+app.delete("/api/activity/user", (req, res) => {
+  try {
+    const userKey = (req.query.user || req.body?.user || "").toString().toLowerCase().trim();
+    if (!userKey) {
+      return res.status(400).json({ error: "Missing user key" });
+    }
+    const store = loadActivityStore();
+    let found = false;
+    for (const [key, user] of Object.entries(store.users)) {
+      if (
+        key.toLowerCase() === userKey ||
+        user.id === userKey ||
+        user.email.toLowerCase() === userKey
+      ) {
+        delete store.users[key];
+        found = true;
+        break;
+      }
+    }
+    if (found) {
+      store.events = store.events.filter(
+        (e) => e.email?.toLowerCase() !== userKey && e.userId !== userKey
+      );
+      saveActivityStore(store);
+      return res.status(200).json({ success: true });
+    }
+    res.status(404).json({ error: "User not found" });
+  } catch (err: any) {
+    console.error("Error deleting activity user:", err);
+    res.status(500).json({ error: "Failed to delete user" });
   }
 });
 
