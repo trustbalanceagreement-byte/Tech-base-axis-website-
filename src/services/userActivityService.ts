@@ -59,38 +59,61 @@ function normalizeKey(emailOrId?: string): string {
   return (emailOrId || '').toLowerCase().trim();
 }
 
+function findExistingUserKey(u: { email?: string; id?: string }): string | null {
+  const normEmail = (u.email || '').toLowerCase().trim();
+  const normId = (u.id || '').trim();
+
+  for (const [k, existing] of unifiedUserMap.entries()) {
+    if (normEmail && existing.email && existing.email.toLowerCase().trim() === normEmail) {
+      return k;
+    }
+    if (normId && existing.id && existing.id === normId) {
+      return k;
+    }
+    if (normEmail && k === normEmail) {
+      return k;
+    }
+    if (normId && k === normId.toLowerCase()) {
+      return k;
+    }
+  }
+  return null;
+}
+
 /**
  * Merges an array of user profiles into the unified in-memory registry.
- * Preserves existing fields (like joined timestamps or avatar URLs) while taking latest status.
+ * Preserves existing fields while deduplicating by email/ID.
  */
 function mergeIntoUnifiedUserMap(newUsers: UserActivityProfile[]): void {
   if (!Array.isArray(newUsers)) return;
   for (const u of newUsers) {
     if (!u) continue;
-    const key = normalizeKey(u.email || u.id);
-    if (!key) continue;
+    const normEmail = (u.email || '').toLowerCase().trim();
+    const targetKey = normEmail || (u.id || '').toLowerCase().trim();
+    if (!targetKey) continue;
 
-    const existing = unifiedUserMap.get(key);
-    if (existing) {
-      unifiedUserMap.set(key, {
-        ...existing,
-        ...u,
-        name: u.name || existing.name,
-        photoURL: u.photoURL || existing.photoURL,
-        device: u.device || existing.device,
-        role: u.role || existing.role,
-        createdAt: existing.createdAt || u.createdAt || new Date().toISOString(),
-        lastLoginAt: u.lastLoginAt || existing.lastLoginAt || new Date().toISOString(),
-        lastActiveAt: u.lastActiveAt || existing.lastActiveAt || new Date().toISOString(),
-        lastLogoutAt: u.lastLogoutAt !== undefined ? u.lastLogoutAt : existing.lastLogoutAt,
-        isOnline: u.isOnline !== undefined ? u.isOnline : existing.isOnline
-      });
-    } else {
-      unifiedUserMap.set(key, {
-        ...u,
-        role: u.role || (key.includes('techbaseaxis') || key.includes('bgho40185') ? 'admin' : 'client')
-      });
+    const existingKey = findExistingUserKey(u);
+    const existing = existingKey ? unifiedUserMap.get(existingKey) : undefined;
+
+    if (existingKey && existingKey !== targetKey) {
+      unifiedUserMap.delete(existingKey);
     }
+
+    const merged: UserActivityProfile = {
+      id: u.id || existing?.id || targetKey,
+      email: u.email || existing?.email || targetKey,
+      name: u.name || existing?.name || targetKey.split('@')[0],
+      photoURL: u.photoURL || existing?.photoURL || null,
+      device: u.device || existing?.device || 'Web Browser',
+      role: u.role || existing?.role || (targetKey.includes('techbaseaxis') || targetKey.includes('bgho40185') ? 'admin' : 'client'),
+      createdAt: existing?.createdAt || u.createdAt || new Date().toISOString(),
+      lastLoginAt: u.lastLoginAt || existing?.lastLoginAt || new Date().toISOString(),
+      lastActiveAt: u.lastActiveAt || existing?.lastActiveAt || new Date().toISOString(),
+      lastLogoutAt: u.lastLogoutAt !== undefined ? u.lastLogoutAt : existing?.lastLogoutAt,
+      isOnline: u.isOnline !== undefined ? u.isOnline : (existing?.isOnline ?? false)
+    };
+
+    unifiedUserMap.set(targetKey, merged);
   }
 }
 
@@ -322,7 +345,17 @@ export async function fetchUserActivityDashboard(): Promise<ActivityDashboardDat
       if (contentType && contentType.includes('application/json')) {
         const data = await res.json();
         if (data && Array.isArray(data.users)) {
+          // Keep active online user sessions
+          const liveOnline = Array.from(unifiedUserMap.values()).filter((u) => u.isOnline);
+          unifiedUserMap.clear();
           mergeIntoUnifiedUserMap(data.users);
+          for (const live of liveOnline) {
+            const key = (live.email || live.id || '').toLowerCase().trim();
+            if (key && unifiedUserMap.has(key)) {
+              const cur = unifiedUserMap.get(key)!;
+              unifiedUserMap.set(key, { ...cur, isOnline: true, lastActiveAt: live.lastActiveAt });
+            }
+          }
           if (Array.isArray(data.recentEvents)) {
             mergeIntoUnifiedEventMap(data.recentEvents);
           }

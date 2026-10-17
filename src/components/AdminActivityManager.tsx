@@ -216,112 +216,51 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
   }, [data.users, activeTab, searchQuery]);
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200 text-neutral-100 max-w-4xl mx-auto">
+    <div className="space-y-5 animate-in fade-in duration-200 text-neutral-100 max-w-4xl mx-auto">
       {/* ===================================================
-          1. ADMIN MODULE HEADER (Matching Reference Screenshot 3)
+          1. CLEAN ACTIVITY HEADER
           =================================================== */}
-      <div className="space-y-3">
-        <div className="text-[11px] font-mono text-neutral-400 uppercase tracking-widest font-bold">
-          ADMIN MODULE
-        </div>
-
-        {/* Section Switcher Banner */}
-        <div className="bg-white text-black p-4 rounded-2xl flex items-center justify-between shadow-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-100 text-[#e61e2b] flex items-center justify-center shrink-0">
-              <Users className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold tracking-tight text-neutral-900">
-                Registered Users ({data.stats.totalUsers})
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-neutral-800/80">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-red-600 to-rose-700 text-white flex items-center justify-center shadow-lg shadow-red-900/30 shrink-0">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-black tracking-tight text-white uppercase font-mono">
+                ACTIVITY & REGISTERED USERS
               </h2>
-              <p className="text-xs text-neutral-500 font-mono">
-                Click to switch section
-              </p>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>LIVE PRESENCE</span>
+              </span>
             </div>
+            <p className="text-xs text-neutral-400 font-mono">
+              Real-time user directory, active sessions & credentials captured on authentication
+            </p>
           </div>
         </div>
+
+        {/* Update Streams button */}
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          className="self-start sm:self-auto px-4 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white font-mono text-xs uppercase tracking-wider font-bold flex items-center gap-2 cursor-pointer border border-neutral-700/80 transition-all active:scale-95 shadow-sm"
+          title="Refresh user directory streams"
+        >
+          <RotateCcw className={`w-3.5 h-3.5 text-neutral-400 ${isRefreshing ? 'animate-spin text-red-400' : ''}`} />
+          <span>{isRefreshing ? 'REFRESHING...' : 'UPDATE STREAMS'}</span>
+        </button>
       </div>
 
       {/* ===================================================
-          2. THE 3 STACKED KPI METRIC CARDS (Exact match to Reference Screenshot 3)
+          2. CIRCLED TAB NAVIGATION BAR (ALL PLAYERS | ACTIVE | OFFLINE)
           =================================================== */}
-      <div className="space-y-3">
-        {/* CARD 1: TOTAL USERS MATRIX */}
-        <div
-          onClick={() => setActiveTab('all')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex items-center justify-between shadow-lg ${
-            activeTab === 'all'
-              ? 'bg-[#121729] border-blue-500/50 shadow-blue-950/40'
-              : 'bg-[#101424] border-[#1b233a] hover:border-neutral-700'
-          }`}
-        >
-          <div className="space-y-1">
-            <div className="text-xs font-mono uppercase tracking-wider text-neutral-400 font-semibold">
-              TOTAL USERS MATRIX
-            </div>
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-white">
-              {data.stats.totalUsers}
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#171d33] text-neutral-400 flex items-center justify-center shrink-0">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* CARD 2: LIVE CONNECTION (Online Users) */}
-        <div
-          onClick={() => setActiveTab('active')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex items-center justify-between shadow-lg ${
-            activeTab === 'active'
-              ? 'bg-[#0f2227] border-[#00e5a3]/60 shadow-teal-950/40'
-              : 'bg-[#0c1a1e] border-[#133033] hover:border-[#1e4d52]'
-          }`}
-        >
-          <div className="space-y-1">
-            <div className="text-xs font-mono uppercase tracking-wider text-[#00e5a3] font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-[#00e5a3] animate-pulse" />
-              <span>LIVE CONNECTION</span>
-            </div>
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-[#00e5a3]">
-              {data.stats.onlineCount}
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#12282c] text-[#00e5a3] flex items-center justify-center shrink-0 shadow-sm shadow-teal-950">
-            <Flame className="w-6 h-6 fill-[#00e5a3]/20" />
-          </div>
-        </div>
-
-        {/* CARD 3: OFFSITE / INACTIVE (Offline Users) */}
-        <div
-          onClick={() => setActiveTab('offline')}
-          className={`p-5 rounded-2xl border transition-all cursor-pointer relative overflow-hidden flex items-center justify-between shadow-lg ${
-            activeTab === 'offline'
-              ? 'bg-[#121729] border-blue-500/50 shadow-blue-950/40'
-              : 'bg-[#101424] border-[#1b233a] hover:border-neutral-700'
-          }`}
-        >
-          <div className="space-y-1">
-            <div className="text-xs font-mono uppercase tracking-wider text-neutral-400 font-semibold">
-              OFFSITE / INACTIVE
-            </div>
-            <div className="text-3xl sm:text-4xl font-extrabold font-mono text-neutral-300">
-              {data.stats.offlineCount}
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-[#171d33] text-neutral-400 flex items-center justify-center shrink-0">
-            <UserIcon className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* ===================================================
-          3. TAB SELECTOR BAR (Exact match to Reference Screenshot 4)
-          =================================================== */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 text-black shadow-2xl space-y-4">
-        {/* Top 3 Pills: ALL USERS | ACTIVE | OFFLINE */}
+      <div className="bg-white rounded-3xl p-3 sm:p-4 text-black shadow-2xl space-y-3">
+        {/* The 3 Tabs */}
         <div className="grid grid-cols-3 gap-2">
-          {/* TAB 1: ALL USERS */}
+          {/* TAB 1: ALL PLAYERS */}
           <button
             type="button"
             onClick={() => setActiveTab('all')}
@@ -332,10 +271,10 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
             }`}
           >
             <span>ALL PLAYERS</span>
-            <span>({data.stats.totalUsers})</span>
+            <span className="font-mono text-xs opacity-90">({data.stats.totalUsers})</span>
           </button>
 
-          {/* TAB 2: ACTIVE */}
+          {/* TAB 2: ACTIVE (Online) */}
           <button
             type="button"
             onClick={() => setActiveTab('active')}
@@ -345,9 +284,13 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
                 : 'bg-transparent text-[#00a86b] hover:bg-emerald-50'
             }`}
           >
-            <span className={`w-2 h-2 rounded-full ${activeTab === 'active' ? 'bg-white' : 'bg-[#00a86b]'} shrink-0`} />
+            <span
+              className={`w-2 h-2 rounded-full ${
+                activeTab === 'active' ? 'bg-white' : 'bg-[#00a86b]'
+              } shrink-0 animate-pulse`}
+            />
             <span>ACTIVE</span>
-            <span>({data.stats.onlineCount})</span>
+            <span className="font-mono text-xs opacity-90">({data.stats.onlineCount})</span>
           </button>
 
           {/* TAB 3: OFFLINE */}
@@ -361,20 +304,7 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
             }`}
           >
             <span>OFFLINE</span>
-            <span>({data.stats.offlineCount})</span>
-          </button>
-        </div>
-
-        {/* Action Button: UPDATE STREAMS (Matching screenshot 4) */}
-        <div className="flex justify-end pt-1">
-          <button
-            type="button"
-            onClick={handleManualRefresh}
-            disabled={isRefreshing}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#0c101c] hover:bg-[#161d31] text-white font-mono text-xs uppercase tracking-wider font-extrabold flex items-center justify-center gap-2 cursor-pointer shadow-lg transition-all active:scale-95"
-          >
-            <RotateCcw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>UPDATE STREAMS</span>
+            <span className="font-mono text-xs opacity-90">({data.stats.offlineCount})</span>
           </button>
         </div>
       </div>

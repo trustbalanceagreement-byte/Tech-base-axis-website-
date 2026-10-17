@@ -56,99 +56,110 @@ export const ADMIN_EMAILS = [
 export function loadActivityStore(): ActivityStore {
   const now = new Date().toISOString();
   let store: ActivityStore | null = null;
+  let fileExisted = false;
 
   try {
     if (fs.existsSync(activityFilePath)) {
       const raw = fs.readFileSync(activityFilePath, 'utf8');
       store = JSON.parse(raw);
+      fileExisted = true;
     }
   } catch (err) {
     console.error('Error reading activity store from disk:', err);
   }
 
-  if (!store || !store.users) {
+  if (!store || typeof store !== 'object') {
     store = {
       users: {},
       events: []
     };
   }
 
-  // Ensure default founder & agency profiles exist
-  if (!store.users['bgho40185@gmail.com']) {
-    store.users['bgho40185@gmail.com'] = {
-      id: 'usr_bikram_ghosh',
-      email: 'bgho40185@gmail.com',
-      name: 'Bikram Ghosh',
-      photoURL: '/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp',
-      role: 'admin',
-      createdAt: '2026-01-15T10:00:00.000Z',
-      lastLoginAt: now,
-      lastLogoutAt: null,
-      lastActiveAt: now,
-      device: 'Admin Console'
-    };
+  if (!store.users || typeof store.users !== 'object') {
+    store.users = {};
+  }
+  if (!Array.isArray(store.events)) {
+    store.events = [];
   }
 
-  if (!store.users['techbaseaxis@gmail.com']) {
-    store.users['techbaseaxis@gmail.com'] = {
-      id: 'usr_tba_hq',
-      email: 'techbaseaxis@gmail.com',
-      name: 'Tech Base Axis HQ',
-      photoURL: '/src/assets/images/bikram-ghosh-developer-avatar.webp',
-      role: 'admin',
-      createdAt: '2026-01-10T08:30:00.000Z',
-      lastLoginAt: now,
-      lastLogoutAt: null,
-      lastActiveAt: now,
-      device: 'Cloud Workstation'
-    };
-  }
-
-  if (!store.users['agnikx4@gmail.com']) {
-    store.users['agnikx4@gmail.com'] = {
-      id: 'k2kv6msCjrfiO5FQJGxTSXprZPQ2',
-      email: 'agnikx4@gmail.com',
-      name: 'Agnik Das',
-      photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocLPJ1k2cuxcWkkSMlg3dQssRmk-77R-MvoI2X-l9p9PmrLY7IF2=s96-c',
-      role: 'client',
-      createdAt: '2026-10-16T19:34:37.880Z',
-      lastLoginAt: '2026-10-16T19:34:37.880Z',
-      lastLogoutAt: null,
-      lastActiveAt: '2026-10-16T19:34:37.880Z',
-      device: 'Mobile / Linux armv81'
-    };
-  }
-
-  if (!store.users['rohankundu454@gmail.com']) {
-    store.users['rohankundu454@gmail.com'] = {
-      id: '3tPaiYcf1CdGE9p0IXLD0hDCtLp1',
-      email: 'rohankundu454@gmail.com',
-      name: 'Rohan Kundu',
-      photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocJva7fRVe5QCiTFH3QgcTTaZZQuAaqby1jL335BRCxy4A_1PA=s96-c',
-      role: 'client',
-      createdAt: '2026-10-16T17:42:23.000Z',
-      lastLoginAt: '2026-10-16T17:42:23.000Z',
-      lastLogoutAt: '2026-10-16T17:43:30.295Z',
-      lastActiveAt: '2026-10-16T17:44:39.088Z',
-      device: 'Mobile / Linux armv81'
-    };
-  }
-
-  if (!Array.isArray(store.events) || store.events.length === 0) {
-    store.events = [
-      {
-        id: 'evt_init_1',
-        userId: 'usr_bikram_ghosh',
-        name: 'Bikram Ghosh',
+  // Only seed default users if file did not exist or was empty
+  if (!fileExisted || Object.keys(store.users).length === 0) {
+    store.users = {
+      'techbaseaxis@gmail.com': {
+        id: 'tba-founder-verified',
+        email: 'techbaseaxis@gmail.com',
+        name: 'Bikram Ghosh (Founder)',
+        photoURL: '/src/assets/images/bikram-ghosh-developer-avatar.webp',
+        role: 'admin',
+        createdAt: '2026-01-10T08:30:00.000Z',
+        lastLoginAt: now,
+        lastLogoutAt: null,
+        lastActiveAt: now,
+        device: 'Cloud Workstation'
+      },
+      'bgho40185@gmail.com': {
+        id: 'usr_bikram_ghosh',
         email: 'bgho40185@gmail.com',
+        name: 'Bikram Ghosh',
         photoURL: '/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp',
-        type: 'login',
-        timestamp: now,
-        device: 'Admin Console',
-        details: 'Founder logged into Admin Console'
+        role: 'admin',
+        createdAt: '2026-01-15T10:00:00.000Z',
+        lastLoginAt: '2026-10-07T03:30:00.000Z',
+        lastLogoutAt: null,
+        lastActiveAt: '2026-10-07T03:30:00.000Z',
+        device: 'Android Chrome / Mobile'
+      },
+      'agnikx4@gmail.com': {
+        id: 'k2kv6msCjrfiO5FQJGxTSXprZPQ2',
+        email: 'agnikx4@gmail.com',
+        name: 'Agnik Das',
+        photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocLPJ1k2cuxcWkkSMlg3dQssRmk-77R-MvoI2X-l9p9PmrLY7IF2=s96-c',
+        role: 'client',
+        createdAt: '2026-10-16T19:34:37.880Z',
+        lastLoginAt: '2026-10-16T19:34:37.880Z',
+        lastLogoutAt: null,
+        lastActiveAt: '2026-10-16T19:34:37.880Z',
+        device: 'Mobile / Linux armv81'
+      },
+      'rohankundu454@gmail.com': {
+        id: '3tPaiYcf1CdGE9p0IXLD0hDCtLp1',
+        email: 'rohankundu454@gmail.com',
+        name: 'Rohan Kundu',
+        photoURL: 'https://lh3.googleusercontent.com/a/ACg8ocJva7fRVe5QCiTFH3QgcTTaZZQuAaqby1jL335BRCxy4A_1PA=s96-c',
+        role: 'client',
+        createdAt: '2026-10-16T17:42:23.000Z',
+        lastLoginAt: '2026-10-16T17:42:23.000Z',
+        lastLogoutAt: '2026-10-16T17:43:30.295Z',
+        lastActiveAt: '2026-10-16T17:44:39.088Z',
+        device: 'Mobile / Linux armv81'
       }
-    ];
+    };
   }
+
+  // Deduplicate users in memory so same email or ID is never counted twice
+  const cleanUsers: Record<string, ActivityUser> = {};
+  for (const [k, u] of Object.entries(store.users)) {
+    if (!u) continue;
+    const cleanKey = (u.email || u.id || k).toLowerCase().trim();
+    if (!cleanUsers[cleanKey]) {
+      cleanUsers[cleanKey] = {
+        ...u,
+        email: u.email || cleanKey
+      };
+    } else {
+      cleanUsers[cleanKey] = {
+        ...cleanUsers[cleanKey],
+        ...u,
+        name: u.name || cleanUsers[cleanKey].name,
+        photoURL: u.photoURL || cleanUsers[cleanKey].photoURL,
+        device: u.device || cleanUsers[cleanKey].device,
+        lastActiveAt: new Date(u.lastActiveAt || 0) > new Date(cleanUsers[cleanKey].lastActiveAt || 0)
+          ? u.lastActiveAt
+          : cleanUsers[cleanKey].lastActiveAt
+      };
+    }
+  }
+  store.users = cleanUsers;
 
   return store;
 }
@@ -234,9 +245,31 @@ export function recordActivityEvent(payload: {
 
   const store = loadActivityStore();
   const nowIso = new Date().toISOString();
-  const userKey = (email || userId || '').toLowerCase().trim();
 
-  const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userKey);
+  // Find user by normalized email first, then by userId
+  const normalizedEmail = (email || '').toLowerCase().trim();
+  let userKey = normalizedEmail;
+
+  if (!userKey && userId) {
+    for (const [k, u] of Object.entries(store.users)) {
+      if (u.id === userId || k === userId.toLowerCase().trim()) {
+        userKey = k;
+        break;
+      }
+    }
+    if (!userKey) userKey = userId.toLowerCase().trim();
+  } else if (userKey) {
+    for (const [k, u] of Object.entries(store.users)) {
+      if (u.email && u.email.toLowerCase().trim() === userKey) {
+        userKey = k;
+        break;
+      }
+    }
+  }
+
+  const isAdmin = ADMIN_EMAILS.some(
+    (adm) => adm.toLowerCase() === userKey || (email && adm.toLowerCase() === email.toLowerCase())
+  );
 
   const existing: ActivityUser = store.users[userKey] || {
     id: userId || `usr_${Date.now()}`,
@@ -251,6 +284,8 @@ export function recordActivityEvent(payload: {
     device: device || 'Web Browser'
   };
 
+  if (userId) existing.id = userId;
+  if (email) existing.email = email;
   if (name) existing.name = name;
   if (photoURL) existing.photoURL = photoURL;
   if (device) existing.device = device;
@@ -302,21 +337,22 @@ export function deleteActivityUser(keyOrId: string): boolean {
   try {
     const store = loadActivityStore();
     const searchKey = (keyOrId || '').toLowerCase().trim();
-    let foundKey: string | null = null;
+    const keysToDelete: string[] = [];
 
     for (const [key, user] of Object.entries(store.users)) {
       if (
         key.toLowerCase() === searchKey ||
         user.id === keyOrId ||
-        user.email.toLowerCase() === searchKey
+        (user.email && user.email.toLowerCase() === searchKey)
       ) {
-        foundKey = key;
-        break;
+        keysToDelete.push(key);
       }
     }
 
-    if (foundKey) {
-      delete store.users[foundKey];
+    if (keysToDelete.length > 0) {
+      for (const k of keysToDelete) {
+        delete store.users[k];
+      }
       store.events = store.events.filter(
         (e) => e.email?.toLowerCase() !== searchKey && e.userId !== keyOrId
       );
