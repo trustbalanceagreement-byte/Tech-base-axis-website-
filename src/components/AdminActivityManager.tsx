@@ -215,6 +215,10 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
     });
   }, [data.users, activeTab, searchQuery]);
 
+  const totalUsersCount = data.stats?.totalUsers ?? data.users.length;
+  const activeCount = data.stats?.onlineCount ?? data.users.filter((u) => u.isOnline).length;
+  const offlineCount = data.stats?.offlineCount ?? Math.max(0, totalUsersCount - activeCount);
+
   return (
     <div className="space-y-5 animate-in fade-in duration-200 text-neutral-100 max-w-4xl mx-auto">
       {/* ===================================================
@@ -230,10 +234,6 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
               <h2 className="text-lg font-black tracking-tight text-white uppercase font-mono">
                 ACTIVITY & REGISTERED USERS
               </h2>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>LIVE PRESENCE</span>
-              </span>
             </div>
             <p className="text-xs text-neutral-400 font-mono">
               Real-time user directory, active sessions & credentials captured on authentication
@@ -271,7 +271,7 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
             }`}
           >
             <span>ALL PLAYERS</span>
-            <span className="font-mono text-xs opacity-90">({data.stats.totalUsers})</span>
+            <span className="font-mono text-xs opacity-90">({totalUsersCount})</span>
           </button>
 
           {/* TAB 2: ACTIVE (Online) */}
@@ -290,7 +290,7 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
               } shrink-0 animate-pulse`}
             />
             <span>ACTIVE</span>
-            <span className="font-mono text-xs opacity-90">({data.stats.onlineCount})</span>
+            <span className="font-mono text-xs opacity-90">({activeCount})</span>
           </button>
 
           {/* TAB 3: OFFLINE */}
@@ -304,7 +304,7 @@ export const AdminActivityManager: React.FC<AdminActivityManagerProps> = () => {
             }`}
           >
             <span>OFFLINE</span>
-            <span className="font-mono text-xs opacity-90">({data.stats.offlineCount})</span>
+            <span className="font-mono text-xs opacity-90">({offlineCount})</span>
           </button>
         </div>
       </div>

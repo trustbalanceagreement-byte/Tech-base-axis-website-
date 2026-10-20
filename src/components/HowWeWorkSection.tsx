@@ -552,32 +552,23 @@ export const HowWeWorkSection: React.FC<HowWeWorkSectionProps> = ({ onNavigate }
 
 
 
-                        {/* Bottom Content Panel Overlaid on Photo */}
-                        <div className="relative z-20 p-3 sm:p-5 bg-black/70 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/10 mb-1 sm:mb-2 shadow-2xl">
+                        {/* Bottom Content Panel Overlaid on Photo (Transparent container & transparent gradient text) */}
+                        <div className="relative z-20 p-2 sm:p-4 bg-transparent border-0 shadow-none mb-1 sm:mb-2">
                           <div className="flex items-center gap-2.5 sm:gap-3 mb-1.5 sm:mb-2">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-red-950/80 border border-red-500/40 text-[#e61e2b] shrink-0">
+                            <div className="p-2 sm:p-2.5 rounded-xl bg-red-950/60 backdrop-blur-md border border-red-500/30 text-[#e61e2b] shrink-0">
                               <ServiceIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                             </div>
                             <div className="min-w-0">
-                              <h3 className="font-display text-lg xs:text-xl sm:text-2xl md:text-3xl text-white font-black leading-tight drop-shadow-md">
+                              <h3 className="font-display text-lg xs:text-xl sm:text-2xl md:text-3xl font-black leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] bg-gradient-to-r from-white via-white/95 to-white/80 bg-clip-text text-transparent">
                                 {service.title}
                               </h3>
                             </div>
                           </div>
 
                           {/* Description */}
-                          <p className="text-neutral-200 text-xs sm:text-sm md:text-base leading-relaxed font-sans drop-shadow max-w-2xl">
+                          <p className="text-neutral-200/90 text-xs sm:text-sm md:text-base leading-relaxed font-sans drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] max-w-2xl">
                             {service.description}
                           </p>
-
-                          {/* Tagline & Metrics */}
-                          <div className="mt-2.5 sm:mt-3 pt-2.5 border-t border-neutral-800/80 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
-                            <span className="text-[#ff4d5a] font-semibold flex items-center gap-1.5">
-                              <span>⚡</span>
-                              <span>{service.tagline}</span>
-                            </span>
-                            <span className="text-neutral-400 hidden xs:inline">{service.metrics}</span>
-                          </div>
                         </div>
                       </div>
                     );

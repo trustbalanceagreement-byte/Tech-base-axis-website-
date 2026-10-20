@@ -140,28 +140,87 @@ export function loadActivityStore(): ActivityStore {
   const cleanUsers: Record<string, ActivityUser> = {};
   for (const [k, u] of Object.entries(store.users)) {
     if (!u) continue;
-    const cleanKey = (u.email || u.id || k).toLowerCase().trim();
-    if (!cleanUsers[cleanKey]) {
-      cleanUsers[cleanKey] = {
-        ...u,
-        email: u.email || cleanKey
+    const email = (u.email || '').toLowerCase().trim();
+    const id = (u.id || '').trim();
+    if (!email && !id) continue;
+    if (email === 'undefined' || id === 'undefined' || email === 'null' || id === 'null') continue;
+
+    // Find if cleanUsers already has a matching user by email or id
+    let matchedKey: string | null = null;
+    for (const [cleanK, existing] of Object.entries(cleanUsers)) {
+      const exEmail = (existing.email || '').toLowerCase().trim();
+      const exId = (existing.id || '').toLowerCase().trim();
+      if (email && exEmail && email === exEmail) { matchedKey = cleanK; break; }
+      if (id && exId && id.toLowerCase() === exId) { matchedKey = cleanK; break; }
+      if (email && cleanK === email) { matchedKey = cleanK; break; }
+      if (id && cleanK === id.toLowerCase()) { matchedKey = cleanK; break; }
+    }
+
+    const preferredKey = (email && email.includes('@')) ? email : (id || k).toLowerCase().trim();
+    if (matchedKey) {
+      // Merge into matched record
+      const cur = cleanUsers[matchedKey];
+      const isMoreRecent = new Date(u.lastActiveAt || 0).getTime() > new Date(cur.lastActiveAt || 0).getTime();
+      const merged: ActivityUser = {
+        ...cur,
+        ...(isMoreRecent ? u : {}),
+        id: u.id || cur.id,
+        email: (u.email && u.email.includes('@')) ? u.email : cur.email,
+        name: isMoreRecent ? (u.name || cur.name) : (cur.name || u.name),
+        photoURL: u.photoURL || cur.photoURL || null,
+        device: isMoreRecent ? (u.device || cur.device) : (cur.device || u.device),
+        lastActiveAt: isMoreRecent ? (u.lastActiveAt || cur.lastActiveAt) : cur.lastActiveAt,
+        lastLoginAt: new Date(u.lastLoginAt || 0) > new Date(cur.lastLoginAt || 0) ? u.lastLoginAt : cur.lastLoginAt,
+        createdAt: new Date(cur.createdAt || 0) < new Date(u.createdAt || 0) ? cur.createdAt : (u.createdAt || cur.createdAt),
+        role: cur.role === 'admin' || u.role === 'admin' ? 'admin' : 'client'
       };
+      if (preferredKey !== matchedKey && preferredKey.includes('@')) {
+        delete cleanUsers[matchedKey];
+        cleanUsers[preferredKey] = merged;
+      } else {
+        cleanUsers[matchedKey] = merged;
+      }
     } else {
-      cleanUsers[cleanKey] = {
-        ...cleanUsers[cleanKey],
+      cleanUsers[preferredKey] = {
         ...u,
-        name: u.name || cleanUsers[cleanKey].name,
-        photoURL: u.photoURL || cleanUsers[cleanKey].photoURL,
-        device: u.device || cleanUsers[cleanKey].device,
-        lastActiveAt: new Date(u.lastActiveAt || 0) > new Date(cleanUsers[cleanKey].lastActiveAt || 0)
-          ? u.lastActiveAt
-          : cleanUsers[cleanKey].lastActiveAt
+        id: u.id || preferredKey,
+        email: u.email || (preferredKey.includes('@') ? preferredKey : ''),
+        name: u.name || (preferredKey.includes('@') ? preferredKey.split('@')[0] : 'User')
       };
     }
   }
   store.users = cleanUsers;
 
   return store;
+}
+
+export function resolveUniqueUserKey(
+  users: Record<string, ActivityUser>,
+  identifier: { email?: string; userId?: string }
+): string | null {
+  const normEmail = (identifier.email || '').toLowerCase().trim();
+  const rawId = (identifier.userId || '').trim();
+
+  for (const [key, user] of Object.entries(users)) {
+    if (!user) continue;
+    const userEmail = (user.email || '').toLowerCase().trim();
+    const userId = (user.id || '').trim();
+
+    if (normEmail && userEmail && userEmail === normEmail) {
+      return key;
+    }
+    if (rawId && userId && userId === rawId) {
+      return key;
+    }
+    if (normEmail && key.toLowerCase().trim() === normEmail) {
+      return key;
+    }
+    if (rawId && key.toLowerCase().trim() === rawId.toLowerCase()) {
+      return key;
+    }
+  }
+
+  return null;
 }
 
 export function saveActivityStore(store: ActivityStore): void {
@@ -190,18 +249,93 @@ export function getActivityDashboard(): any {
     }
   };
 
-  const usersList = Object.values(store.users).map((u) => {
+  // Canonical unique user map: Keyed strictly by normalized email or unique userId
+  const uniqueUsersMap = new Map<string, ActivityUser & { isOnline: boolean }>();
+
+  for (const [k, u] of Object.entries(store.users)) {
+    if (!u) continue;
+    const email = (u.email || '').toLowerCase().trim();
+    const id = (u.id || '').trim();
+
+    // Filter out invalid, empty, or corrupt user records
+    if (!email && !id) continue;
+    if (email === 'undefined' || id === 'undefined' || email === 'null' || id === 'null') continue;
+
+    // Find if an existing user matches by email OR id
+    let existingKey: string | null = null;
+    for (const [existingK, existingU] of uniqueUsersMap.entries()) {
+      const exEmail = (existingU.email || '').toLowerCase().trim();
+      const exId = (existingU.id || '').toLowerCase().trim();
+      if (email && exEmail && email === exEmail) {
+        existingKey = existingK;
+        break;
+      }
+      if (id && exId && id.toLowerCase() === exId) {
+        existingKey = existingK;
+        break;
+      }
+      if (email && existingK === email) {
+        existingKey = existingK;
+        break;
+      }
+      if (id && existingK === id.toLowerCase()) {
+        existingKey = existingK;
+        break;
+      }
+      if (k && (existingK === k.toLowerCase().trim() || exId === k.toLowerCase().trim())) {
+        existingKey = existingK;
+        break;
+      }
+    }
+
+    const preferredCanonicalKey = (email && email.includes('@')) ? email : (id || k).toLowerCase().trim();
+
     const activeAgeMs = now - new Date(u.lastActiveAt || 0).getTime();
     const logoutTime = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
     const activeTime = new Date(u.lastActiveAt || 0).getTime();
-
-    // Online if pinged within last 2.5 minutes (150,000 ms) and not logged out after active
     const isOnline = activeAgeMs < 150000 && activeTime >= logoutTime;
-    return {
-      ...u,
-      isOnline
-    };
-  });
+
+    if (!existingKey) {
+      uniqueUsersMap.set(preferredCanonicalKey, {
+        ...u,
+        id: u.id || preferredCanonicalKey,
+        email: u.email || (preferredCanonicalKey.includes('@') ? preferredCanonicalKey : ''),
+        name: u.name || (email ? email.split('@')[0] : 'User'),
+        photoURL: u.photoURL || null,
+        device: u.device || 'Web Browser',
+        role: u.role || (preferredCanonicalKey.includes('techbaseaxis') || preferredCanonicalKey.includes('bgho40185') ? 'admin' : 'client'),
+        isOnline
+      });
+    } else {
+      const existing = uniqueUsersMap.get(existingKey)!;
+      // Merge: keep most recent activity & active status
+      const existingActiveTime = new Date(existing.lastActiveAt || 0).getTime();
+      const isMoreRecent = activeTime > existingActiveTime;
+      const merged: ActivityUser & { isOnline: boolean } = {
+        ...existing,
+        ...(isMoreRecent ? u : {}),
+        id: u.id || existing.id,
+        email: (u.email && u.email.includes('@')) ? u.email : existing.email,
+        name: isMoreRecent ? (u.name || existing.name) : (existing.name || u.name),
+        photoURL: u.photoURL || existing.photoURL || null,
+        device: isMoreRecent ? (u.device || existing.device) : (existing.device || u.device),
+        isOnline: existing.isOnline || isOnline,
+        lastActiveAt: isMoreRecent ? (u.lastActiveAt || existing.lastActiveAt) : existing.lastActiveAt,
+        lastLoginAt: new Date(u.lastLoginAt || 0) > new Date(existing.lastLoginAt || 0) ? u.lastLoginAt : existing.lastLoginAt,
+        createdAt: new Date(existing.createdAt || 0) < new Date(u.createdAt || 0) ? existing.createdAt : (u.createdAt || existing.createdAt),
+        role: existing.role === 'admin' || u.role === 'admin' ? 'admin' : 'client'
+      };
+
+      if (preferredCanonicalKey !== existingKey && preferredCanonicalKey.includes('@')) {
+        uniqueUsersMap.delete(existingKey);
+        uniqueUsersMap.set(preferredCanonicalKey, merged);
+      } else {
+        uniqueUsersMap.set(existingKey, merged);
+      }
+    }
+  }
+
+  const usersList = Array.from(uniqueUsersMap.values());
 
   // Sort: online first, then by lastActiveAt descending
   usersList.sort((a, b) => {
@@ -248,33 +382,20 @@ export function recordActivityEvent(payload: {
 
   // Find user by normalized email first, then by userId
   const normalizedEmail = (email || '').toLowerCase().trim();
-  let userKey = normalizedEmail;
+  const existingKey = resolveUniqueUserKey(store.users, { email, userId });
+  const userKey = normalizedEmail || existingKey || (userId || '').trim().toLowerCase();
 
-  if (!userKey && userId) {
-    for (const [k, u] of Object.entries(store.users)) {
-      if (u.id === userId || k === userId.toLowerCase().trim()) {
-        userKey = k;
-        break;
-      }
-    }
-    if (!userKey) userKey = userId.toLowerCase().trim();
-  } else if (userKey) {
-    for (const [k, u] of Object.entries(store.users)) {
-      if (u.email && u.email.toLowerCase().trim() === userKey) {
-        userKey = k;
-        break;
-      }
-    }
+  // If user was previously keyed by an old ID, clean up the old duplicate key
+  if (existingKey && existingKey !== userKey && normalizedEmail) {
+    delete store.users[existingKey];
   }
 
-  const isAdmin = ADMIN_EMAILS.some(
-    (adm) => adm.toLowerCase() === userKey || (email && adm.toLowerCase() === email.toLowerCase())
-  );
+  const isAdmin = ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userKey || (normalizedEmail && adm.toLowerCase() === normalizedEmail));
 
-  const existing: ActivityUser = store.users[userKey] || {
+  const existing: ActivityUser = store.users[userKey] || (existingKey ? store.users[existingKey] : null) || {
     id: userId || `usr_${Date.now()}`,
     email: email || userKey,
-    name: name || userKey.split('@')[0],
+    name: name || (email ? email.split('@')[0] : 'User'),
     photoURL: photoURL || null,
     role: isAdmin ? 'admin' : 'client',
     createdAt: nowIso,

@@ -18,6 +18,11 @@ import {
   syncProjectsToSupabase, 
   getProjectsFromSupabase 
 } from "./server/supabaseHelper.ts";
+import {
+  getActivityDashboard,
+  recordActivityEvent,
+  deleteActivityUser
+} from "./server/activityHelper.ts";
 
 const app = express();
 app.use(express.json({ limit: "200mb" }));
@@ -36,177 +41,14 @@ if (!fs.existsSync(dataDir)) {
 const projectsFilePath = path.join(dataDir, "projects.json");
 const activityFilePath = path.join(dataDir, "user_activity.json");
 
-interface ActivityUser {
-  id: string;
-  email: string;
-  name: string;
-  photoURL?: string | null;
-  role: 'admin' | 'client';
-  createdAt: string;
-  lastLoginAt: string;
-  lastLogoutAt?: string | null;
-  lastActiveAt: string;
-  device?: string;
-}
-
-interface ActivityEvent {
-  id: string;
-  userId: string;
-  name: string;
-  email: string;
-  photoURL?: string | null;
-  type: 'signup' | 'login' | 'logout' | 'heartbeat';
-  timestamp: string;
-  device?: string;
-  details?: string;
-}
-
-interface ActivityStore {
-  users: Record<string, ActivityUser>;
-  events: ActivityEvent[];
-}
-
-const loadActivityStore = (): ActivityStore => {
-  try {
-    if (fs.existsSync(activityFilePath)) {
-      const raw = fs.readFileSync(activityFilePath, "utf8");
-      return JSON.parse(raw);
-    }
-  } catch (err) {
-    console.error("Error reading activity store:", err);
-  }
-  
-  const now = new Date().toISOString();
-  return {
-    users: {
-      "bgho40185@gmail.com": {
-        id: "usr_bikram_ghosh",
-        email: "bgho40185@gmail.com",
-        name: "Bikram Ghosh",
-        photoURL: "/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp",
-        role: "admin",
-        createdAt: "2026-01-15T10:00:00.000Z",
-        lastLoginAt: now,
-        lastLogoutAt: null,
-        lastActiveAt: now,
-        device: "Chrome / Linux / Admin Console"
-      },
-      "techbaseaxis@gmail.com": {
-        id: "usr_tba_hq",
-        email: "techbaseaxis@gmail.com",
-        name: "Tech Base Axis HQ",
-        photoURL: "/src/assets/images/bikram-ghosh-developer-avatar.webp",
-        role: "admin",
-        createdAt: "2026-01-10T08:30:00.000Z",
-        lastLoginAt: now,
-        lastLogoutAt: null,
-        lastActiveAt: now,
-        device: "Cloud Workstation"
-      },
-      "agnikx4@gmail.com": {
-        id: "k2kv6msCjrfiO5FQJGxTSXprZPQ2",
-        email: "agnikx4@gmail.com",
-        name: "Agnik Das",
-        photoURL: "https://lh3.googleusercontent.com/a/ACg8ocLPJ1k2cuxcWkkSMlg3dQssRmk-77R-MvoI2X-l9p9PmrLY7IF2=s96-c",
-        role: "client",
-        createdAt: "2026-10-16T19:34:37.880Z",
-        lastLoginAt: "2026-10-16T19:34:37.880Z",
-        lastLogoutAt: null,
-        lastActiveAt: "2026-10-16T19:34:37.880Z",
-        device: "Mobile / Linux armv81"
-      },
-      "rohankundu454@gmail.com": {
-        id: "3tPaiYcf1CdGE9p0IXLD0hDCtLp1",
-        email: "rohankundu454@gmail.com",
-        name: "Rohan Kundu",
-        photoURL: "https://lh3.googleusercontent.com/a/ACg8ocJva7fRVe5QCiTFH3QgcTTaZZQuAaqby1jL335BRCxy4A_1PA=s96-c",
-        role: "client",
-        createdAt: "2026-10-16T17:42:23.000Z",
-        lastLoginAt: "2026-10-16T17:42:23.000Z",
-        lastLogoutAt: "2026-10-16T17:43:30.295Z",
-        lastActiveAt: "2026-10-16T17:44:39.088Z",
-        device: "Mobile / Linux armv81"
-      }
-    },
-    events: [
-      {
-        id: "evt_init_1",
-        userId: "usr_bikram_ghosh",
-        name: "Bikram Ghosh",
-        email: "bgho40185@gmail.com",
-        photoURL: "/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp",
-        type: "login",
-        timestamp: now,
-        device: "Chrome / Linux",
-        details: "Founder logged in to Admin Console"
-      }
-    ]
-  };
-};
-
-const saveActivityStore = (store: ActivityStore) => {
-  try {
-    fs.writeFileSync(activityFilePath, JSON.stringify(store, null, 2), "utf8");
-  } catch (err) {
-    console.error("Error saving activity store:", err);
-  }
-};
-
 // Static route for uploaded media
 app.use("/uploads", express.static(uploadsDir));
 
 // GET /api/activity - Real-time activity dashboard, online/offline presence & user directory
 app.get("/api/activity", (_req, res) => {
   try {
-    const store = loadActivityStore();
-    const now = Date.now();
-    const isToday = (isoDate: string) => {
-      const d = new Date(isoDate);
-      const today = new Date();
-      return (
-        d.getDate() === today.getDate() &&
-        d.getMonth() === today.getMonth() &&
-        d.getFullYear() === today.getFullYear()
-      );
-    };
-
-    const usersList = Object.values(store.users).map((u) => {
-      const activeAgeMs = now - new Date(u.lastActiveAt).getTime();
-      const logoutTime = u.lastLogoutAt ? new Date(u.lastLogoutAt).getTime() : 0;
-      const activeTime = new Date(u.lastActiveAt).getTime();
-      
-      // Online if pinged within last 2.5 minutes (150,000 ms) and not logged out after active
-      const isOnline = activeAgeMs < 150000 && activeTime >= logoutTime;
-      return {
-        ...u,
-        isOnline
-      };
-    });
-
-    // Sort users: Online users first, then by lastActiveAt descending
-    usersList.sort((a, b) => {
-      if (a.isOnline && !b.isOnline) return -1;
-      if (!a.isOnline && b.isOnline) return 1;
-      return new Date(b.lastActiveAt).getTime() - new Date(a.lastActiveAt).getTime();
-    });
-
-    const onlineCount = usersList.filter((u) => u.isOnline).length;
-    const offlineCount = usersList.length - onlineCount;
-    const loginsToday = store.events.filter((e) => e.type === "login" && isToday(e.timestamp)).length;
-    const signupsToday = store.events.filter((e) => e.type === "signup" && isToday(e.timestamp)).length;
-
-    res.status(200).json({
-      users: usersList,
-      recentEvents: store.events.slice(0, 100),
-      stats: {
-        totalUsers: usersList.length,
-        onlineCount,
-        offlineCount,
-        loginsToday,
-        signupsToday,
-        serverTime: new Date().toISOString()
-      }
-    });
+    const data = getActivityDashboard();
+    res.status(200).json(data);
   } catch (err: any) {
     console.error("Activity API error:", err);
     res.status(500).json({ error: "Failed to retrieve user activity" });
@@ -223,83 +65,13 @@ app.post("/api/activity/event", (req, res) => {
       } catch (_) {}
     }
 
-    const { userId, email, name, photoURL, type, device, details } = payload || {};
+    const { email, userId } = payload || {};
     if (!email && !userId) {
       return res.status(400).json({ error: "Missing email or userId" });
     }
 
-    const store = loadActivityStore();
-    const nowIso = new Date().toISOString();
-    const userKey = (email || userId).toLowerCase();
-
-    const adminEmails = [
-      "techbaseaxis@gmail.com",
-      "techbaseaixe@gmail.com",
-      "bgho40185@gmail.com"
-    ];
-    const isAdmin = adminEmails.includes(userKey);
-
-    const existing: ActivityUser = store.users[userKey] || {
-      id: userId || `usr_${Date.now()}`,
-      email: email || userKey,
-      name: name || userKey.split("@")[0],
-      photoURL: photoURL || null,
-      role: isAdmin ? "admin" : "client",
-      createdAt: nowIso,
-      lastLoginAt: nowIso,
-      lastLogoutAt: null,
-      lastActiveAt: nowIso,
-      device: device || "Web Browser"
-    };
-
-    // Update dynamic fields
-    if (name) existing.name = name;
-    if (photoURL) existing.photoURL = photoURL;
-    if (device) existing.device = device;
-
-    if (type === "signup") {
-      existing.createdAt = nowIso;
-      existing.lastLoginAt = nowIso;
-      existing.lastLogoutAt = null;
-      existing.lastActiveAt = nowIso;
-    } else if (type === "login") {
-      existing.lastLoginAt = nowIso;
-      existing.lastLogoutAt = null;
-      existing.lastActiveAt = nowIso;
-    } else if (type === "logout") {
-      existing.lastLogoutAt = nowIso;
-      existing.lastActiveAt = nowIso;
-    } else if (type === "heartbeat") {
-      existing.lastActiveAt = nowIso;
-      if (existing.lastLogoutAt && new Date(nowIso).getTime() > new Date(existing.lastLogoutAt).getTime()) {
-        existing.lastLogoutAt = null;
-      }
-    }
-
-    store.users[userKey] = existing;
-
-    // Record in events audit log if not a raw heartbeat
-    if (type !== "heartbeat") {
-      store.events.unshift({
-        id: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-        userId: existing.id,
-        name: existing.name,
-        email: existing.email,
-        photoURL: existing.photoURL,
-        type: type || "login",
-        timestamp: nowIso,
-        device: device || existing.device,
-        details: details || `${existing.name} ${type === "signup" ? "created a new account" : type === "login" ? "logged in" : "logged out"}`
-      });
-
-      // Keep up to 150 events
-      if (store.events.length > 150) {
-        store.events = store.events.slice(0, 150);
-      }
-    }
-
-    saveActivityStore(store);
-    res.status(200).json({ success: true, timestamp: nowIso });
+    const result = recordActivityEvent(payload);
+    res.status(200).json(result);
   } catch (err: any) {
     console.error("Error logging activity event:", err);
     res.status(500).json({ error: "Failed to record activity event" });
@@ -309,28 +81,12 @@ app.post("/api/activity/event", (req, res) => {
 // DELETE /api/activity/user - Remove user from activity directory
 app.delete("/api/activity/user", (req, res) => {
   try {
-    const userKey = (req.query.user || req.body?.user || "").toString().toLowerCase().trim();
+    const userKey = (req.query.user || req.body?.user || req.body?.email || req.body?.userId || "").toString().toLowerCase().trim();
     if (!userKey) {
       return res.status(400).json({ error: "Missing user key" });
     }
-    const store = loadActivityStore();
-    let found = false;
-    for (const [key, user] of Object.entries(store.users)) {
-      if (
-        key.toLowerCase() === userKey ||
-        user.id === userKey ||
-        user.email.toLowerCase() === userKey
-      ) {
-        delete store.users[key];
-        found = true;
-        break;
-      }
-    }
-    if (found) {
-      store.events = store.events.filter(
-        (e) => e.email?.toLowerCase() !== userKey && e.userId !== userKey
-      );
-      saveActivityStore(store);
+    const success = deleteActivityUser(userKey);
+    if (success) {
       return res.status(200).json({ success: true });
     }
     res.status(404).json({ error: "User not found" });

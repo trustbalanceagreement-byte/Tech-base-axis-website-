@@ -15,7 +15,8 @@ import {
   ShieldCheck, 
   Cpu, 
   Zap, 
-  ExternalLink 
+  ExternalLink,
+  Pointer
 } from 'lucide-react';
 
 interface AboutSectionProps {
@@ -29,6 +30,29 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
 }) => {
   const [isCompanyMode, setIsCompanyMode] = useState(false);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  // Flip hint effect: shows whenever the user loads or refreshes the page
+  const [showHintEffect, setShowHintEffect] = useState(true);
+
+  // Clear any old permanent localStorage flag so refresh always triggers the effect
+  useEffect(() => {
+    try {
+      localStorage.removeItem('tba_about_flip_hint_seen');
+    } catch (_) {}
+  }, []);
+
+  const dismissHintEffect = () => {
+    setShowHintEffect(false);
+  };
+
+  useEffect(() => {
+    if (showHintEffect) {
+      // Auto-dismiss gently after 15 seconds if card is not tapped
+      const timer = setTimeout(() => {
+        dismissHintEffect();
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [showHintEffect]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -39,6 +63,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
   }, []);
 
   const handleToggle = () => {
+    dismissHintEffect();
     setIsCompanyMode((prev) => !prev);
   };
 
@@ -154,6 +179,78 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                         Web Developer & Digital Systems Architect
                       </p>
                     </div>
+
+                    {/* INTERACTIVE 1-TIME FLIP HINT EFFECT (Matches user reference screenshot) */}
+                    <AnimatePresence>
+                      {showHintEffect && !isCompanyMode && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="absolute inset-0 pointer-events-none z-30 select-none overflow-visible"
+                        >
+                          {/* SVG Curved Dashed Line matching exact arc from screenshot */}
+                          <svg
+                            viewBox="0 0 100 125"
+                            className="absolute inset-0 w-full h-full overflow-visible"
+                            preserveAspectRatio="none"
+                          >
+                            <defs>
+                              <filter id="about-hint-shadow" x="-30%" y="-30%" width="160%" height="160%">
+                                <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodColor="#000000" floodOpacity="0.9" />
+                              </filter>
+                            </defs>
+                            <path
+                              d="M 91 10 C 80 40 80 85 91 114"
+                              fill="none"
+                              stroke="#ffffff"
+                              strokeWidth="2.4"
+                              strokeDasharray="4 3"
+                              strokeLinecap="round"
+                              filter="url(#about-hint-shadow)"
+                              className="opacity-95"
+                            />
+                          </svg>
+
+                          {/* Hand Pointer Gesture Icon on the Arc */}
+                          <div 
+                            className="absolute right-[14%] top-[54%] -translate-y-1/2 flex items-center justify-center pointer-events-none"
+                            style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.95))' }}
+                          >
+                            {/* Fingertip tap ripple ring */}
+                            <motion.div
+                              animate={{
+                                scale: [0.6, 2],
+                                opacity: [0.85, 0],
+                              }}
+                              transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                ease: 'easeOut',
+                              }}
+                              className="absolute -top-1 -left-1 w-6 h-6 rounded-full border-2 border-white/80"
+                            />
+
+                            {/* Pointer Hand with gentle tap motion */}
+                            <motion.div
+                              animate={{
+                                scale: [1, 0.88, 1],
+                                rotate: [-4, 2, -4],
+                              }}
+                              transition={{
+                                duration: 1.5,
+                                repeat: Infinity,
+                                ease: 'easeInOut',
+                              }}
+                              className="text-white"
+                            >
+                              <Pointer className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-black/35 drop-shadow-lg" strokeWidth={2.2} />
+                            </motion.div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* =================================================== */}

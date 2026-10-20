@@ -84,7 +84,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
   // Media State
   const [formImageUrl, setFormImageUrl] = useState<string>('');
   const [formVideoUrl, setFormVideoUrl] = useState<string>('');
-  const [mediaTab, setMediaTab] = useState<'video' | 'photo' | 'url'>('video');
+  const [mediaTab, setMediaTab] = useState<'video' | 'photo' | 'url'>('photo');
   const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
   const [uploadStatusText, setUploadStatusText] = useState<string>('');
@@ -856,31 +856,18 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
             </div>
 
             <form onSubmit={handleSaveProject} className="space-y-6">
-              {/* MEDIA SECTION: PHOTO & VIDEO / INSTAGRAM REEL */}
+              {/* MEDIA SECTION: VIDEO, PHOTO & URL */}
               <div className="p-5 rounded-2xl bg-neutral-900/90 border border-neutral-800 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Film className="w-4 h-4 text-[#e61e2b]" />
                     <h4 className="text-sm font-bold font-mono text-white">
-                      Media Showcase: Photo &amp; Video / Instagram Reel
+                      Media Showcase: Video, Photo &amp; URL
                     </h4>
                   </div>
 
-                  {/* Switch between Video, Photo, and URL config */}
+                  {/* Switch between Photo, Video, and URL config */}
                   <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-neutral-800">
-                    <button
-                      type="button"
-                      onClick={() => setMediaTab('video')}
-                      className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-                        mediaTab === 'video'
-                          ? 'bg-[#e61e2b] text-white shadow-sm'
-                          : 'text-neutral-400 hover:text-white'
-                      }`}
-                    >
-                      <Film className="w-3.5 h-3.5" />
-                      <span>Video / Reel</span>
-                    </button>
-
                     <button
                       type="button"
                       onClick={() => setMediaTab('photo')}
@@ -892,6 +879,19 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
                       <span>Photo</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setMediaTab('video')}
+                      className={`px-3 py-1 rounded-lg text-xs font-mono font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+                        mediaTab === 'video'
+                          ? 'bg-[#e61e2b] text-white shadow-sm'
+                          : 'text-neutral-400 hover:text-white'
+                      }`}
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      <span>Video</span>
                     </button>
 
                     <button

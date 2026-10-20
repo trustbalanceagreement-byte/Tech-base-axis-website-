@@ -693,28 +693,28 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
             className="absolute -bottom-24 -left-24 w-60 h-60 bg-red-950/30 rounded-full blur-3xl pointer-events-none" 
           />
 
-          {/* Company Brand Logo Header - Centered & Enlarged */}
-          <div className="relative z-10 flex flex-col items-center justify-center mx-auto mb-6">
+          {/* Company Brand Logo Header - Centered & Compact */}
+          <div className="relative z-10 flex flex-col items-center justify-center mx-auto mb-4">
             <motion.div 
               whileHover={{ scale: 1.04 }}
               transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-              className="relative flex items-center justify-center p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-neutral-900/95 border border-neutral-800/90 shadow-[0_0_45px_rgba(230,30,43,0.35)] group"
+              className="relative flex items-center justify-center p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-neutral-900/95 border border-neutral-800/90 shadow-[0_0_25px_rgba(230,30,43,0.25)] group"
             >
               <img
                 src={tabLogo}
                 alt="Tech Base Axis - Web Development Company Kolkata Official Logo"
-                className="h-28 xs:h-32 sm:h-36 md:h-40 w-auto max-w-[260px] sm:max-w-[320px] object-contain filter drop-shadow-[0_6px_24px_rgba(255,255,255,0.25)] group-hover:brightness-110 transition-all duration-300"
+                className="h-14 xs:h-16 sm:h-20 w-auto max-w-[130px] sm:max-w-[160px] object-contain filter drop-shadow-[0_4px_16px_rgba(255,255,255,0.2)] group-hover:brightness-110 transition-all duration-300"
               />
-              <span className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity blur-sm pointer-events-none" />
+              <span className="absolute inset-0 rounded-xl sm:rounded-2xl bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity blur-sm pointer-events-none" />
             </motion.div>
-            <div className="mt-3.5 flex items-center gap-2 font-bold tracking-wider text-white text-base sm:text-lg">
+            <div className="mt-2.5 flex items-center gap-1.5 font-bold tracking-wider text-white text-sm sm:text-base">
               <span>TECH BASE</span>
               <span className="text-[#e61e2b] font-extrabold">AXIS</span>
             </div>
           </div>
 
-          <div className="relative z-10 text-center mb-6">
-            <h2 className="text-2xl font-bold text-white tracking-tight">
+          <div className="relative z-10 text-center mb-5">
+            <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
               Admin Console Login
             </h2>
             <p className="text-xs text-neutral-400 font-mono mt-1">

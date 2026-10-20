@@ -54,6 +54,27 @@ export interface ActivityDashboardData {
 // Global in-memory unified registry to prevent state oscillation and glitches
 const unifiedUserMap = new Map<string, UserActivityProfile>();
 const unifiedEventMap = new Map<string, ActivityEvent>();
+const deletedUserKeys = new Set<string>();
+
+try {
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('tba_deleted_user_keys');
+    if (stored) {
+      const arr = JSON.parse(stored);
+      if (Array.isArray(arr)) {
+        arr.forEach((k) => deletedUserKeys.add(String(k).toLowerCase().trim()));
+      }
+    }
+  }
+} catch (_) {}
+
+function isUserDeleted(email?: string, id?: string): boolean {
+  const normEmail = (email || '').toLowerCase().trim();
+  const normId = (id || '').toLowerCase().trim();
+  if (normEmail && deletedUserKeys.has(normEmail)) return true;
+  if (normId && deletedUserKeys.has(normId)) return true;
+  return false;
+}
 
 function normalizeKey(emailOrId?: string): string {
   return (emailOrId || '').toLowerCase().trim();
@@ -64,16 +85,20 @@ function findExistingUserKey(u: { email?: string; id?: string }): string | null 
   const normId = (u.id || '').trim();
 
   for (const [k, existing] of unifiedUserMap.entries()) {
-    if (normEmail && existing.email && existing.email.toLowerCase().trim() === normEmail) {
+    const exEmail = (existing.email || '').toLowerCase().trim();
+    const exId = (existing.id || '').trim();
+    const exK = k.toLowerCase().trim();
+
+    if (normEmail && exEmail && normEmail === exEmail) {
       return k;
     }
-    if (normId && existing.id && existing.id === normId) {
+    if (normId && exId && normId === exId) {
       return k;
     }
-    if (normEmail && k === normEmail) {
+    if (normEmail && (exK === normEmail || exId.toLowerCase() === normEmail)) {
       return k;
     }
-    if (normId && k === normId.toLowerCase()) {
+    if (normId && (exK === normId.toLowerCase() || exEmail === normId.toLowerCase())) {
       return k;
     }
   }
@@ -89,7 +114,16 @@ function mergeIntoUnifiedUserMap(newUsers: UserActivityProfile[]): void {
   for (const u of newUsers) {
     if (!u) continue;
     const normEmail = (u.email || '').toLowerCase().trim();
-    const targetKey = normEmail || (u.id || '').toLowerCase().trim();
+    const rawId = (u.id || '').trim();
+
+    // Filter out invalid, empty, or corrupt records
+    if (!normEmail && !rawId) continue;
+    if (normEmail === 'undefined' || rawId === 'undefined' || normEmail === 'null' || rawId === 'null') continue;
+
+    // Check if user was previously deleted
+    if (isUserDeleted(normEmail, rawId)) continue;
+
+    const targetKey = (normEmail && normEmail.includes('@')) ? normEmail : rawId.toLowerCase();
     if (!targetKey) continue;
 
     const existingKey = findExistingUserKey(u);
@@ -99,16 +133,22 @@ function mergeIntoUnifiedUserMap(newUsers: UserActivityProfile[]): void {
       unifiedUserMap.delete(existingKey);
     }
 
+    const mergedCreatedAt = existing?.createdAt && u.createdAt 
+      ? (new Date(existing.createdAt).getTime() < new Date(u.createdAt).getTime() ? existing.createdAt : u.createdAt)
+      : (existing?.createdAt || u.createdAt || new Date().toISOString());
+
+    const isNewMoreRecent = new Date(u.lastActiveAt || 0).getTime() > new Date(existing?.lastActiveAt || 0).getTime();
+
     const merged: UserActivityProfile = {
       id: u.id || existing?.id || targetKey,
-      email: u.email || existing?.email || targetKey,
-      name: u.name || existing?.name || targetKey.split('@')[0],
+      email: (normEmail && normEmail.includes('@')) ? normEmail : (existing?.email || targetKey),
+      name: isNewMoreRecent ? (u.name || existing?.name || targetKey.split('@')[0]) : (existing?.name || u.name || targetKey.split('@')[0]),
       photoURL: u.photoURL || existing?.photoURL || null,
-      device: u.device || existing?.device || 'Web Browser',
-      role: u.role || existing?.role || (targetKey.includes('techbaseaxis') || targetKey.includes('bgho40185') ? 'admin' : 'client'),
-      createdAt: existing?.createdAt || u.createdAt || new Date().toISOString(),
-      lastLoginAt: u.lastLoginAt || existing?.lastLoginAt || new Date().toISOString(),
-      lastActiveAt: u.lastActiveAt || existing?.lastActiveAt || new Date().toISOString(),
+      device: isNewMoreRecent ? (u.device || existing?.device || 'Web Browser') : (existing?.device || u.device || 'Web Browser'),
+      role: existing?.role === 'admin' || u.role === 'admin' || targetKey.includes('techbaseaxis') || targetKey.includes('bgho40185') ? 'admin' : 'client',
+      createdAt: mergedCreatedAt,
+      lastLoginAt: new Date(u.lastLoginAt || 0).getTime() > new Date(existing?.lastLoginAt || 0).getTime() ? u.lastLoginAt : (existing?.lastLoginAt || new Date().toISOString()),
+      lastActiveAt: isNewMoreRecent ? (u.lastActiveAt || new Date().toISOString()) : (existing?.lastActiveAt || new Date().toISOString()),
       lastLogoutAt: u.lastLogoutAt !== undefined ? u.lastLogoutAt : existing?.lastLogoutAt,
       isOnline: u.isOnline !== undefined ? u.isOnline : (existing?.isOnline ?? false)
     };
@@ -345,17 +385,7 @@ export async function fetchUserActivityDashboard(): Promise<ActivityDashboardDat
       if (contentType && contentType.includes('application/json')) {
         const data = await res.json();
         if (data && Array.isArray(data.users)) {
-          // Keep active online user sessions
-          const liveOnline = Array.from(unifiedUserMap.values()).filter((u) => u.isOnline);
-          unifiedUserMap.clear();
           mergeIntoUnifiedUserMap(data.users);
-          for (const live of liveOnline) {
-            const key = (live.email || live.id || '').toLowerCase().trim();
-            if (key && unifiedUserMap.has(key)) {
-              const cur = unifiedUserMap.get(key)!;
-              unifiedUserMap.set(key, { ...cur, isOnline: true, lastActiveAt: live.lastActiveAt });
-            }
-          }
           if (Array.isArray(data.recentEvents)) {
             mergeIntoUnifiedEventMap(data.recentEvents);
           }
@@ -529,13 +559,23 @@ export async function deleteUserActivityProfile(userKeyOrEmail: string): Promise
   const normalizedKey = normalizeKey(userKeyOrEmail);
   if (!normalizedKey) return false;
 
+  deletedUserKeys.add(normalizedKey);
+
   // 1. Remove from unified in-memory registry
   unifiedUserMap.delete(normalizedKey);
   for (const [key, u] of unifiedUserMap.entries()) {
-    if (u.id === userKeyOrEmail || normalizeKey(u.email) === normalizedKey) {
+    if (u.id === userKeyOrEmail || normalizeKey(u.email) === normalizedKey || normalizeKey(u.id) === normalizedKey) {
+      if (u.email) deletedUserKeys.add(normalizeKey(u.email));
+      if (u.id) deletedUserKeys.add(normalizeKey(u.id));
       unifiedUserMap.delete(key);
     }
   }
+
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tba_deleted_user_keys', JSON.stringify(Array.from(deletedUserKeys)));
+    }
+  } catch (_) {}
 
   // 2. Delete on Server
   try {

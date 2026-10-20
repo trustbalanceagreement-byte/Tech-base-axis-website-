@@ -108,24 +108,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
 
         {/* Sub-Footer */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-neutral-500">
+        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center text-center text-xs font-mono text-neutral-500">
           <div>
             © {currentYear} Tech Base Axis • Designed & Engineered by Bikram Ghosh. All Rights Reserved.
           </div>
-          {onNavigate && (
-            <div>
-              <button
-                id="footer-founder-portal-link"
-                onClick={() => {
-                  onNavigate('admin');
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                className="transition-colors cursor-pointer text-[11px] font-mono text-neutral-600 hover:text-red-400"
-              >
-                Founder Console
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </footer>

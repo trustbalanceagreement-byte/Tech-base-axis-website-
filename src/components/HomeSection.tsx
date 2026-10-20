@@ -120,20 +120,20 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                   </div>
 
                   {/* Mobile-only photo in the hero row - enlarged, prominent & crisp */}
-                  <div className="md:hidden shrink-0 relative w-28 xs:w-36 sm:w-44 h-36 xs:h-44 sm:h-52 flex items-center justify-center">
+                  <div className="md:hidden shrink-0 relative w-36 xs:w-44 sm:w-52 h-48 xs:h-56 sm:h-64 flex items-center justify-center">
                     {/* Crimson red circle disk */}
-                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-24 xs:w-30 sm:w-38 h-24 xs:h-30 sm:h-38 rounded-full bg-[#e61e2b] shadow-[0_0_25px_rgba(230,30,43,0.55)] z-0" />
+                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-32 xs:w-40 sm:w-48 h-32 xs:h-40 sm:h-48 rounded-full bg-[#e61e2b] shadow-[0_0_30px_rgba(230,30,43,0.6)] z-0" />
                     
                     {/* Male Cutout / Portrait */}
                     <div className="relative z-10 w-full h-full flex items-end justify-center">
                       <img
                         src={founderImage}
                         alt="Bikram Ghosh, founder and web developer at Tech Base Axis, architecting modern digital platforms in Kolkata"
-                        className="w-24 xs:w-32 sm:w-40 h-34 xs:h-42 sm:h-50 object-cover object-top rounded-b-xl filter grayscale contrast-125 brightness-95 drop-shadow-[0_16px_25px_rgba(0,0,0,0.9)]"
+                        className="w-34 xs:w-42 sm:w-50 h-46 xs:h-54 sm:h-62 object-cover object-top rounded-b-xl filter grayscale contrast-125 brightness-95 drop-shadow-[0_16px_25px_rgba(0,0,0,0.9)]"
                       />
                     </div>
 
-                    <div className="absolute -bottom-1 -left-1 z-20 px-2 py-0.5 rounded-md bg-black/95 border border-neutral-800 text-[9px] xs:text-[10px] font-mono text-neutral-200 shadow-md">
+                    <div className="absolute -bottom-1 -left-1 z-20 px-2.5 py-0.5 rounded-md bg-black/95 border border-neutral-800 text-[10px] xs:text-[11px] font-mono text-neutral-200 shadow-md">
                       <span className="text-[#e61e2b] font-bold">FOUNDER</span>
                     </div>
                   </div>
@@ -188,16 +188,16 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
 
               {/* Desktop Right Column: Commanding & High-Impact Male Portrait with Red Circle */}
               <div className="hidden md:flex md:col-span-5 items-center justify-center">
-                <div className="relative w-56 md:w-64 lg:w-76 h-[270px] md:h-[330px] lg:h-[390px] flex items-center justify-center">
+                <div className="relative w-64 md:w-72 lg:w-84 h-[320px] md:h-[380px] lg:h-[440px] flex items-center justify-center">
                   {/* Solid Crimson Red Circular Disk Accent */}
-                  <div className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 w-48 md:w-56 lg:w-64 h-48 md:h-56 lg:h-64 rounded-full bg-[#e61e2b] shadow-[0_0_45px_rgba(230,30,43,0.5)] z-0" />
+                  <div className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 w-56 md:w-64 lg:w-72 h-56 md:h-64 lg:h-72 rounded-full bg-[#e61e2b] shadow-[0_0_45px_rgba(230,30,43,0.5)] z-0" />
                   
                   {/* Person Cutout / Portrait in front of the red disk */}
                   <div className="relative z-10 w-full h-full flex items-end justify-center">
                     <img
                       src={founderImage}
                       alt="Bikram Ghosh, founder and web developer at Tech Base Axis - Web Development Company Kolkata"
-                      className="w-48 md:w-56 lg:w-68 h-[250px] md:h-[310px] lg:h-[370px] object-cover object-top rounded-b-2xl filter grayscale contrast-125 brightness-95 drop-shadow-[0_20px_35px_rgba(0,0,0,0.9)]"
+                      className="w-56 md:w-64 lg:w-76 h-[300px] md:h-[360px] lg:h-[420px] object-cover object-top rounded-b-2xl filter grayscale contrast-125 brightness-95 drop-shadow-[0_20px_35px_rgba(0,0,0,0.9)]"
                     />
                   </div>
 
