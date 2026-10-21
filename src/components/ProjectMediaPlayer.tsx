@@ -55,6 +55,15 @@ export function extractYouTubeId(url?: string): string | null {
   return match ? match[1] : null;
 }
 
+/**
+ * Extract Vimeo Video ID
+ */
+export function extractVimeoId(url?: string): string | null {
+  if (!url) return null;
+  const match = url.trim().match(/(?:vimeo\.com\/(?:video\/|channels\/(?:\w+\/)?|groups\/[^\/]*\/videos\/|album\/(?:\d+\/)?video\/|))([0-9]+)/i);
+  return match ? match[1] : null;
+}
+
 export const ProjectMediaPlayer: React.FC<ProjectMediaPlayerProps> = ({
   imageUrl,
   videoUrl,
@@ -84,7 +93,8 @@ export const ProjectMediaPlayer: React.FC<ProjectMediaPlayerProps> = ({
 
   const instagramData = hasVideo ? extractInstagramId(videoUrl) : null;
   const youTubeId = hasVideo ? extractYouTubeId(videoUrl) : null;
-  const isDirectVideo = hasVideo && !instagramData && !youTubeId;
+  const vimeoId = hasVideo ? extractVimeoId(videoUrl) : null;
+  const isDirectVideo = hasVideo && !instagramData && !youTubeId && !vimeoId;
 
   // Native video player state
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -190,6 +200,19 @@ export const ProjectMediaPlayer: React.FC<ProjectMediaPlayerProps> = ({
             src={`https://www.youtube-nocookie.com/embed/${youTubeId}?rel=0&modestbranding=1&playsinline=1`}
             className="w-full h-full border-0 rounded-xl"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            title={title}
+          />
+        </div>
+      )}
+
+      {/* 2.5 VIMEO VIDEO PLAYER */}
+      {activeMedia === 'video' && vimeoId && !instagramData && !youTubeId && (
+        <div className="relative w-full aspect-video bg-black">
+          <iframe
+            src={`https://player.vimeo.com/video/${vimeoId}?autoplay=0&title=0&byline=0`}
+            className="w-full h-full border-0 rounded-xl"
+            allow="autoplay; fullscreen; picture-in-picture"
             allowFullScreen
             title={title}
           />

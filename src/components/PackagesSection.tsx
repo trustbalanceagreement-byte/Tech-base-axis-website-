@@ -438,9 +438,6 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
         }}
         onNavigate={(section) => {
           setSelectedBookingPlan(null);
-          if (section === 'admin') {
-            window.location.hash = 'admin/inquiries';
-          }
           onNavigate(section);
         }}
       />

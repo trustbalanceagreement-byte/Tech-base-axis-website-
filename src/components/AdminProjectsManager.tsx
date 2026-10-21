@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Project, NavSection, MediaSourceType } from '../types';
-import { ProjectMediaPlayer, extractInstagramId, extractYouTubeId } from './ProjectMediaPlayer';
+import { ProjectMediaPlayer, extractInstagramId, extractYouTubeId, extractVimeoId } from './ProjectMediaPlayer';
 import { 
   uploadMediaToCloud, 
   validateVideoFile, 
@@ -39,7 +39,8 @@ import {
   FileImage,
   Info,
   Database,
-  Link2
+  Link2,
+  Globe
 } from 'lucide-react';
 
 interface AdminProjectsManagerProps {
@@ -84,7 +85,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
   // Media State
   const [formImageUrl, setFormImageUrl] = useState<string>('');
   const [formVideoUrl, setFormVideoUrl] = useState<string>('');
-  const [mediaTab, setMediaTab] = useState<'video' | 'photo' | 'url'>('photo');
+  const [mediaTab, setMediaTab] = useState<'photo' | 'video' | 'url'>('photo');
   const [mediaUploadError, setMediaUploadError] = useState<string | null>(null);
   const [isUploadingMedia, setIsUploadingMedia] = useState<boolean>(false);
   const [uploadStatusText, setUploadStatusText] = useState<string>('');
@@ -237,12 +238,12 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
     setUploadStatusText('');
     setMediaUploadError(null);
 
-    // If external link/embed, open URL tab; if uploaded video, open video tab; else photo
-    if (proj.videoUrl && (extractInstagramId(proj.videoUrl) || extractYouTubeId(proj.videoUrl) || proj.mediaSource === 'external_video')) {
+    // If external link or embed, open URL tab; if uploaded video, open video tab; else photo
+    if (proj.videoUrl && (extractInstagramId(proj.videoUrl) || extractYouTubeId(proj.videoUrl) || extractVimeoId(proj.videoUrl) || proj.mediaSource === 'external_video' || proj.videoUrl.startsWith('http'))) {
       setMediaTab('url');
     } else if (proj.videoUrl) {
       setMediaTab('video');
-    } else if (proj.imageUrl && proj.imageUrl.startsWith('http') && !proj.imageUrl.startsWith('/uploads') && !proj.imageUrl.includes('supabase.co')) {
+    } else if (proj.imageUrl && proj.imageUrl.startsWith('http') && !proj.imageUrl.startsWith('/uploads') && !proj.imageUrl.startsWith('data:')) {
       setMediaTab('url');
     } else {
       setMediaTab('photo');
@@ -534,9 +535,10 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
     showToast('All projects cleared. Public portfolio page is clean.');
   };
 
-  // Instagram / YouTube link detection helpers
+  // Instagram / YouTube / Vimeo link detection helpers
   const isInstagram = Boolean(extractInstagramId(formVideoUrl));
   const isYouTube = Boolean(extractYouTubeId(formVideoUrl));
+  const isVimeo = Boolean(extractVimeoId(formVideoUrl));
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200 text-neutral-100">
@@ -856,17 +858,17 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
             </div>
 
             <form onSubmit={handleSaveProject} className="space-y-6">
-              {/* MEDIA SECTION: VIDEO, PHOTO & URL */}
+              {/* MEDIA SECTION: PHOTO & VIDEO */}
               <div className="p-5 rounded-2xl bg-neutral-900/90 border border-neutral-800 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Film className="w-4 h-4 text-[#e61e2b]" />
                     <h4 className="text-sm font-bold font-mono text-white">
-                      Media Showcase: Video, Photo &amp; URL
+                      Media Showcase: Photo, Video &amp; URL
                     </h4>
                   </div>
 
-                  {/* Switch between Photo, Video, and URL config */}
+                  {/* Switch between Photo, Video, and URL */}
                   <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-neutral-800">
                     <button
                       type="button"
@@ -903,7 +905,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                           : 'text-neutral-400 hover:text-white'
                       }`}
                     >
-                      <Link2 className="w-3.5 h-3.5 text-sky-400" />
+                      <Link2 className="w-3.5 h-3.5" />
                       <span>URL</span>
                     </button>
                   </div>
@@ -1124,24 +1126,46 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                   </div>
                 )}
 
-                {/* 3. DEDICATED URL SECTION (Where circled by user!) */}
+                {/* 3. MULTI-PLATFORM URL LINK SECTION */}
                 {mediaTab === 'url' && (
                   <div className="space-y-4 animate-in fade-in">
                     <div className="p-4 rounded-xl bg-black/60 border border-neutral-800 space-y-3">
                       <div>
                         <div className="text-xs font-mono font-bold text-white flex items-center gap-1.5">
                           <Link2 className="w-4 h-4 text-sky-400" />
-                          <span>Media URL / Link (Instagram Reel, YouTube, Video, Image)</span>
+                          <span>Any Platform Media URL / Embed Link</span>
                         </div>
                         <div className="text-[11px] font-mono text-neutral-400 mt-0.5">
-                          Paste an Instagram Reel, YouTube link, external video URL (.mp4/.webm), or image web URL.
+                          Paste video or image links from any platform: YouTube, Instagram Reels, Vimeo, direct MP4 / WebM video streams, or image web URLs.
                         </div>
+                      </div>
+
+                      {/* Supported Platform Badges */}
+                      <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono text-neutral-400 pb-1">
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center gap-1">
+                          <Youtube className="w-3 h-3 text-red-500" /> YouTube
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center gap-1">
+                          <Instagram className="w-3 h-3 text-pink-500" /> Instagram Reel
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center gap-1">
+                          <Video className="w-3 h-3 text-sky-400" /> Vimeo
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center gap-1">
+                          <Film className="w-3 h-3 text-emerald-400" /> MP4 / WebM
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center gap-1">
+                          <ImageIcon className="w-3 h-3 text-amber-400" /> Web Photo URL
+                        </span>
+                        <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 flex items-center gap-1">
+                          <Globe className="w-3 h-3 text-indigo-400" /> Any Web Link
+                        </span>
                       </div>
 
                       <div className="flex gap-2">
                         <input
                           type="url"
-                          placeholder="https://www.instagram.com/reel/... or https://youtu.be/... or .mp4 / image URL"
+                          placeholder="https://www.youtube.com/... or instagram.com/reel/... or vimeo.com/... or .mp4 / image URL"
                           value={formVideoUrl || formImageUrl}
                           onChange={(e) => {
                             const val = e.target.value.trim();
@@ -1158,6 +1182,9 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                             } else if (extractYouTubeId(val)) {
                               setFormVideoUrl(val);
                               setFormMediaSource('youtube_embed');
+                            } else if (extractVimeoId(val)) {
+                              setFormVideoUrl(val);
+                              setFormMediaSource('external_video');
                             } else if (/\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(val)) {
                               setFormVideoUrl(val);
                               setFormMediaSource('external_video');
@@ -1192,7 +1219,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                         )}
                       </div>
 
-                      {/* Live Detection Badges */}
+                      {/* Live Platform Detection Badges */}
                       <div className="flex items-center gap-2 flex-wrap pt-1">
                         {isInstagram && (
                           <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-pink-950 text-pink-300 border border-pink-500/40 flex items-center gap-1.5 font-semibold animate-in fade-in">
@@ -1208,10 +1235,17 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                           </span>
                         )}
 
-                        {!isInstagram && !isYouTube && formVideoUrl && (
+                        {isVimeo && (
+                          <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-sky-950 text-sky-300 border border-sky-500/40 flex items-center gap-1.5 font-semibold animate-in fade-in">
+                            <Video className="w-3.5 h-3.5 text-sky-400" />
+                            <span>Vimeo HD Player Detected</span>
+                          </span>
+                        )}
+
+                        {!isInstagram && !isYouTube && !isVimeo && formVideoUrl && (
                           <span className="px-2.5 py-1 rounded-md text-[11px] font-mono bg-blue-950 text-blue-300 border border-blue-500/40 flex items-center gap-1.5 animate-in fade-in">
                             <Film className="w-3.5 h-3.5 text-blue-400" />
-                            <span>External MP4/WebM Video Stream</span>
+                            <span>Direct Video Stream Connected</span>
                           </span>
                         )}
 
@@ -1224,7 +1258,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                       </div>
                     </div>
 
-                    {/* URL Live Preview */}
+                    {/* URL Live Player Preview */}
                     {formVideoUrl && (
                       <div className="mt-4 pt-3 border-t border-neutral-800">
                         <div className="flex items-center justify-between mb-2">
@@ -1257,7 +1291,7 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
                           </div>
                           <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30 flex items-center gap-1 font-semibold">
                             <CheckCircle2 className="w-3 h-3" />
-                            <span>Live Cloud Photo Ready</span>
+                            <span>Live Photo Ready</span>
                           </span>
                         </div>
                         <div className="w-full max-h-56 rounded-xl overflow-hidden border border-neutral-800 bg-black">

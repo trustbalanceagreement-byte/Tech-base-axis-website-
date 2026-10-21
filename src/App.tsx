@@ -86,24 +86,25 @@ function AppShell() {
     savePackages(packages);
   }, [packages]);
 
-  // Sync hash routing if user enters e.g. #projects, #packages, #contact, #admin
+  // Handle initial URL hash if present, then strip anchor link from URL for clean navigation
   useEffect(() => {
-    const handleHashChange = () => {
+    if (window.location.hash) {
       const rawHash = window.location.hash.replace('#', '');
       const baseHash = rawHash.split('/')[0] as NavSection;
       if (['home', 'projects', 'packages', 'contact', 'admin'].includes(baseHash)) {
         setActiveSection(baseHash);
       }
-    };
-
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+      // Remove anchor link (#...) from URL bar
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
   }, []);
 
   const handleNavigate = (section: NavSection) => {
     setActiveSection(section);
-    window.location.hash = section;
+    // Ensure clean URL with no anchor links
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
