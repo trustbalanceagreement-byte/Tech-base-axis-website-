@@ -1,0 +1,135 @@
+[
+  {
+    "id": "enterprise-overhaul",
+    "name": "Enterprise Scale & Modernization",
+    "badge": "Maximum Resilience",
+    "theme": "amber",
+    "price": 7999,
+    "period": "/project",
+    "cycle": "milestone",
+    "popular": false,
+    "description": "Full-scale custom engineering for high-traffic, mission-critical systems requiring strict security audits, microservices & zero downtime.",
+    "turnaround": "6 - 8 Weeks",
+    "idealFor": "Enterprises, High-volume platforms, FinTech, Logistics, and High-compliance agencies",
+    "features": [
+      {
+        "text": "Everything in Full-Stack Growth Architecture tier",
+        "included": true
+      },
+      {
+        "text": "Distributed microservices or clean modular monolith architecture",
+        "included": true
+      },
+      {
+        "text": "High-throughput caching & message queue implementation (Redis, Kafka)",
+        "included": true
+      },
+      {
+        "text": "Database read-replica clustering and sub-50ms query optimization",
+        "included": true
+      },
+      {
+        "text": "SOC2 / GDPR compliance readiness & penetration-test remediation",
+        "included": true
+      },
+      {
+        "text": "Custom internal admin dashboard with telemetry logs and audit trails",
+        "included": true
+      },
+      {
+        "text": "Comprehensive disaster recovery & automated backup configuration",
+        "included": true
+      },
+      {
+        "text": "60 days priority 24/7 technical support & SLA guarantee",
+        "included": true
+      }
+    ],
+    "deliverables": [
+      "Enterprise Multi-Service Repository with Infrastructure as Code (IaC)",
+      "High-Availability Cloud Architecture Blueprint",
+      "Security Hardening Report & Pen-Test Checklist",
+      "Dedicated Technical Onboarding & Training Session"
+    ],
+    "techStack": [
+      "Distributed TypeScript/Go",
+      "Kubernetes",
+      "Kafka",
+      "PostgreSQL",
+      "Docker",
+      "GCP/AWS"
+    ]
+  },
+  {
+    "id": "pkg-custom-22946",
+    "name": "Maintenance",
+    "badge": "New Tier",
+    "theme": "red",
+    "price": 699,
+    "period": "/Month ",
+    "cycle": "milestone",
+    "popular": false,
+    "description": "Custom architecture and engineering scope.",
+    "turnaround": "Instant Setup",
+    "idealFor": "Startups & modern companies",
+    "features": [
+      {
+        "text": "Unlimited projects",
+        "included": true
+      },
+      {
+        "text": "Custom dashboard",
+        "included": true
+      },
+      {
+        "text": "Dedicated support",
+        "included": true
+      }
+    ],
+    "deliverables": [
+      "Full Source Code Repository",
+      "Architecture Walkthrough & Handoff"
+    ],
+    "techStack": [
+      "React 19",
+      "TypeScript",
+      "Tailwind CSS"
+    ]
+  },
+  {
+    "id": "pkg-custom-99549",
+    "name": "Package",
+    "badge": "Starter plan",
+    "theme": "red",
+    "price": 10000,
+    "period": "/month",
+    "cycle": "monthly",
+    "popular": false,
+    "description": "Custom architecture and engineering scope.",
+    "turnaround": "Instant Setup",
+    "idealFor": "Startups & modern companies",
+    "features": [
+      {
+        "text": "Unlimited projects",
+        "included": true
+      },
+      {
+        "text": "Custom dashboard",
+        "included": true
+      },
+      {
+        "text": "Dedicated support",
+        "included": true
+      }
+    ],
+    "deliverables": [
+      "Full Source Code Repository",
+      "Architecture Walkthrough & Handoff"
+    ],
+    "techStack": [
+      "React 19",
+      "TypeScript",
+      "Tailwind CSS"
+    ]
+  }
+]

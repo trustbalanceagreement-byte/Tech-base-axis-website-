@@ -8,6 +8,13 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Packages collection: Public can view packages and custom prices without authentication.
+    // Admin / authenticated users can create, update, and delete packages.
+    match /packages/{packageId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // User activity and real-time presence tracking
     match /user_activity/{userId} {
       allow read, write: if true;

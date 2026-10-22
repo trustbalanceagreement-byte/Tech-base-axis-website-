@@ -126,6 +126,47 @@ export async function getProjectsFromSupabase(): Promise<any[] | null> {
 }
 
 /**
+ * Persists custom service packages & admin pricing JSON to Supabase Storage Bucket ('Tech Base Axis Storege')
+ * Ensures all visitor devices & phones see updated prices globally without auth barriers
+ */
+export async function syncPackagesToSupabase(packages: any[]): Promise<boolean> {
+  try {
+    const jsonBuffer = Buffer.from(JSON.stringify(packages, null, 2), 'utf8');
+    const { error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .upload('packages/packages.json', jsonBuffer, {
+        contentType: 'application/json',
+        upsert: true
+      });
+    if (error) {
+      console.warn('[Supabase Sync] Warning syncing packages.json:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase Sync] Packages sync notice:', err);
+    return false;
+  }
+}
+
+/**
+ * Loads published packages directly from Supabase Storage Bucket
+ */
+export async function getPackagesFromSupabase(): Promise<any[] | null> {
+  try {
+    const { data, error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .download('packages/packages.json');
+    if (error || !data) return null;
+    const text = await data.text();
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Express / Connect request handler for /api/supabase/upload
  * Handles incoming raw binary streams or form data and pipes directly into Supabase Storage
  */

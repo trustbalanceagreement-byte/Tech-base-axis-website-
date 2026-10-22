@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NavSection, Project, ServicePackage, ClientInquiry } from './types';
 import { DEFAULT_INQUIRIES, PROJECTS_DATA, SERVICE_PACKAGES } from './data/mockData';
-import { INITIAL_PACKAGES, loadSavedPackages, savePackages } from './data/pricingData';
+import { 
+  INITIAL_PACKAGES, 
+  loadSavedPackages, 
+  savePackages, 
+  subscribeToPublicPackages 
+} from './data/pricingData';
 import { 
   loadSavedProjects,
   saveProjects, 
@@ -52,7 +57,7 @@ function AppShell() {
     return DEFAULT_INQUIRIES;
   });
 
-  // Initialize service & subscription packages from localStorage or fallback to defaults
+  // Initialize service & subscription packages from cloud or localStorage
   const [packages, setPackages] = useState<ServicePackage[]>(() => {
     return loadSavedPackages();
   });
@@ -72,6 +77,26 @@ function AppShell() {
     return () => unsubscribe();
   }, []);
 
+  // Real-time synchronization of public packages & custom pricing from Cloud/Server for all live visitors
+  useEffect(() => {
+    const unsubscribe = subscribeToPublicPackages((livePackages) => {
+      if (Array.isArray(livePackages) && livePackages.length > 0) {
+        setPackages(livePackages);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Ensure any existing custom packages configured on admin's device are synced to Cloud on startup
+  useEffect(() => {
+    try {
+      const saved = loadSavedPackages();
+      if (Array.isArray(saved) && saved.length > 0) {
+        savePackages(saved);
+      }
+    } catch (_) {}
+  }, []);
+
   // Persist inquiries whenever changed
   useEffect(() => {
     try {
@@ -80,11 +105,6 @@ function AppShell() {
       console.error('Failed to persist inquiries:', err);
     }
   }, [inquiries]);
-
-  // Persist packages whenever changed
-  useEffect(() => {
-    savePackages(packages);
-  }, [packages]);
 
   // Strip shortcut anchor links (#home, #projects, #packages, #contact, #admin) from browser URL bar
   useEffect(() => {
@@ -150,15 +170,19 @@ function AppShell() {
   };
 
   const handleUpdatePackagePrice = (id: string, newPrice: number) => {
-    setPackages((prev) =>
-      prev.map((pkg) => (pkg.id === id ? { ...pkg, price: newPrice } : pkg))
-    );
+    setPackages((prev) => {
+      const updated = prev.map((pkg) => (pkg.id === id ? { ...pkg, price: newPrice } : pkg));
+      savePackages(updated);
+      return updated;
+    });
   };
 
   const handleUpdatePackage = (updatedPkg: ServicePackage) => {
-    setPackages((prev) =>
-      prev.map((pkg) => (pkg.id === updatedPkg.id ? updatedPkg : pkg))
-    );
+    setPackages((prev) => {
+      const updated = prev.map((pkg) => (pkg.id === updatedPkg.id ? updatedPkg : pkg));
+      savePackages(updated);
+      return updated;
+    });
   };
 
   const handleResetPackagesToDefault = () => {

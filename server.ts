@@ -16,7 +16,9 @@ import {
 import { 
   handleSupabaseUploadStream, 
   syncProjectsToSupabase, 
-  getProjectsFromSupabase 
+  getProjectsFromSupabase,
+  syncPackagesToSupabase,
+  getPackagesFromSupabase
 } from "./server/supabaseHelper.ts";
 import {
   getActivityDashboard,
@@ -39,6 +41,7 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 const projectsFilePath = path.join(dataDir, "projects.json");
+const packagesFilePath = path.join(dataDir, "packages.json");
 const activityFilePath = path.join(dataDir, "user_activity.json");
 
 // Static route for uploaded media
@@ -137,6 +140,50 @@ app.post("/api/projects", (req, res) => {
   } catch (err: any) {
     console.error("Error saving projects:", err);
     res.status(500).json({ error: err?.message || "Failed to save projects" });
+  }
+});
+
+// GET /api/packages - Shared public packages & pricing for all visitor phones & devices
+app.get("/api/packages", async (_req, res) => {
+  try {
+    if (fs.existsSync(packagesFilePath)) {
+      const raw = fs.readFileSync(packagesFilePath, "utf8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return res.status(200).json(parsed);
+      }
+    }
+
+    // If local file is empty or missing, fetch from Supabase cloud storage bucket
+    const supaPackages = await getPackagesFromSupabase();
+    if (Array.isArray(supaPackages) && supaPackages.length > 0) {
+      try {
+        fs.writeFileSync(packagesFilePath, JSON.stringify(supaPackages, null, 2), "utf8");
+      } catch (_) {}
+      return res.status(200).json(supaPackages);
+    }
+
+    return res.status(200).json([]);
+  } catch (err: any) {
+    console.error("Error reading packages:", err);
+    res.status(200).json([]);
+  }
+});
+
+// POST /api/packages - Saves packages list from admin console
+app.post("/api/packages", (req, res) => {
+  try {
+    const packages = req.body;
+    if (Array.isArray(packages)) {
+      fs.writeFileSync(packagesFilePath, JSON.stringify(packages, null, 2), "utf8");
+      // Cloud persistence to Supabase bucket
+      syncPackagesToSupabase(packages).catch(() => {});
+      return res.status(200).json({ success: true, count: packages.length });
+    }
+    res.status(400).json({ error: "Expected an array of packages" });
+  } catch (err: any) {
+    console.error("Error saving packages:", err);
+    res.status(500).json({ error: err?.message || "Failed to save packages" });
   }
 });
 

@@ -40,6 +40,7 @@ if (!fs.existsSync(dataDir)) {
 
 const activityFilePath = path.join(dataDir, 'user_activity.json');
 const projectsFilePath = path.join(dataDir, 'projects.json');
+const packagesFilePath = path.join(dataDir, 'packages.json');
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   try {
@@ -682,6 +683,35 @@ export function saveProjectsList(projects: any[]): boolean {
     return true;
   } catch (err) {
     console.error('Error saving projects list:', err);
+    return false;
+  }
+}
+
+export function getPackagesList(): any[] {
+  try {
+    if (fs.existsSync(packagesFilePath)) {
+      const raw = fs.readFileSync(packagesFilePath, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error reading packages file:', err);
+  }
+  return [];
+}
+
+export function savePackagesList(packages: any[]): boolean {
+  if (!Array.isArray(packages)) return false;
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(packagesFilePath, JSON.stringify(packages, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Error saving packages list:', err);
     return false;
   }
 }

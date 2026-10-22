@@ -53,6 +53,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
+import { savePackages } from '../data/pricingData';
 
 interface AdminSectionProps {
   inquiries: ClientInquiry[];
@@ -292,6 +293,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
   // New package modal state
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [isSyncingPackages, setIsSyncingPackages] = useState<boolean>(false);
 
   // OneSignal push notifications state
   const [pushPermission, setPushPermission] = useState<boolean>(false);
@@ -586,10 +588,25 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     const toSave = getPackageData(pkg);
     onUpdatePackage(toSave);
     setSavedFeedbackId(pkg.id);
-    triggerToast(`Package "${toSave.name}" price set to ₹${toSave.price.toLocaleString('en-IN')}${toSave.period || ''}! Live on website.`);
+    triggerToast(`Package "${toSave.name}" price set to ₹${toSave.price.toLocaleString('en-IN')}${toSave.period || ''}! Synced live to all visitor phones & devices.`);
     setTimeout(() => {
       setSavedFeedbackId((curr) => (curr === pkg.id ? null : curr));
     }, 2500);
+  };
+
+  // Publish / Sync all packages & prices to Cloud Firestore & Supabase CDN for all visitor phones
+  const handleSyncAllPackagesToCloud = async () => {
+    setIsSyncingPackages(true);
+    try {
+      const currentList = packages.map((pkg) => editedPackages[pkg.id] || pkg);
+      await savePackages(currentList);
+      triggerToast('All package prices & details published to all phones & visitor devices in real time!');
+    } catch (err) {
+      console.error('Failed to sync packages:', err);
+      triggerToast('Prices saved locally, cloud sync will retry in background.');
+    } finally {
+      setIsSyncingPackages(false);
+    }
   };
 
   // Toggle feature inclusion in draft
@@ -1121,39 +1138,11 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                   <Plus className="w-4 h-4" />
                   <span>Add New Package</span>
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm('Are you sure you want to reset all package prices and names back to initial defaults?')) {
-                      onResetPackagesToDefault();
-                      setEditedPackages({});
-                      triggerToast('All package prices restored to defaults!');
-                    }
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border border-neutral-800 text-xs font-mono flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Restore original package pricing"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset to Defaults</span>
-                </button>
               </div>
             </div>
 
             {/* Quick Stats Grid - Side by Side (Pashapashi) */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 pt-2 border-t border-neutral-800/80">
-              <div className="p-2 sm:p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <div className="min-w-0">
-                  <div className="text-[9px] sm:text-[11px] font-mono text-neutral-400 truncate">Total Active</div>
-                  <div className="text-xs sm:text-xl font-bold font-mono text-white mt-0.5 truncate">
-                    {packages.length} Packages
-                  </div>
-                </div>
-                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-red-950/60 text-[#e61e2b] flex items-center justify-center shrink-0 self-end sm:self-center">
-                  <Package className="w-3 h-3 sm:w-4 sm:h-4" />
-                </div>
-              </div>
-
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 border-t border-neutral-800/80">
               <div className="p-2 sm:p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <div className="min-w-0">
                   <div className="text-[9px] sm:text-[11px] font-mono text-neutral-400 truncate">Subscription</div>

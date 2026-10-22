@@ -17,6 +17,8 @@ import {
   deleteActivityUser,
   getProjectsList,
   saveProjectsList,
+  getPackagesList,
+  savePackagesList,
   handleUpload
 } from './server/activityHelper';
 import {
@@ -26,7 +28,9 @@ import {
 import { 
   handleSupabaseUploadStream,
   syncProjectsToSupabase,
-  getProjectsFromSupabase
+  getProjectsFromSupabase,
+  syncPackagesToSupabase,
+  getPackagesFromSupabase
 } from './server/supabaseHelper';
 
 function onesignalDevApiPlugin(): Plugin {
@@ -154,6 +158,63 @@ function onesignalDevApiPlugin(): Plugin {
               res.setHeader('Content-Type', 'application/json');
               res.statusCode = 400;
               res.end(JSON.stringify({ error: err?.message || 'Invalid projects format' }));
+            }
+          });
+          return;
+        }
+
+        res.statusCode = 405;
+        res.end(JSON.stringify({ error: 'Method not allowed' }));
+      });
+
+      // Public and Admin Packages Sync
+      server.middlewares.use('/api/packages', async (req, res) => {
+        if (req.method === 'GET') {
+          try {
+            const list = getPackagesList();
+            if (Array.isArray(list) && list.length > 0) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify(list));
+              return;
+            }
+
+            // Fallback to Supabase cloud storage bucket
+            const supaList = await getPackagesFromSupabase();
+            if (Array.isArray(supaList) && supaList.length > 0) {
+              savePackagesList(supaList);
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify(supaList));
+              return;
+            }
+
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify([]));
+          } catch (err: any) {
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 500;
+            res.end(JSON.stringify([]));
+          }
+          return;
+        }
+
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const packages = JSON.parse(body || '[]');
+              savePackagesList(packages);
+              syncPackagesToSupabase(packages).catch(() => {});
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, count: packages.length }));
+            } catch (err: any) {
+              res.setHeader('Content-Type', 'application/json');
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err?.message || 'Invalid packages format' }));
             }
           });
           return;
