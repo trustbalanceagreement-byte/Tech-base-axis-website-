@@ -4,7 +4,7 @@
       "id": "usr_bikram_ghosh",
       "email": "bgho40185@gmail.com",
       "name": "Bikram Ghosh",
-      "photoURL": null,
+      "photoURL": "/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp",
       "role": "admin",
       "createdAt": "2026-01-15T10:00:00.000Z",
       "lastLoginAt": "2026-10-07T03:30:00.000Z",
@@ -19,22 +19,10 @@
       "photoURL": "/src/assets/images/bikram-ghosh-developer-avatar.webp",
       "role": "admin",
       "createdAt": "2026-01-10T08:30:00.000Z",
-      "lastLoginAt": "2026-10-17T10:42:30.397Z",
-      "lastLogoutAt": null,
-      "lastActiveAt": "2026-10-17T10:47:46.200Z",
+      "lastLoginAt": "2026-10-21T05:21:32.384Z",
+      "lastLogoutAt": "2026-10-21T05:23:12.197Z",
+      "lastActiveAt": "2026-10-21T05:23:12.197Z",
       "device": "Mobile / Linux armv81"
-    },
-    "bgho40185@gmail.com": {
-      "id": "usr_bikram_ghosh",
-      "email": "bgho40185@gmail.com",
-      "name": "Bikram Ghosh",
-      "photoURL": "/src/assets/images/bikram-ghosh-lead-architect-kolkata.webp",
-      "role": "admin",
-      "createdAt": "2026-01-15T10:00:00.000Z",
-      "lastLoginAt": "2026-10-07T03:30:00.000Z",
-      "lastLogoutAt": null,
-      "lastActiveAt": "2026-10-07T03:30:00.000Z",
-      "device": "Android Chrome / Mobile"
     },
     "agnikx4@gmail.com": {
       "id": "k2kv6msCjrfiO5FQJGxTSXprZPQ2",
@@ -62,6 +50,39 @@
     }
   },
   "events": [
+    {
+      "id": "evt_1792560192197_q6u6y",
+      "userId": "tba-founder-verified",
+      "name": "Bikram Ghosh (Founder)",
+      "email": "techbaseaxis@gmail.com",
+      "photoURL": "/src/assets/images/bikram-ghosh-developer-avatar.webp",
+      "type": "logout",
+      "timestamp": "2026-10-21T05:23:12.197Z",
+      "device": "Mobile / Linux armv81",
+      "details": "Bikram Ghosh (Founder) logged out"
+    },
+    {
+      "id": "evt_1792560092384_n16ex",
+      "userId": "tba-founder-verified",
+      "name": "Bikram Ghosh (Founder)",
+      "email": "techbaseaxis@gmail.com",
+      "photoURL": "/src/assets/images/bikram-ghosh-developer-avatar.webp",
+      "type": "login",
+      "timestamp": "2026-10-21T05:21:32.384Z",
+      "device": "Mobile / Linux armv81",
+      "details": "Bikram Ghosh (Founder) logged in"
+    },
+    {
+      "id": "evt_1792560089054_rnhpd",
+      "userId": "tba-founder-verified",
+      "name": "Bikram Ghosh (Founder)",
+      "email": "techbaseaxis@gmail.com",
+      "photoURL": "/src/assets/images/bikram-ghosh-developer-avatar.webp",
+      "type": "logout",
+      "timestamp": "2026-10-21T05:21:29.054Z",
+      "device": "Mobile / Linux armv81",
+      "details": "Bikram Ghosh (Founder) logged out"
+    },
     {
       "id": "evt_1792233750397_4ihsk",
       "userId": "usr_tba_hq",

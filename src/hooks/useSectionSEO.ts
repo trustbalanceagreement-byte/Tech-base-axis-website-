@@ -54,11 +54,11 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Tech Base Axis is a premier web development company in Kolkata, founded by Bikram Ghosh. We engineer high-performance web applications, scalable cloud platforms, and bespoke digital solutions.',
     ogTitle: 'Tech Base Axis | Web Development Company Kolkata | Bikram Ghosh Web Developer',
     ogDescription: 'Tech Base Axis is a premier web development company in Kolkata, founded by Bikram Ghosh. We engineer high-performance web applications, scalable cloud platforms, and bespoke digital solutions.',
-    ogUrl: 'https://www.tbaonline.online/#home',
+    ogUrl: 'https://www.tbaonline.online',
   },
 
   /**
-   * PROJECTS (#projects)
+   * PROJECTS
    * Role: Proof of Work & Empirical Evidence Node
    * Focus: Case studies, verified production builds, and technology stack demonstrations.
    * Anti-Cannibalization Rule: Quarantines "Portfolio", "Case Studies", and "Demos" away from the homepage.
@@ -78,11 +78,11 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Explore production software, web apps, and digital solutions delivered by Kolkata web development company Tech Base Axis and lead web developer Bikram Ghosh.',
     ogTitle: 'Featured Projects | Tech Base Axis - Web Development Company Kolkata',
     ogDescription: 'Explore production software, web apps, and digital solutions delivered by Kolkata web development company Tech Base Axis and lead web developer Bikram Ghosh.',
-    ogUrl: 'https://www.tbaonline.online/#projects',
+    ogUrl: 'https://www.tbaonline.online',
   },
 
   /**
-   * PACKAGES (#packages)
+   * PACKAGES
    * Role: Commercial Offer & Transactional Pricing Node
    * Focus: Service tier pricing, package inclusions, hourly/milestone rates, and contract models.
    * Anti-Cannibalization Rule: Exclusively owns terms with commercial modifier "Packages", "Cost", and "Pricing".
@@ -102,11 +102,11 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Transparent web development packages from Kolkata\'s leading tech firm Tech Base Axis. Hire Bikram Ghosh, senior web developer, for bespoke digital solutions.',
     ogTitle: 'Engineering Packages & Pricing | Tech Base Axis Kolkata',
     ogDescription: 'Transparent web development packages from Kolkata\'s leading tech firm Tech Base Axis. Hire Bikram Ghosh, senior web developer, for bespoke digital solutions.',
-    ogUrl: 'https://www.tbaonline.online/#packages',
+    ogUrl: 'https://www.tbaonline.online',
   },
 
   /**
-   * CONTACT (#contact)
+   * CONTACT
    * Role: Conversion & Local Geographic Outreach Node
    * Focus: Direct lead generation, office booking, phone/email contact, and client consultation.
    * Anti-Cannibalization Rule: Exclusively targets direct action verbs ("Contact", "Consultation", "Book").
@@ -126,11 +126,11 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Get in touch with Tech Base Axis, a leading web development company in Kolkata. Consult with Bikram Ghosh to architect and build your next web application.',
     ogTitle: 'Contact Tech Base Axis | Web Development Company Kolkata',
     ogDescription: 'Get in touch with Tech Base Axis, a leading web development company in Kolkata. Consult with Bikram Ghosh to architect and build your next web application.',
-    ogUrl: 'https://www.tbaonline.online/#contact',
+    ogUrl: 'https://www.tbaonline.online',
   },
 
   /**
-   * ADMIN (#admin)
+   * ADMIN
    * Role: Internal Operations Console (Excluded from Public Search Indexing)
    */
   admin: {
@@ -142,7 +142,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
     ogTitle: 'Admin Console | Tech Base Axis',
     ogDescription: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
-    ogUrl: 'https://www.tbaonline.online/#admin',
+    ogUrl: 'https://www.tbaonline.online',
   },
 };
 

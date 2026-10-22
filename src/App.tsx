@@ -86,23 +86,36 @@ function AppShell() {
     savePackages(packages);
   }, [packages]);
 
-  // Handle initial URL hash if present, then strip anchor link from URL for clean navigation
+  // Strip shortcut anchor links (#home, #projects, #packages, #contact, #admin) from browser URL bar
   useEffect(() => {
-    if (window.location.hash) {
-      const rawHash = window.location.hash.replace('#', '');
-      const baseHash = rawHash.split('/')[0] as NavSection;
-      if (['home', 'projects', 'packages', 'contact', 'admin'].includes(baseHash)) {
-        setActiveSection(baseHash);
+    const stripAnchorLinks = () => {
+      if (typeof window !== 'undefined' && window.location.hash) {
+        const rawHash = window.location.hash.replace('#', '');
+        const baseHash = rawHash.split('/')[0] as NavSection;
+        if (['home', 'projects', 'packages', 'contact', 'admin'].includes(baseHash)) {
+          setActiveSection(baseHash);
+        }
+        // Remove anchor link (#...) from URL bar so only clean domain shows
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
-      // Remove anchor link (#...) from URL bar
+    };
+
+    stripAnchorLinks();
+    window.addEventListener('hashchange', stripAnchorLinks);
+    return () => window.removeEventListener('hashchange', stripAnchorLinks);
+  }, []);
+
+  // Always keep URL clean when switching sections
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash) {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
-  }, []);
+  }, [activeSection]);
 
   const handleNavigate = (section: NavSection) => {
     setActiveSection(section);
-    // Ensure clean URL with no anchor links
-    if (window.location.hash) {
+    // Ensure clean URL without any anchor links (#home, #projects, #packages, #contact, #admin)
+    if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });

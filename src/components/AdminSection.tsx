@@ -244,6 +244,9 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       } else if (hash.includes('projects')) {
         setActiveAdminTab('projects');
       }
+      if (hash) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
     };
     handleHash();
     window.addEventListener('hashchange', handleHash);
