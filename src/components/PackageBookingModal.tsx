@@ -243,7 +243,11 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
       });
     } catch (err: any) {
       setIsProcessingRazorpay(false);
-      setRazorpayError(err.message || 'Unable to initialize Razorpay checkout gateway.');
+      const rawMsg = err?.message || '';
+      const friendlyMsg = rawMsg.includes('JSON') || rawMsg.includes('Unexpected')
+        ? 'Could not connect to payment order service. You can retry Razorpay or pay instantly with Direct UPI QR.'
+        : (rawMsg || 'Unable to open Razorpay payment gateway.');
+      setRazorpayError(friendlyMsg);
     }
   };
 
@@ -666,9 +670,21 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
               )}
 
               {razorpayError && (
-                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-600/70 text-rose-300 text-xs font-mono flex items-center gap-2 animate-in fade-in">
-                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>{razorpayError}</span>
+                <div className="p-3.5 rounded-xl bg-rose-950/80 border border-rose-600/70 text-rose-300 text-xs font-mono space-y-2 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                    <span>{razorpayError}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-rose-900/60">
+                    <span className="text-[11px] text-neutral-300">Quick Alternative: Pay directly via UPI QR:</span>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      className="px-3 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-[11px] font-mono cursor-pointer transition-colors shadow-sm"
+                    >
+                      Pay via Direct UPI QR →
+                    </button>
+                  </div>
                 </div>
               )}
 

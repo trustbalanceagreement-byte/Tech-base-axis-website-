@@ -512,6 +512,11 @@ app.post("/api/verify-payment", async (req, res) => {
   }
 });
 
+// Ensure any unhandled API request returns JSON rather than HTML
+app.all("/api/*", (_req, res) => {
+  res.status(404).json({ error: "API endpoint not found" });
+});
+
 // Serve compiled static assets from dist
 const distPath = path.join(process.cwd(), "dist");
 app.use(express.static(distPath));
