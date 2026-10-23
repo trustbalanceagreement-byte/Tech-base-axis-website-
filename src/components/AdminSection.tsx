@@ -53,7 +53,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
-import { savePackages } from '../data/pricingData';
+import { savePackages, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 
 interface AdminSectionProps {
   inquiries: ClientInquiry[];
@@ -364,7 +364,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     theme: 'blue' as 'green' | 'blue' | 'amber' | 'red',
     price: 99,
     period: '/month',
-    cycle: 'monthly' as 'monthly' | 'milestone',
+    cycle: 'monthly' as 'monthly' | 'maintenance',
     popular: false,
     description: '',
     turnaround: 'Instant Setup',
@@ -587,8 +587,8 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   const handleSavePackage = (pkg: ServicePackage) => {
     const toSave = getPackageData(pkg);
     onUpdatePackage(toSave);
-    setSavedFeedbackId(pkg.id);
-    triggerToast(`Package "${toSave.name}" price set to ₹${toSave.price.toLocaleString('en-IN')}${toSave.period || ''}! Synced live to all visitor phones & devices.`);
+    const categoryLabel = isSubscriptionPackage(toSave) ? 'Subscription' : 'Maintenance';
+    triggerToast(`Package "${toSave.name}" saved to ${categoryLabel} at ₹${toSave.price.toLocaleString('en-IN')}${toSave.period || ''}! Synced live to all visitor phones.`);
     setTimeout(() => {
       setSavedFeedbackId((curr) => (curr === pkg.id ? null : curr));
     }, 2500);
@@ -656,17 +656,18 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       .filter(Boolean)
       .map(text => ({ text, included: true }));
 
+    const isMaint = newPkgForm.cycle === 'maintenance';
     const newPackage: ServicePackage = {
-      id: `pkg-custom-${Date.now().toString().slice(-5)}`,
+      id: isMaint ? `pkg-maint-${Date.now().toString().slice(-6)}` : `pkg-sub-${Date.now().toString().slice(-6)}`,
       name: newPkgForm.name.trim(),
-      badge: newPkgForm.badge.trim() || 'Special',
+      badge: newPkgForm.badge.trim() || (isMaint ? 'Maintenance' : 'Subscription'),
       theme: newPkgForm.theme,
       price: Number(newPkgForm.price) || 0,
-      period: newPkgForm.period || (newPkgForm.cycle === 'monthly' ? '/month' : '/project'),
-      cycle: newPkgForm.cycle,
+      period: newPkgForm.period?.trim() || '/month',
+      cycle: isMaint ? 'maintenance' : 'monthly',
       popular: newPkgForm.popular,
-      description: newPkgForm.description.trim() || 'Custom architecture and engineering scope.',
-      turnaround: newPkgForm.turnaround.trim() || 'Flexible Sprint',
+      description: newPkgForm.description.trim() || (isMaint ? 'Ongoing system maintenance, security and updates.' : 'Subscription tier.'),
+      turnaround: newPkgForm.turnaround.trim() || 'Instant Setup',
       idealFor: newPkgForm.idealFor.trim() || 'Businesses seeking tailored velocity',
       features: featuresList,
       deliverables: ['Full Source Code Repository', 'Architecture Walkthrough & Handoff'],
@@ -677,17 +678,17 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       onCreatePackage(newPackage);
     }
     setIsCreateModalOpen(false);
-    triggerToast(`New package "${newPackage.name}" created at ₹${newPackage.price.toLocaleString('en-IN')}! Live on website.`);
+    triggerToast(`New package "${newPackage.name}" created at ₹${newPackage.price.toLocaleString('en-IN')}! Added strictly to ${isMaint ? 'Maintenance' : 'Subscription'}.`);
   };
 
-  // Filtered packages
+  // Filtered packages strictly separated (zero overlap)
   const filteredPackages = packages.filter((pkg) => {
     if (packageFilter === 'all') return true;
     if (packageFilter === 'monthly') {
-      return pkg.cycle === 'monthly' || pkg.period?.includes('month') || pkg.id.includes('monthly');
+      return isSubscriptionPackage(pkg);
     }
     if (packageFilter === 'milestone') {
-      return pkg.cycle === 'milestone' || (!pkg.period?.includes('month') && !pkg.id.includes('monthly'));
+      return isMaintenancePackage(pkg);
     }
     return true;
   });
@@ -1132,7 +1133,23 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={() => setIsCreateModalOpen(true)}
+                  onClick={() => {
+                    const defaultCycle = packageFilter === 'milestone' ? 'maintenance' : 'monthly';
+                    setNewPkgForm({
+                      name: '',
+                      badge: defaultCycle === 'maintenance' ? 'Essential Care' : 'Special Tier',
+                      theme: defaultCycle === 'maintenance' ? 'amber' : 'blue',
+                      price: defaultCycle === 'maintenance' ? 1499 : 99,
+                      period: '/month',
+                      cycle: defaultCycle,
+                      popular: false,
+                      description: defaultCycle === 'maintenance' ? 'Ongoing system maintenance and priority updates.' : 'Scalable modern full-stack development subscription.',
+                      turnaround: 'Instant Setup',
+                      idealFor: 'Startups & modern companies',
+                      featuresText: 'Unlimited projects\nCustom dashboard\nDedicated support'
+                    });
+                    setIsCreateModalOpen(true);
+                  }}
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-mono font-semibold flex items-center gap-1.5 shadow-md shadow-blue-600/20 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
@@ -1143,11 +1160,19 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
             {/* Quick Stats Grid - Side by Side (Pashapashi) */}
             <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 border-t border-neutral-800/80">
-              <div className="p-2 sm:p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div 
+                onClick={() => setPackageFilter(packageFilter === 'monthly' ? 'all' : 'monthly')}
+                className={`p-2 sm:p-3.5 rounded-xl border transition-all cursor-pointer ${
+                  packageFilter === 'monthly'
+                    ? 'bg-blue-950/40 border-blue-500/70 ring-1 ring-blue-500/40'
+                    : 'bg-neutral-900/60 border-neutral-800/80 hover:border-neutral-700'
+                } flex flex-col sm:flex-row sm:items-center justify-between gap-1`}
+                title="Click to view Subscription packages"
+              >
                 <div className="min-w-0">
                   <div className="text-[9px] sm:text-[11px] font-mono text-neutral-400 truncate">Subscription</div>
                   <div className="text-xs sm:text-xl font-bold font-mono text-blue-400 mt-0.5 truncate">
-                    {packages.filter(p => p.cycle === 'monthly' || p.period?.includes('month')).length} Plans
+                    {packages.filter(isSubscriptionPackage).length} Plans
                   </div>
                 </div>
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-950/60 text-blue-400 flex items-center justify-center shrink-0 self-end sm:self-center">
@@ -1155,11 +1180,19 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                 </div>
               </div>
 
-              <div className="p-2 sm:p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <div 
+                onClick={() => setPackageFilter(packageFilter === 'milestone' ? 'all' : 'milestone')}
+                className={`p-2 sm:p-3.5 rounded-xl border transition-all cursor-pointer ${
+                  packageFilter === 'milestone'
+                    ? 'bg-amber-950/40 border-amber-500/70 ring-1 ring-amber-500/40'
+                    : 'bg-neutral-900/60 border-neutral-800/80 hover:border-neutral-700'
+                } flex flex-col sm:flex-row sm:items-center justify-between gap-1`}
+                title="Click to view Maintenance packages"
+              >
                 <div className="min-w-0">
                   <div className="text-[9px] sm:text-[11px] font-mono text-neutral-400 truncate">Maintenance</div>
                   <div className="text-xs sm:text-xl font-bold font-mono text-amber-400 mt-0.5 truncate">
-                    {packages.filter(p => p.cycle === 'milestone' || (!p.period?.includes('month') && !p.id.includes('monthly'))).length} Plans
+                    {packages.filter(isMaintenancePackage).length} Plans
                   </div>
                 </div>
                 <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-amber-950/60 text-amber-400 flex items-center justify-center shrink-0 self-end sm:self-center">
@@ -1172,25 +1205,36 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
             <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-neutral-800/80">
               <button
                 type="button"
-                onClick={() => setPackageFilter(packageFilter === 'monthly' ? 'all' : 'monthly')}
+                onClick={() => setPackageFilter('all')}
                 className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
-                  packageFilter === 'monthly'
-                    ? 'bg-blue-950/70 text-blue-300 border border-blue-500/40 font-semibold'
+                  packageFilter === 'all'
+                    ? 'bg-neutral-800 text-white border border-neutral-600 font-semibold'
                     : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                 }`}
               >
-                ⚡ Subscription
+                All ({packages.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setPackageFilter(packageFilter === 'monthly' ? 'all' : 'monthly')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
+                  packageFilter === 'monthly'
+                    ? 'bg-blue-950/70 text-blue-300 border border-blue-500/40 font-semibold shadow-sm shadow-blue-500/20'
+                    : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
+                }`}
+              >
+                ⚡ Subscription ({packages.filter(isSubscriptionPackage).length})
               </button>
               <button
                 type="button"
                 onClick={() => setPackageFilter(packageFilter === 'milestone' ? 'all' : 'milestone')}
                 className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
                   packageFilter === 'milestone'
-                    ? 'bg-amber-950/70 text-amber-300 border border-amber-500/40 font-semibold'
+                    ? 'bg-amber-950/70 text-amber-300 border border-amber-500/40 font-semibold shadow-sm shadow-amber-500/20'
                     : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
                 }`}
               >
-                🛠️ Maintenance
+                🛠️ Maintenance ({packages.filter(isMaintenancePackage).length})
               </button>
             </div>
           </div>
@@ -1199,7 +1243,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredPackages.map((pkg) => {
               const current = getPackageData(pkg);
-              const isMonthly = current.cycle === 'monthly' || current.period?.includes('month') || current.id.includes('monthly');
+              const isMonthly = isSubscriptionPackage(current);
               const isSaved = savedFeedbackId === pkg.id;
 
               return (
@@ -1213,9 +1257,17 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                       : 'border-neutral-800 hover:border-neutral-700'
                   }`}
                 >
-                  {/* Top Bar with Popular Toggle & Actions (Badge Removed) */}
+                  {/* Top Bar with Category Badge & Popular Toggle */}
                   <div>
-                    <div className="flex items-center justify-end gap-1.5 mb-3">
+                    <div className="flex items-center justify-between gap-1.5 mb-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex items-center gap-1 ${
+                        isMonthly 
+                          ? 'bg-blue-950/80 text-blue-300 border border-blue-500/40' 
+                          : 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+                      }`}>
+                        {isMonthly ? '⚡ Subscription' : '🛠️ Maintenance'}
+                      </span>
+
                       {/* Popular Toggle */}
                       <button
                         type="button"
@@ -1243,6 +1295,37 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                         onChange={(e) => handleFieldChange(pkg.id, 'name', e.target.value)}
                         className="w-full px-3 py-1.5 bg-neutral-900/90 border border-neutral-800 focus:border-[#e61e2b] rounded-lg text-sm font-bold text-white focus:outline-none"
                       />
+                    </div>
+
+                    {/* Category Selector on Card */}
+                    <div className="mb-3">
+                      <label className="block text-[10px] font-mono uppercase text-neutral-400 mb-1">
+                        Target Section / Category
+                      </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(pkg.id, 'cycle', 'monthly')}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-mono flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                            isMonthly
+                              ? 'bg-blue-950/70 border-blue-500/70 text-blue-300 font-bold shadow-sm shadow-blue-500/20'
+                              : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <span>⚡ Subscription</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange(pkg.id, 'cycle', 'maintenance')}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-mono flex items-center justify-center gap-1 border transition-all cursor-pointer ${
+                            !isMonthly
+                              ? 'bg-amber-950/70 border-amber-500/70 text-amber-300 font-bold shadow-sm shadow-amber-500/20'
+                              : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
+                          }`}
+                        >
+                          <span>🛠️ Maintenance</span>
+                        </button>
+                      </div>
                     </div>
 
                     {/* Badge / Subtitle */}
@@ -1811,17 +1894,18 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                   <select
                     value={newPkgForm.cycle}
                     onChange={(e) => {
-                      const cycle = e.target.value as 'monthly' | 'milestone';
+                      const cycle = e.target.value as 'monthly' | 'maintenance';
                       setNewPkgForm({
                         ...newPkgForm,
                         cycle,
-                        period: cycle === 'monthly' ? '/month' : '/project'
+                        badge: cycle === 'maintenance' ? 'Essential Care' : 'Special Tier',
+                        period: '/month'
                       });
                     }}
                     className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                   >
                     <option value="monthly">Subscription</option>
-                    <option value="milestone">Maintenance</option>
+                    <option value="maintenance">Maintenance</option>
                   </select>
                 </div>
 

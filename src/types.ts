@@ -50,7 +50,7 @@ export interface ServicePackage {
   badge: string;
   price: number;
   period?: string;
-  cycle?: 'monthly' | 'milestone' | 'maintenance';
+  cycle?: 'monthly' | 'milestone' | 'maintenance' | 'subscription';
   theme?: 'green' | 'blue' | 'amber' | 'red';
   description: string;
   turnaround?: string;

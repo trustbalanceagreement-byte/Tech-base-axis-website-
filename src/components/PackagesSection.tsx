@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ServicePackage, NavSection, ClientInquiry } from '../types';
-import { INITIAL_PACKAGES } from '../data/pricingData';
+import { INITIAL_PACKAGES, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 import { PackageCardSkeleton } from './ui/Skeleton';
 import { 
   Check, 
@@ -43,12 +43,12 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
   // Available packages dynamically loaded from Admin panel or initial defaults
   const allPackages = packages && packages.length > 0 ? packages : INITIAL_PACKAGES;
 
-  // Filter plans based on the active billing cycle
+  // Filter plans based on the active billing cycle strictly (zero overlap)
   const currentCategoryPackages = allPackages.filter((pkg) => {
     if (billingCycle === 'monthly') {
-      return pkg.cycle === 'monthly' || pkg.period?.includes('month') || pkg.id.includes('monthly');
+      return isSubscriptionPackage(pkg);
     }
-    return pkg.cycle === 'milestone' || pkg.cycle === 'maintenance' || (!pkg.period?.includes('month') && !pkg.id.includes('monthly'));
+    return isMaintenancePackage(pkg);
   });
 
   const displayPlans = currentCategoryPackages.map((pkg, idx) => {
@@ -72,7 +72,7 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
       name: pkg.name,
       theme,
       price: pkg.price,
-      period: pkg.period || (pkg.cycle === 'monthly' ? '/month' : '/project'),
+      period: pkg.period || (isSubscriptionPackage(pkg) ? '/month' : '/project'),
       popular: Boolean(pkg.popular),
       description: pkg.description,
       features: normalizedFeatures,
@@ -81,9 +81,7 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
   });
 
   // Project plans for the matrix table header
-  const milestonePlans = allPackages.filter((p) => 
-    p.cycle === 'milestone' || (!p.period?.includes('month') && !p.id.includes('monthly'))
-  );
+  const milestonePlans = allPackages.filter(isMaintenancePackage);
 
   const faqs = [
     {
@@ -157,7 +155,7 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              Subscription Plans ({allPackages.filter(p => p.cycle === 'monthly' || p.period?.includes('month') || p.id.includes('monthly')).length})
+              Subscription Plans ({allPackages.filter(isSubscriptionPackage).length})
             </button>
             <button
               id="packages-filter-milestone"
@@ -168,7 +166,7 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
                   : 'text-neutral-400 hover:text-white'
               }`}
             >
-              Maintenance ({allPackages.filter(p => p.cycle === 'milestone' || p.cycle === 'maintenance' || (!p.period?.includes('month') && !p.id.includes('monthly'))).length})
+              Maintenance ({allPackages.filter(isMaintenancePackage).length})
             </button>
           </div>
         </div>

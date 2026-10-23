@@ -185,6 +185,61 @@ import { supabaseAdmin, SUPABASE_STORAGE_BUCKET } from '../lib/supabaseClient';
 
 export const SUPABASE_PACKAGES_URL = 'https://httjpsskqtgjtmjgrjgs.supabase.co/storage/v1/object/public/Tech%20Base%20Axis%20Storege/packages/packages.json';
 
+export type PackageCategory = 'subscription' | 'maintenance';
+
+/**
+ * Strict, mutually exclusive classification of packages into either:
+ * - 'subscription'
+ * - 'maintenance'
+ * Guaranteed: A package will NEVER be classified into both categories.
+ */
+export function getPackageCategory(pkg: ServicePackage): PackageCategory {
+  if (!pkg) return 'subscription';
+  
+  // 1. Explicit cycle flag takes highest priority
+  if (pkg.cycle === 'maintenance' || pkg.cycle === 'milestone') {
+    return 'maintenance';
+  }
+  if (pkg.cycle === 'monthly' || pkg.cycle === 'subscription') {
+    return 'subscription';
+  }
+
+  // 2. ID prefix classification
+  const idLower = (pkg.id || '').toLowerCase();
+  if (idLower.startsWith('maint') || idLower.includes('maintenance')) {
+    return 'maintenance';
+  }
+  if (idLower.startsWith('monthly') || idLower.startsWith('sub') || idLower.includes('subscription')) {
+    return 'subscription';
+  }
+
+  // 3. Name keywords
+  const nameLower = (pkg.name || '').toLowerCase();
+  if (nameLower.includes('maintenance') || nameLower.includes('support') || nameLower.includes('bug')) {
+    return 'maintenance';
+  }
+  if (nameLower.includes('subscription') || nameLower.includes('monthly')) {
+    return 'subscription';
+  }
+
+  // 4. Period keywords (milestone/project vs monthly)
+  const periodLower = (pkg.period || '').toLowerCase();
+  if (periodLower.includes('project') || periodLower.includes('milestone') || periodLower.includes('one-time')) {
+    return 'maintenance';
+  }
+
+  // Default fallback is subscription
+  return 'subscription';
+}
+
+export function isSubscriptionPackage(pkg: ServicePackage): boolean {
+  return getPackageCategory(pkg) === 'subscription';
+}
+
+export function isMaintenancePackage(pkg: ServicePackage): boolean {
+  return getPackageCategory(pkg) === 'maintenance';
+}
+
 /**
  * Loads saved packages from localStorage if available, or returns INITIAL_PACKAGES.
  */
@@ -215,7 +270,7 @@ export function sanitizePackageForFirestore(pkg: ServicePackage): Record<string,
     theme: pkg.theme || 'green',
     price: typeof pkg.price === 'number' ? pkg.price : 0,
     period: pkg.period || '/month',
-    cycle: pkg.cycle || 'monthly',
+    cycle: pkg.cycle || (getPackageCategory(pkg) === 'maintenance' ? 'maintenance' : 'monthly'),
     description: pkg.description || '',
     turnaround: pkg.turnaround || 'Instant Setup',
     idealFor: pkg.idealFor || '',
