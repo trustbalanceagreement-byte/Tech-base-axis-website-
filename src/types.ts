@@ -1,4 +1,4 @@
-export type NavSection = 'home' | 'projects' | 'packages' | 'contact' | 'admin';
+export type NavSection = 'home' | 'projects' | 'packages' | 'contact' | 'admin' | 'privacy' | 'terms';
 
 export type MediaSourceType = 
   | 'uploaded_video'

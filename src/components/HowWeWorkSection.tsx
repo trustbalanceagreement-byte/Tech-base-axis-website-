@@ -9,7 +9,8 @@ import {
   Brain, 
   Layers, 
   ArrowUpRight, 
-  Workflow 
+  Workflow,
+  CheckCircle2
 } from 'lucide-react';
 
 // Register GSAP ScrollTrigger plugin
@@ -38,80 +39,111 @@ interface ServiceStage {
   icon: React.ElementType;
   tagline: string;
   metrics: string;
+  features: string[];
 }
 
 const SERVICES_DATA: ServiceStage[] = [
   {
     id: 'automation',
     stepNumber: '01 / 06',
-    category: 'AUTOMATION',
+    category: 'AUTOMATION & WORKFLOWS',
     title: 'Automation Solutions',
-    description: 'We create smart automation systems that reduce repetitive tasks, improve workflow efficiency, and help businesses save time.',
+    description: 'We design and engineer autonomous business workflows that connect your apps, eliminate manual data entry, and execute business logic without human intervention.',
     image: imgAutomation,
     altText: 'Tech Base Axis automation development team engineering robust continuous integration and workflow systems in Kolkata',
     icon: Workflow,
     tagline: 'Streamlined Pipelines & Workflows',
-    metrics: 'Up to 80% time saved on repetitive workflows'
+    metrics: 'Save up to 80% manual operating time',
+    features: [
+      'Automated multi-system data pipelines & webhooks',
+      'Custom CRM, ERP, and payment gateway sync',
+      'Fault-tolerant background task runners & alerts'
+    ]
   },
   {
     id: 'custom-app',
     stepNumber: '02 / 06',
-    category: 'CUSTOM APP DEVELOPMENT',
+    category: 'MOBILE & WEB APPS',
     title: 'Custom App Development',
-    description: 'We design and develop custom applications tailored to specific business requirements, user needs and workflows.',
+    description: 'From dynamic mobile apps to progressive web solutions, we build tailored software designed specifically for your unique operations, customer touchpoints, and business scale.',
     image: imgCustomApp,
     altText: 'Tech Base Axis custom app development engineering tailored cross-platform mobile and web applications',
     icon: Smartphone,
     tagline: 'Native & Cross-Platform Precision',
-    metrics: 'Tailored UX for iOS, Android & Hybrid apps'
+    metrics: '60 FPS fluid native interfaces for iOS & Android',
+    features: [
+      'Cross-platform React Native & Flutter architecture',
+      'High-responsiveness offline-first local caching',
+      'Seamless push notifications & biometric auth'
+    ]
   },
   {
     id: 'software-dev',
     stepNumber: '03 / 06',
-    category: 'SOFTWARE DEVELOPMENT',
+    category: 'ENTERPRISE SYSTEMS',
     title: 'Software Development',
-    description: 'We build scalable and reliable software solutions designed around real-world business requirements and long-term growth.',
+    description: 'We engineer rock-solid backend systems, APIs, and enterprise web platforms engineered for zero downtime, heavy database throughput, and effortless long-term maintainability.',
     image: imgSoftwareDev,
     altText: 'Bikram Ghosh, lead web developer at Tech Base Axis, architecting scalable enterprise software solutions',
     icon: Code2,
-    tagline: 'Fault-Tolerant Enterprise Systems',
-    metrics: '99.99% uptime architecture & modular backends'
+    tagline: 'Scalable, High-Concurrency Architectures',
+    metrics: '99.99% uptime with microservice reliability',
+    features: [
+      'Modular REST & GraphQL API infrastructure',
+      'PostgreSQL, Redis & Cloud SQL clustering',
+      'Automated CI/CD deployment & end-to-end testing'
+    ]
   },
   {
     id: 'web-dev',
     stepNumber: '04 / 06',
-    category: 'WEB DEVELOPMENT',
+    category: 'FULL-STACK WEB',
     title: 'Web Development',
-    description: 'We create modern, responsive and high-performance websites that work seamlessly across desktop, tablet and mobile devices.',
+    description: 'Modern, responsive, and performance-tuned web applications built with Next.js and React that load in under 1 second, rank on Google, and convert visitors into paying clients.',
     image: imgWebDev,
     altText: 'Tech Base Axis web development company Kolkata building responsive, high-performance web applications',
     icon: Globe,
-    tagline: 'Responsive & Sub-Second Speeds',
-    metrics: '100% responsive, SEO & Core Web Vitals optimized'
+    tagline: 'Ultra-Fast, High-Converting Web Platforms',
+    metrics: 'Sub-second speeds & 95+ Core Web Vitals',
+    features: [
+      'Next.js SSR & edge CDN delivery',
+      'Fully responsive layout across all device viewports',
+      'Enterprise SEO, OpenGraph & Schema.org rich cards'
+    ]
   },
   {
     id: 'ai-systems',
     stepNumber: '05 / 06',
-    category: 'AI & INTELLIGENT SYSTEMS',
+    category: 'AI & MACHINE LEARNING',
     title: 'AI & Intelligent Systems',
-    description: 'We integrate modern AI technologies to create smarter digital experiences, automation systems and intelligent business solutions.',
+    description: 'We integrate advanced generative AI, retrieval-augmented generation (RAG), and autonomous agents into your existing systems to automate analysis and deliver smarter outcomes.',
     image: imgAiSystems,
     altText: 'Tech Base Axis AI and intelligent systems development engineering RAG pipelines and vector intelligence',
     icon: Brain,
-    tagline: 'LLMs, Reasoning & Vector Search',
-    metrics: 'Real-time inference, RAG & agentic pipelines'
+    tagline: 'Smart Reasoning, Agents & Neural Workflows',
+    metrics: 'Sub-second inference & vector database retrieval',
+    features: [
+      'Custom LLM agent pipelines & tool calling',
+      'Retrieval-Augmented Generation (RAG) over company data',
+      'Automated document processing & visual recognition'
+    ]
   },
   {
     id: 'digital-solutions',
     stepNumber: '06 / 06',
     category: 'BUSINESS DIGITAL SOLUTIONS',
     title: 'Complete Digital Solutions',
-    description: 'From concept to development and deployment, we create complete digital solutions designed to solve business problems and improve digital experiences.',
+    description: 'A complete full-lifecycle technology partnership: we handle discovery, UI/UX architecture, custom engineering, payment integrations, domain management, and cloud maintenance.',
     image: imgDigitalSol,
     altText: 'Complete bespoke digital business solutions delivered by Bikram Ghosh and Tech Base Axis in Kolkata',
     icon: Layers,
-    tagline: 'End-to-End Execution & Growth',
-    metrics: 'Full lifecycle strategy, development & cloud launch'
+    tagline: 'From Product Concept to Cloud Deployment',
+    metrics: 'Full-stack delivery with guaranteed SLA support',
+    features: [
+      'Turnkey concept-to-deployment execution',
+      'Secure payment gateway & custom domain setup',
+      'Continuous 24/7 monitoring, security & feature updates'
+    ]
   }
 ];
 
@@ -404,172 +436,113 @@ export const HowWeWorkSection: React.FC<HowWeWorkSectionProps> = ({ onNavigate }
               </div>
             </div>
 
-            {/* TWO-COLUMN SHOWCASE: DESKTOP TABS (LEFT) & GSAP PINNED IMAGE SHOWCASE (RIGHT) */}
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-8 items-center">
+            {/* TWO-COLUMN SHOWCASE: DYNAMIC HEADLINE & DETAILS (LEFT) & GSAP PINNED IMAGE SHOWCASE (RIGHT) */}
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-stretch">
               
-              {/* LEFT COLUMN: Service Navigation & Synchronized Stage Details */}
-              <div className="hidden sm:flex lg:col-span-5 flex-col justify-between space-y-2.5 sm:space-y-3.5 order-2 lg:order-1">
-                
-                {/* Desktop Step Selector List (01 to 06) */}
-                <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
-                  {SERVICES_DATA.map((service, idx) => {
-                    const isActive = idx === activeStep;
-                    const ItemIcon = service.icon;
+              {/* LEFT COLUMN: Dynamic Headline & Full Details Showcase (Synchronized with active photo via GSAP) */}
+              <div className="w-full lg:col-span-5 order-2 lg:order-1 flex flex-col">
+                <div className="relative w-full h-[460px] xs:h-[490px] sm:h-[520px] lg:h-[580px] rounded-2xl border border-neutral-800/90 bg-[#0a0a0d] backdrop-blur-xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] flex flex-col justify-between">
+                  {/* Subtle ambient corner glow */}
+                  <div className="absolute -top-16 -right-16 w-48 h-48 bg-red-600/10 rounded-full blur-2xl pointer-events-none" />
+                  <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-red-950/20 rounded-full blur-2xl pointer-events-none" />
 
-                    return (
-                      <button
-                        key={service.id}
-                        type="button"
-                        onClick={() => handleStepClick(idx)}
-                        className={`text-left w-full p-2 sm:p-2.5 rounded-xl transition-all duration-200 flex items-center justify-between border cursor-pointer ${
-                          isActive
-                            ? 'bg-neutral-900/95 border-red-600/70 shadow-[0_0_20px_rgba(230,30,43,0.18)] translate-x-1.5'
-                            : 'bg-neutral-950/40 border-neutral-800/60 hover:border-neutral-700 hover:bg-neutral-900/40 opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-mono font-bold transition-colors ${
-                            isActive 
-                              ? 'bg-[#e61e2b] text-white shadow-[0_0_10px_rgba(230,30,43,0.6)]' 
-                              : 'bg-neutral-900 text-neutral-400 border border-neutral-800'
-                          }`}>
-                            0{idx + 1}
-                          </div>
-                          
-                          <div className="truncate">
-                            <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400 flex items-center gap-1.5">
-                              <span>{service.category}</span>
-                            </div>
-                            <div className={`text-xs sm:text-sm font-bold truncate ${
-                              isActive ? 'text-white' : 'text-neutral-300'
-                            }`}>
+                  {/* 6 Synchronized Panels Layered on top of each other, controlled by GSAP detailRefs */}
+                  <div className="relative flex-1 w-full h-full overflow-hidden">
+                    {SERVICES_DATA.map((service, idx) => {
+                      const ServiceIcon = service.icon;
+                      return (
+                        <div
+                          key={service.id}
+                          ref={(el) => { detailRefs.current[idx] = el; }}
+                          className="absolute inset-0 p-4 xs:p-5 sm:p-6 lg:p-7 flex flex-col justify-between overflow-y-auto"
+                          style={{
+                            visibility: idx === 0 ? 'visible' : 'hidden',
+                            opacity: idx === 0 ? 1 : 0,
+                            zIndex: idx === 0 ? 10 : 1,
+                          }}
+                        >
+                          {/* Content Area */}
+                          <div className="space-y-3 sm:space-y-4">
+                            {/* PROMINENT HEADLINE (matches active photo, e.g. "Complete Digital Solutions") */}
+                            <h3 className="font-display text-2xl xs:text-3xl sm:text-4xl lg:text-5xl font-black text-white tracking-tight uppercase leading-tight pt-1">
                               {service.title}
+                            </h3>
+
+                            {/* Tagline */}
+                            <div className="text-xs sm:text-sm font-mono text-[#e61e2b] font-semibold flex items-center gap-2">
+                              <ServiceIcon className="w-4 h-4" />
+                              <span>{service.tagline}</span>
+                            </div>
+
+                            {/* Rich Description */}
+                            <p className="text-xs sm:text-sm lg:text-base text-neutral-300 leading-relaxed font-sans pt-1">
+                              {service.description}
+                            </p>
+
+                            {/* Key Deliverable Highlights */}
+                            <div className="pt-2 space-y-2">
+                              {service.features.map((feat, fIdx) => (
+                                <div key={fIdx} className="flex items-start gap-2.5 text-xs sm:text-sm text-neutral-300">
+                                  <CheckCircle2 className="w-4 h-4 text-[#e61e2b] shrink-0 mt-0.5" />
+                                  <span className="leading-snug">{feat}</span>
+                                </div>
+                              ))}
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          {isActive && (
-                            <span className="text-[9px] font-mono text-[#e61e2b] bg-red-950/40 border border-red-900/50 px-2 py-0.5 rounded-full animate-pulse">
-                              ACTIVE
-                            </span>
-                          )}
-                          <ItemIcon className={`w-4 h-4 transition-colors ${
-                            isActive ? 'text-[#e61e2b]' : 'text-neutral-500'
-                          }`} />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Synchronized Stage Detail Box (Stack of 6 DOM panels transitioned directly by GSAP) */}
-                <div className="relative p-3 sm:p-3.5 rounded-xl bg-neutral-900/60 border border-neutral-800/80 h-[108px] overflow-hidden">
-                  {SERVICES_DATA.map((service, idx) => {
-                    const ServiceIcon = service.icon;
-                    return (
-                      <div
-                        key={service.id}
-                        ref={(el) => { detailRefs.current[idx] = el; }}
-                        className="absolute inset-0 p-3 sm:p-3.5 flex flex-col justify-between"
-                        style={{
-                          visibility: idx === 0 ? 'visible' : 'hidden',
-                          opacity: idx === 0 ? 1 : 0,
-                        }}
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-2 text-xs font-mono text-neutral-400 mb-1">
-                            <span className="text-[#e61e2b] font-semibold flex items-center gap-1.5">
-                              <ServiceIcon className="w-3.5 h-3.5" />
-                              {service.tagline}
-                            </span>
-                            <span className="text-neutral-500">STAGE {service.stepNumber}</span>
-                          </div>
-                          <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed font-sans line-clamp-2">
-                            {service.description}
-                          </p>
-                        </div>
-
-                        {/* CTA & Metrics */}
-                        <div className="pt-2 border-t border-neutral-800/60 flex items-center justify-between">
-                          <span className="text-[11px] font-mono text-neutral-400 truncate max-w-[240px]">
-                            {service.metrics}
-                          </span>
+                          {/* Bottom Card Area: Clean CTA Button */}
                           {onNavigate && (
-                            <button
-                              type="button"
-                              onClick={() => onNavigate('contact')}
-                              className="inline-flex items-center gap-1 text-xs font-mono text-[#e61e2b] hover:text-red-400 font-bold tracking-wider transition-colors cursor-pointer shrink-0"
-                            >
-                              <span>EXPLORE SERVICE</span>
-                              <ArrowUpRight className="w-3.5 h-3.5" />
-                            </button>
+                            <div className="pt-4 border-t border-neutral-800/80 mt-auto">
+                              <button
+                                type="button"
+                                onClick={() => onNavigate('contact')}
+                                className="w-full py-3 px-5 rounded-xl bg-gradient-to-r from-[#e61e2b] to-red-700 hover:from-red-600 hover:to-red-800 text-white font-bold text-xs sm:text-sm font-mono tracking-wider uppercase transition-all shadow-[0_0_15px_rgba(230,30,43,0.3)] hover:shadow-[0_0_25px_rgba(230,30,43,0.5)] flex items-center justify-center gap-2 cursor-pointer"
+                              >
+                                <span>Inquire About {service.title}</span>
+                                <ArrowUpRight className="w-4 h-4" />
+                              </button>
+                            </div>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-
               </div>
 
               {/* RIGHT COLUMN: PINNED CINEMATIC IMAGE CONTAINER (CYCLED BY GSAP TIMELINE) */}
-              <div className="w-full lg:col-span-7 order-1 lg:order-2">
+              <div className="w-full lg:col-span-7 order-1 lg:order-2 flex flex-col">
                 <div 
-                  className="relative w-full h-[500px] xs:h-[540px] sm:h-[580px] md:h-[620px] lg:h-[650px] rounded-2xl border border-neutral-800/90 bg-neutral-950 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.95)] select-none"
+                  className="relative w-full h-[460px] xs:h-[490px] sm:h-[520px] lg:h-[580px] rounded-2xl border border-neutral-800/90 bg-neutral-950 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.95)] select-none"
                   onTouchStart={handleCardTouchStart}
                   onTouchEnd={handleCardTouchEnd}
                 >
                   {/* 6 Layered Slides Cycled by GSAP Timeline */}
                   {SERVICES_DATA.map((service, index) => {
-                    const ServiceIcon = service.icon;
                     return (
                       <div
                         key={service.id}
                         ref={(el) => { slideRefs.current[index] = el; }}
-                        className="absolute inset-0 w-full h-full flex flex-col justify-between p-3 sm:p-5 overflow-hidden rounded-2xl select-none"
+                        className="absolute inset-0 w-full h-full overflow-hidden rounded-2xl select-none"
                         style={{
                           opacity: index === 0 ? 1 : 0,
                           visibility: index === 0 ? 'visible' : 'hidden',
                           zIndex: index === 0 ? 20 : 1,
                         }}
                       >
-                        {/* Full Image */}
+                        {/* Full Photorealistic Image */}
                         <img
                           src={service.image}
                           alt={service.altText}
                           loading={index === 0 ? 'eager' : 'lazy'}
-                          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-105 brightness-95"
+                          className="absolute inset-0 w-full h-full object-cover object-center filter contrast-105 brightness-100"
                         />
 
                         {/* Top-edge Crimson Glow */}
                         <div className="absolute top-0 inset-x-0 h-[2.5px] bg-gradient-to-r from-transparent via-[#e61e2b] to-transparent shadow-[0_0_16px_#e61e2b] z-30" />
 
-                        {/* Cinematic Gradients for readability */}
-                        <div className="absolute top-0 inset-x-0 h-28 sm:h-36 bg-gradient-to-b from-black/90 via-black/40 to-transparent pointer-events-none z-10" />
-                        <div className="absolute bottom-0 inset-x-0 h-80 sm:h-96 bg-gradient-to-t from-black via-black/85 to-transparent pointer-events-none z-10" />
+                        {/* Subtle edge border */}
                         <div className="absolute inset-0 border border-white/10 rounded-2xl pointer-events-none z-30" />
-
-
-
-                        {/* Bottom Content Panel Overlaid on Photo (Transparent container & transparent gradient text) */}
-                        <div className="relative z-20 p-2 sm:p-4 bg-transparent border-0 shadow-none mb-1 sm:mb-2">
-                          <div className="flex items-center gap-2.5 sm:gap-3 mb-1.5 sm:mb-2">
-                            <div className="p-2 sm:p-2.5 rounded-xl bg-red-950/60 backdrop-blur-md border border-red-500/30 text-[#e61e2b] shrink-0">
-                              <ServiceIcon className="w-5 h-5 sm:w-6 sm:h-6" />
-                            </div>
-                            <div className="min-w-0">
-                              <h3 className="font-display text-lg xs:text-xl sm:text-2xl md:text-3xl font-black leading-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)] bg-gradient-to-r from-white via-white/95 to-white/80 bg-clip-text text-transparent">
-                                {service.title}
-                              </h3>
-                            </div>
-                          </div>
-
-                          {/* Description */}
-                          <p className="text-neutral-200/90 text-xs sm:text-sm md:text-base leading-relaxed font-sans drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] max-w-2xl">
-                            {service.description}
-                          </p>
-                        </div>
                       </div>
                     );
                   })}

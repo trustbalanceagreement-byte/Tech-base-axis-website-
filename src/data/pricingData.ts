@@ -179,6 +179,7 @@ export const INITIAL_PACKAGES: ServicePackage[] = [
 
 export const PACKAGES_STORAGE_KEY = 'tech_base_axis_pricing_packages_v4';
 export const PACKAGES_INITIALIZED_KEY = 'tech_base_axis_packages_initialized';
+export const DELETED_PACKAGES_STORAGE_KEY = 'tech_base_axis_deleted_packages_v1';
 
 import { db, collection, getDocs, setDoc, doc, deleteDoc, onSnapshot } from '../lib/firebase';
 import { supabaseAdmin, SUPABASE_STORAGE_BUCKET } from '../lib/supabaseClient';
@@ -186,6 +187,35 @@ import { supabaseAdmin, SUPABASE_STORAGE_BUCKET } from '../lib/supabaseClient';
 export const SUPABASE_PACKAGES_URL = 'https://httjpsskqtgjtmjgrjgs.supabase.co/storage/v1/object/public/Tech%20Base%20Axis%20Storege/packages/packages.json';
 
 export type PackageCategory = 'subscription' | 'maintenance';
+
+/**
+ * Gets permanently deleted package IDs from persistent storage
+ */
+export function getDeletedPackageIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DELETED_PACKAGES_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (_) {}
+  return [];
+}
+
+/**
+ * Permanently records a deleted package ID to prevent resurrection from cloud cache or initial defaults
+ */
+export function recordDeletedPackageId(id: string): void {
+  if (typeof window === 'undefined' || !id) return;
+  try {
+    const current = getDeletedPackageIds();
+    if (!current.includes(id)) {
+      current.push(id);
+      localStorage.setItem(DELETED_PACKAGES_STORAGE_KEY, JSON.stringify(current));
+    }
+  } catch (_) {}
+}
 
 /**
  * Strict, mutually exclusive classification of packages into either:
@@ -242,21 +272,25 @@ export function isMaintenancePackage(pkg: ServicePackage): boolean {
 
 /**
  * Loads saved packages from localStorage if available, or returns INITIAL_PACKAGES.
+ * Guaranteed to exclude any package permanently deleted by admin.
  */
 export function loadSavedPackages(): ServicePackage[] {
-  if (typeof window === 'undefined') return INITIAL_PACKAGES;
+  const deletedIds = getDeletedPackageIds();
+  if (typeof window === 'undefined') {
+    return INITIAL_PACKAGES.filter((p) => !deletedIds.includes(p.id));
+  }
   try {
     const raw = localStorage.getItem(PACKAGES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+      if (Array.isArray(parsed)) {
+        return parsed.filter((p) => !deletedIds.includes(p.id));
       }
     }
   } catch (err) {
     console.error('Failed to load packages from storage, using defaults:', err);
   }
-  return INITIAL_PACKAGES;
+  return INITIAL_PACKAGES.filter((p) => !deletedIds.includes(p.id));
 }
 
 /**
@@ -295,16 +329,20 @@ export function sanitizePackageForFirestore(pkg: ServicePackage): Record<string,
  * view the identical admin-configured prices without requiring authentication.
  */
 export async function fetchPublicPackages(): Promise<ServicePackage[]> {
+  const deletedIds = getDeletedPackageIds();
+  const filterDeleted = (list: ServicePackage[]) => list.filter(p => !deletedIds.includes(p.id));
+
   // 1. Fetch directly from global Supabase Cloud CDN (public, global, 100% available without auth)
   try {
     const supaRes = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' });
     if (supaRes.ok) {
       const supaPackages = await supaRes.json();
-      if (Array.isArray(supaPackages) && supaPackages.length > 0) {
+      if (Array.isArray(supaPackages)) {
+        const cleaned = filterDeleted(supaPackages);
         try {
-          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(supaPackages));
+          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleaned));
         } catch (_) {}
-        return supaPackages;
+        return cleaned;
       }
     }
   } catch (_) {}
@@ -314,11 +352,12 @@ export async function fetchPublicPackages(): Promise<ServicePackage[]> {
     const res = await fetch('/api/packages');
     if (res.ok) {
       const serverPackages = await res.json();
-      if (Array.isArray(serverPackages) && serverPackages.length > 0) {
+      if (Array.isArray(serverPackages)) {
+        const cleaned = filterDeleted(serverPackages);
         try {
-          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(serverPackages));
+          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleaned));
         } catch (_) {}
-        return serverPackages;
+        return cleaned;
       }
     }
   } catch (_) {}
@@ -329,8 +368,10 @@ export async function fetchPublicPackages(): Promise<ServicePackage[]> {
     if (!querySnapshot.empty) {
       const firestorePackages: ServicePackage[] = [];
       querySnapshot.forEach((d) => {
-        const item = d.data() as ServicePackage;
-        firestorePackages.push({ ...item, id: d.id });
+        if (!deletedIds.includes(d.id)) {
+          const item = d.data() as ServicePackage;
+          firestorePackages.push({ ...item, id: d.id });
+        }
       });
 
       if (firestorePackages.length > 0) {
@@ -350,7 +391,7 @@ export async function fetchPublicPackages(): Promise<ServicePackage[]> {
     return local;
   }
 
-  return INITIAL_PACKAGES;
+  return INITIAL_PACKAGES.filter(p => !deletedIds.includes(p.id));
 }
 
 /**
@@ -362,17 +403,20 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
 
   const safeCallback = (incoming: ServicePackage[]) => {
     if (!isMounted) return;
-    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    if (!Array.isArray(incoming)) return;
 
-    callback(incoming);
+    const deletedIds = getDeletedPackageIds();
+    const cleanPackages = incoming.filter((p) => !deletedIds.includes(p.id));
+
+    callback(cleanPackages);
     try {
-      localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(incoming));
+      localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleanPackages));
     } catch (_) {}
   };
 
   // 1. Initial fast load
   fetchPublicPackages().then((pkgs) => {
-    if (isMounted && Array.isArray(pkgs) && pkgs.length > 0) {
+    if (isMounted && Array.isArray(pkgs)) {
       safeCallback(pkgs);
     }
   }).catch(() => {});
@@ -383,15 +427,16 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
     unsubscribeFirestore = onSnapshot(collection(db, 'packages'), (snapshot) => {
       if (!isMounted) return;
       if (!snapshot.empty) {
+        const deletedIds = getDeletedPackageIds();
         const livePackages: ServicePackage[] = [];
         snapshot.forEach((d) => {
-          const item = d.data() as ServicePackage;
-          livePackages.push({ ...item, id: d.id });
+          if (!deletedIds.includes(d.id)) {
+            const item = d.data() as ServicePackage;
+            livePackages.push({ ...item, id: d.id });
+          }
         });
 
-        if (livePackages.length > 0) {
-          safeCallback(livePackages);
-        }
+        safeCallback(livePackages);
       }
     }, (err) => {
       if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
@@ -407,7 +452,7 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
   // 3. Local reactive event listener for instant 0ms single-tab updates
   const handleLocalUpdate = (e: any) => {
     if (!isMounted) return;
-    if (e.detail && Array.isArray(e.detail) && e.detail.length > 0) {
+    if (e.detail && Array.isArray(e.detail)) {
       safeCallback(e.detail);
     }
   };
@@ -420,7 +465,7 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
       channel = new BroadcastChannel('tba_packages_channel');
       channel.onmessage = (event) => {
         if (!isMounted) return;
-        if (event.data && Array.isArray(event.data) && event.data.length > 0) {
+        if (event.data && Array.isArray(event.data)) {
           safeCallback(event.data);
         }
       };
@@ -433,13 +478,13 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
     fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' })
       .then((r) => (r.ok ? r.json() : null))
       .then((supaData) => {
-        if (isMounted && Array.isArray(supaData) && supaData.length > 0) {
+        if (isMounted && Array.isArray(supaData)) {
           safeCallback(supaData);
         } else if (isMounted) {
           fetch('/api/packages')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (isMounted && Array.isArray(data) && data.length > 0) {
+              if (isMounted && Array.isArray(data)) {
                 safeCallback(data);
               }
             })
@@ -451,7 +496,7 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
           fetch('/api/packages')
             .then((res) => (res.ok ? res.json() : null))
             .then((data) => {
-              if (isMounted && Array.isArray(data) && data.length > 0) {
+              if (isMounted && Array.isArray(data)) {
                 safeCallback(data);
               }
             })
@@ -471,20 +516,25 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
 
 /**
  * Saves packages permanently to localStorage, Server Cloud API, Supabase CDN, and Cloud Firestore.
- * Ensures that changes made by the admin are immediately visible to all visitors on any phone or device.
+ * Ensures that changes and deletions made by the admin are immediately and permanently removed everywhere.
  */
 export async function savePackages(packages: ServicePackage[], deletedId?: string): Promise<void> {
-  if (!Array.isArray(packages) || packages.length === 0) return;
+  if (deletedId) {
+    recordDeletedPackageId(deletedId);
+  }
+
+  const deletedIds = getDeletedPackageIds();
+  const cleanPackages = (Array.isArray(packages) ? packages : []).filter((p) => !deletedIds.includes(p.id));
 
   // 0. IMMEDIATE LOCAL PERSISTENCE (Synchronous, guaranteed 0ms)
   try {
-    localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(packages));
+    localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleanPackages));
     localStorage.setItem(PACKAGES_INITIALIZED_KEY, 'true');
   } catch (_) {}
 
   // 1. DIRECT SUPABASE CLOUD SYNC (Guarantees persistence on custom domains and static hosting)
   try {
-    const jsonBlob = new Blob([JSON.stringify(packages, null, 2)], { type: 'application/json' });
+    const jsonBlob = new Blob([JSON.stringify(cleanPackages, null, 2)], { type: 'application/json' });
     supabaseAdmin.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .upload('packages/packages.json', jsonBlob, {
@@ -503,18 +553,18 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
     await fetch('/api/packages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(packages)
+      body: JSON.stringify(cleanPackages)
     }).catch(() => {});
   } catch (_) {}
 
   // 3. Dispatch instant reactive events across tabs & components
   try {
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tba_packages_updated', { detail: packages }));
+      window.dispatchEvent(new CustomEvent('tba_packages_updated', { detail: cleanPackages }));
     }
     if (typeof BroadcastChannel !== 'undefined') {
       const channel = new BroadcastChannel('tba_packages_channel');
-      channel.postMessage(packages);
+      channel.postMessage(cleanPackages);
       setTimeout(() => channel.close(), 100);
     }
   } catch (_) {}
@@ -526,7 +576,19 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
         await deleteDoc(doc(db, 'packages', deletedId)).catch(() => {});
       }
 
-      for (const pkg of packages) {
+      // Check all existing documents in Firestore 'packages' collection and delete any removed ones
+      const snap = await getDocs(collection(db, 'packages')).catch(() => null);
+      if (snap) {
+        const activeIds = new Set(cleanPackages.map((p) => p.id));
+        const delIds = new Set(deletedIds);
+        snap.forEach(async (d) => {
+          if (delIds.has(d.id) || !activeIds.has(d.id)) {
+            await deleteDoc(doc(db, 'packages', d.id)).catch(() => {});
+          }
+        });
+      }
+
+      for (const pkg of cleanPackages) {
         const sanitized = sanitizePackageForFirestore(pkg);
         await setDoc(doc(db, 'packages', pkg.id), sanitized, { merge: true }).catch(() => {});
       }

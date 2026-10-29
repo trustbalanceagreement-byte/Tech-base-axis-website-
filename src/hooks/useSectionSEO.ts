@@ -144,6 +144,36 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     ogDescription: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
     ogUrl: 'https://www.tbaonline.online',
   },
+
+  /**
+   * PRIVACY POLICY
+   */
+  privacy: {
+    primaryKeyword: 'Tech Base Axis Privacy Policy',
+    secondaryKeywords: ['Data Protection', 'Confidentiality Agreement Kolkata', 'Client Data Security'],
+    searchIntent: 'Informational',
+    semanticRole: 'Legal Transparency Node: Details data processing, encryption, and client rights.',
+    title: 'Privacy Policy | Tech Base Axis & Bikram Ghosh',
+    description: 'Learn how Tech Base Axis protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
+    ogTitle: 'Privacy Policy | Tech Base Axis & Bikram Ghosh',
+    ogDescription: 'Learn how Tech Base Axis protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
+    ogUrl: 'https://www.tbaonline.online',
+  },
+
+  /**
+   * TERMS & CONDITIONS (INCLUDES REFUND POLICY)
+   */
+  terms: {
+    primaryKeyword: 'Tech Base Axis Terms & Conditions',
+    secondaryKeywords: ['Strict No-Refund Policy', 'Software Development Agreement Kolkata', 'Payment Terms'],
+    searchIntent: 'Informational',
+    semanticRole: 'Legal & Policy Node: Details service terms, milestone billing, and our strict no-refund policy.',
+    title: 'Terms & Conditions | Strict No-Refund Policy | Tech Base Axis',
+    description: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
+    ogTitle: 'Terms & Conditions & Strict No-Refund Policy | Tech Base Axis',
+    ogDescription: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
+    ogUrl: 'https://www.tbaonline.online',
+  },
 };
 
 function setOrUpdateMeta(attribute: 'name' | 'property', key: string, content: string) {

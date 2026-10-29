@@ -1569,11 +1569,16 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                       onClick={() => {
                         if (onDeletePackage) {
                           onDeletePackage(pkg.id);
-                          triggerToast(`Package "${current.name}" deleted from website & Packages page.`);
+                          setEditedPackages(prev => {
+                            const next = { ...prev };
+                            delete next[pkg.id];
+                            return next;
+                          });
+                          triggerToast(`Package "${current.name}" permanently deleted from website & Packages page.`);
                         }
                       }}
                       className="p-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-white border border-rose-900/50 hover:border-red-600 transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 shadow-sm shadow-rose-950/50"
-                      title={`Delete "${current.name}" package from website & Packages page`}
+                      title={`Delete "${current.name}" package permanently from website & Packages page`}
                     >
                       <Trash2 className="w-4 h-4 text-rose-400" />
                       <span className="text-xs font-mono font-semibold hidden sm:inline">Delete</span>

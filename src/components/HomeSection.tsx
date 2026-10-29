@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { NavSection, Project, ServicePackage } from '../types';
 import { FOUNDER_INFO, EDUCATION_DATA } from '../data/mockData';
 import founderImage from '../assets/images/bikram-ghosh-founder-web-developer.webp';
+import { useAuth } from '../context/AuthContext';
 import { AboutSection } from './AboutSection';
 import { HowWeWorkSection } from './HowWeWorkSection';
 import { StaggerTestimonials, TestimonialItem, INITIAL_TESTIMONIALS } from './ui/stagger-testimonials';
@@ -48,6 +49,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
   onSelectPackage,
   projects = []
 }) => {
+  const { user } = useAuth();
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>(() => {
     try {
@@ -402,9 +404,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6 sm:pt-8"
       >
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          <div className="text-xs font-mono text-[#e61e2b] uppercase tracking-widest mb-2">
-            FOUNDER & CLIENT ENDORSEMENTS
-          </div>
           <h2 className="font-display text-4xl sm:text-5xl md:text-6xl text-white font-black tracking-tight uppercase">
             Client Reviews
           </h2>
@@ -412,17 +411,20 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
             Verified feedback from CTOs, technical founders, and enterprise engineering partners.
           </p>
 
-          {/* "Review Us" Button right where indicated by user's arrow */}
-          <div className="mt-5 flex justify-center">
-            <button
-              type="button"
-              onClick={() => setIsReviewModalOpen(true)}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#e61e2b] hover:bg-[#c81924] text-white font-semibold text-xs sm:text-sm font-mono tracking-wide shadow-[0_0_20px_rgba(230,30,43,0.4)] hover:shadow-[0_0_30px_rgba(230,30,43,0.65)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-            >
-              <Star className="w-4 h-4 fill-white text-white" />
-              <span>Review Us</span>
-            </button>
-          </div>
+          {/* "Review Us" Button - Only visible when client is logged in with their account */}
+          {user && (
+            <div className="mt-5 flex justify-center">
+              <button
+                type="button"
+                id="review-us-btn"
+                onClick={() => setIsReviewModalOpen(true)}
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#e61e2b] hover:bg-[#c81924] text-white font-semibold text-xs sm:text-sm font-mono tracking-wide shadow-[0_0_20px_rgba(230,30,43,0.4)] hover:shadow-[0_0_30px_rgba(230,30,43,0.65)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              >
+                <Star className="w-4 h-4 fill-white text-white" />
+                <span>Review Us</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <StaggerTestimonials testimonials={testimonialsList} />

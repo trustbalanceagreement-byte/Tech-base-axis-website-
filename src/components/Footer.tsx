@@ -107,11 +107,62 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Sub-Footer */}
-        <div className="pt-4 flex flex-col sm:flex-row items-center justify-center text-center text-xs font-mono text-neutral-500">
+        {/* Sub-Footer with Legal Links */}
+        <div className="pt-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left text-xs font-mono text-neutral-500">
           <div>
             © {currentYear} Tech Base Axis • Designed & Engineered by Bikram Ghosh. All Rights Reserved.
           </div>
+
+          {onNavigate && (
+            <div className="flex items-center gap-3 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate('privacy');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{
+                  height: '30px'
+                }}
+                className="h-[30px] hover:text-white transition-colors cursor-pointer inline-flex items-center"
+              >
+                Privacy Policy
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate('terms');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{
+                  height: '30px',
+                  width: '113.521px'
+                }}
+                className="h-[30px] w-[113.521px] hover:text-white transition-colors cursor-pointer inline-flex items-center justify-center"
+              >
+                Terms & Conditions
+              </button>
+              <span>•</span>
+              <button
+                type="button"
+                onClick={() => {
+                  onNavigate('terms');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{
+                  width: '72.7708px',
+                  height: '30px',
+                  color: '#737373',
+                  lineHeight: '16px',
+                  fontFamily: 'system-ui'
+                }}
+                className="h-[30px] w-[72.7708px] text-[#737373] hover:text-white font-sans text-xs leading-[16px] transition-colors cursor-pointer inline-flex items-center justify-center"
+              >
+                Refund Policy
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </footer>

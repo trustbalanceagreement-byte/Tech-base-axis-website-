@@ -143,6 +143,9 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({
           style={{
             boxShadow: "3px 3px 0px rgba(0,0,0,0.6)"
           }}
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(testimonial.by.split(',')[0] || 'Client')}&background=e61e2b&color=ffffff&bold=true`;
+          }}
         />
 
         {/* 5-star rating */}
@@ -226,6 +229,19 @@ export const StaggerTestimonials: React.FC<StaggerTestimonialsProps> = ({
     setTestimonialsList(newList);
   };
 
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Automatic shuffle: automatically rotate cards every 3.5 seconds
+  useEffect(() => {
+    if (isPaused || testimonialsList.length <= 1) return;
+
+    const autoTimer = setInterval(() => {
+      handleMove(1);
+    }, 3500);
+
+    return () => clearInterval(autoTimer);
+  }, [isPaused, testimonialsList]);
+
   useEffect(() => {
     const updateSize = () => {
       const { matches } = window.matchMedia("(min-width: 640px)");
@@ -239,6 +255,10 @@ export const StaggerTestimonials: React.FC<StaggerTestimonialsProps> = ({
 
   return (
     <div
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={() => setIsPaused(true)}
+      onTouchEnd={() => setIsPaused(false)}
       className="relative w-full overflow-hidden bg-[#0a0a0c]/60 rounded-2xl border border-neutral-800/80"
       style={{ height: 580 }}
     >

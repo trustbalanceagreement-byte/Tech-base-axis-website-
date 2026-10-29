@@ -15,7 +15,11 @@ import {
   MessageCircle,
   Calendar,
   Calculator,
-  Phone
+  Phone,
+  Lock,
+  FileText,
+  RotateCcw,
+  ArrowUpRight
 } from 'lucide-react';
 import { OfficialGmailIcon, OfficialWhatsAppIcon, OfficialInstagramIcon } from './ui/SocialIcons';
 
@@ -294,8 +298,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Project Brief Form */}
-        <div className="lg:col-span-7">
+        {/* Right Column: Direct Client Portal & Client Protections */}
+        <div className="lg:col-span-7 space-y-6">
           <div className="obsidian-card p-6 sm:p-8 rounded-2xl border border-neutral-800 relative">
             {submitted ? (
               <div className="text-center py-12 space-y-6">
@@ -653,6 +657,100 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </button>
               </form>
             )}
+          </div>
+
+          {/* Client Protections & Legal Transparency Card (Directly Below Direct Client Portal) */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-[#0e0e12] border border-neutral-800/90 shadow-[0_10px_30px_rgba(0,0,0,0.6)] space-y-4">
+            <div className="flex items-center justify-between border-b border-neutral-800/80 pb-3">
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-white uppercase tracking-wider">
+                <ShieldCheck className="w-4 h-4 text-[#e61e2b]" />
+                <span>Client Protections & Policies</span>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-900 text-neutral-400 border border-neutral-800">
+                Guaranteed
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Privacy Policy Link Card */}
+              <button
+                type="button"
+                id="contact-legal-privacy-btn"
+                onClick={() => {
+                  onNavigate('privacy');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-left p-3.5 rounded-xl bg-neutral-950/60 hover:bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between group cursor-pointer"
+              >
+                <div className="flex items-center justify-between w-full mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-red-950/60 border border-red-500/20 text-[#e61e2b] flex items-center justify-center shrink-0">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-red-400 transition-colors" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white font-mono group-hover:text-red-400 transition-colors">
+                    Privacy Policy
+                  </div>
+                  <div className="text-[11px] text-neutral-400 leading-snug mt-1">
+                    Data encryption, zero third-party resale & user privacy rights.
+                  </div>
+                </div>
+              </button>
+
+              {/* Terms & Conditions Link Card */}
+              <button
+                type="button"
+                id="contact-legal-terms-btn"
+                onClick={() => {
+                  onNavigate('terms');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-left p-3.5 rounded-xl bg-neutral-950/60 hover:bg-neutral-900/90 border border-neutral-800 hover:border-neutral-700 transition-all flex flex-col justify-between group cursor-pointer"
+              >
+                <div className="flex items-center justify-between w-full mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-200 flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <ArrowUpRight className="w-3.5 h-3.5 text-neutral-500 group-hover:text-red-400 transition-colors" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white font-mono group-hover:text-red-400 transition-colors">
+                    Terms & Conditions
+                  </div>
+                  <div className="text-[11px] text-neutral-400 leading-snug mt-1">
+                    Service agreements, 100% code ownership & 30-day bug warranty.
+                  </div>
+                </div>
+              </button>
+
+              {/* Refund Policy Link Card */}
+              <button
+                type="button"
+                id="contact-legal-refund-btn"
+                onClick={() => {
+                  onNavigate('terms');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="text-left p-3.5 rounded-xl bg-red-950/20 hover:bg-red-950/40 border border-red-900/40 hover:border-red-600/50 transition-all flex flex-col justify-between group cursor-pointer"
+              >
+                <div className="flex items-center justify-between w-full mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-red-950 border border-red-500/40 text-[#e61e2b] flex items-center justify-center shrink-0">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-red-950 text-red-300 border border-red-800/60 font-semibold">No Refunds</span>
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white font-mono group-hover:text-red-300 transition-colors flex items-center gap-1">
+                    <span>Strict Refund Policy</span>
+                    <ArrowUpRight className="w-3 h-3 text-[#e61e2b]" />
+                  </div>
+                  <div className="text-[11px] text-neutral-300 leading-snug mt-1">
+                    Strict no-refund policy. All payments, package orders &amp; subscriptions are final.
+                  </div>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
       </div>

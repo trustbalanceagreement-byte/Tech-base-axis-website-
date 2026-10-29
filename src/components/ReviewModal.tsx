@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Star, CheckCircle2, User, Building, MessageSquare, Sparkles } from 'lucide-react';
+import { X, Star, CheckCircle2, User, Building, MessageSquare } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { getAutoAvatarUrl } from '../utils/avatar';
 
 export interface NewReviewData {
   name: string;
@@ -9,15 +11,6 @@ export interface NewReviewData {
   rating: number;
   avatar: string;
 }
-
-const AVATAR_OPTIONS = [
-  { id: '1', label: 'Tech Lead', url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80' },
-  { id: '2', label: 'VP Product', url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80' },
-  { id: '3', label: 'Founder', url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80' },
-  { id: '4', label: 'Engineering Dir', url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' },
-  { id: '5', label: 'CTO', url: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80' },
-  { id: '6', label: 'Architect', url: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80' }
-];
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -30,14 +23,24 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
   onClose,
   onSubmitReview
 }) => {
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [role, setRole] = useState('');
   const [testimonial, setTestimonial] = useState('');
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATAR_OPTIONS[0].url);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+
+  // Automatically resolve the user's Gmail/Google profile photo
+  const userAvatar = user?.photoURL || getAutoAvatarUrl(user);
+
+  // Sync initial name with account name
+  useEffect(() => {
+    if (isOpen && user) {
+      setName(user.displayName || (user.email ? user.email.split('@')[0] : ''));
+    }
+  }, [isOpen, user]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,14 +59,14 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     setTimeout(() => {
       onSubmitReview({
         name: name.trim(),
-        role: role.trim() || 'Verified Partner',
+        role: role.trim() || 'Verified Client',
         testimonial: testimonial.trim(),
         rating,
-        avatar: selectedAvatar
+        avatar: userAvatar
       });
 
       // Reset form
-      setName('');
+      setName(user?.displayName || '');
       setRole('');
       setTestimonial('');
       setRating(5);
@@ -99,15 +102,11 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
             {/* Header */}
             <div className="p-5 sm:p-6 pb-4 flex items-start justify-between border-b border-neutral-800/80">
               <div>
-                <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[#e61e2b] font-semibold mb-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Verified Endorsement</span>
-                </div>
                 <h3 className="font-display text-xl sm:text-2xl text-white font-bold tracking-tight">
                   Write a Client Review
                 </h3>
                 <p className="text-neutral-400 text-xs sm:text-sm mt-0.5">
-                  Share your collaboration experience with Bikram Ghosh & Tech Base Axis.
+                  Share your collaboration experience with Bikram Ghosh &amp; Tech Base Axis.
                 </p>
               </div>
 
@@ -140,6 +139,29 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                     {error}
                   </div>
                 )}
+
+                {/* Logged In Account Info - Profile Photo automatically retrieved */}
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-neutral-900/80 border border-neutral-800">
+                  <img
+                    src={userAvatar}
+                    alt={name || 'User DP'}
+                    className="w-11 h-11 rounded-full object-cover border-2 border-[#e61e2b]/50 shadow-md shrink-0 bg-neutral-800"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name || user?.displayName || 'User')}&background=e61e2b&color=ffffff&bold=true`;
+                    }}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-mono font-bold text-white truncate flex items-center gap-1.5">
+                      <span>{name || user?.displayName || 'Verified Client'}</span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 font-normal">
+                        Google / Account Photo
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-mono text-neutral-400 truncate">
+                      {user?.email || 'Logged In Account'}
+                    </div>
+                  </div>
+                </div>
 
                 {/* Rating selection */}
                 <div className="space-y-1.5">
@@ -187,6 +209,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
+                      placeholder="Your full name"
                       className="w-full px-3.5 py-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800 text-sm text-white focus:outline-none focus:border-[#e61e2b] transition-colors"
                     />
                   </div>
@@ -194,45 +217,15 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <div className="space-y-1">
                     <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
                       <Building className="w-3.5 h-3.5 text-neutral-400" />
-                      <span>Role & Company</span>
+                      <span>Role &amp; Company</span>
                     </label>
                     <input
                       type="text"
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
+                      placeholder="e.g. Founder at Startup"
                       className="w-full px-3.5 py-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800 text-sm text-white focus:outline-none focus:border-[#e61e2b] transition-colors"
                     />
-                  </div>
-                </div>
-
-                {/* Avatar Picker */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 block">
-                    Select Profile Avatar
-                  </label>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {AVATAR_OPTIONS.map((av) => {
-                      const isSelected = selectedAvatar === av.url;
-                      return (
-                        <button
-                          key={av.id}
-                          type="button"
-                          onClick={() => setSelectedAvatar(av.url)}
-                          className={`relative shrink-0 rounded-lg p-0.5 border-2 transition-all cursor-pointer ${
-                            isSelected
-                              ? 'border-[#e61e2b] scale-105 shadow-[0_0_12px_rgba(230,30,43,0.5)]'
-                              : 'border-neutral-800 opacity-60 hover:opacity-100'
-                          }`}
-                          title={av.label}
-                        >
-                          <img
-                            src={av.url}
-                            alt={av.label}
-                            className="w-9 h-9 object-cover rounded-md"
-                          />
-                        </button>
-                      );
-                    })}
                   </div>
                 </div>
 
@@ -247,6 +240,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                     value={testimonial}
                     onChange={(e) => setTestimonial(e.target.value)}
                     required
+                    placeholder="Describe your project experience, architecture quality, or results achieved..."
                     className="w-full px-3.5 py-2.5 rounded-lg bg-neutral-900/90 border border-neutral-800 text-sm text-white focus:outline-none focus:border-[#e61e2b] transition-colors resize-none"
                   />
                 </div>
@@ -256,7 +250,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="px-4 py-2 rounded-lg border border-neutral-800 text-xs font-mono text-neutral-300 hover:text-white hover:bg-neutral-900 transition-colors"
+                    className="px-4 py-2 rounded-lg border border-neutral-800 text-xs font-mono text-neutral-300 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>

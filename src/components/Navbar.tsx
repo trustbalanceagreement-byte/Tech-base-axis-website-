@@ -83,7 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   key={item.id}
                   id={`nav-btn-${item.id}`}
                   onClick={() => handleNavClick(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-medium transition-colors duration-200 relative ${
+                  className={`flex items-center gap-1.5 lg:gap-2 px-2.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-xs lg:text-sm font-medium transition-colors duration-200 relative ${
                     isActive
                       ? 'text-white'
                       : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/40'
@@ -97,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     />
                   )}
                   <span className="relative z-10 flex items-center gap-2">
-                    <Icon className={`w-4 h-4 ${isActive ? 'text-[#e61e2b]' : 'text-neutral-400'}`} />
+                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#e61e2b]' : 'text-neutral-400'}`} />
                     <span>{item.label}</span>
                     {item.badge && (
                       <span className="ml-1 px-1.5 py-0.5 text-[10px] font-mono rounded-full bg-red-600/20 text-red-300 border border-red-600/40">

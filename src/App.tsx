@@ -6,7 +6,8 @@ import {
   INITIAL_PACKAGES, 
   loadSavedPackages, 
   savePackages, 
-  subscribeToPublicPackages 
+  subscribeToPublicPackages,
+  recordDeletedPackageId 
 } from './data/pricingData';
 import { 
   loadSavedProjects,
@@ -20,6 +21,9 @@ import { ProjectsSection } from './components/ProjectsSection';
 import { PackagesSection } from './components/PackagesSection';
 import { ContactSection } from './components/ContactSection';
 import { AdminSection } from './components/AdminSection';
+import { PrivacyPolicySection } from './components/PrivacyPolicySection';
+import { TermsSection } from './components/TermsSection';
+import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Footer } from './components/Footer';
 import { useSectionSEO } from './hooks/useSectionSEO';
 import { FullPageSkeleton } from './components/ui/Skeleton';
@@ -112,7 +116,7 @@ function AppShell() {
       if (typeof window !== 'undefined' && window.location.hash) {
         const rawHash = window.location.hash.replace('#', '');
         const baseHash = rawHash.split('/')[0] as NavSection;
-        if (['home', 'projects', 'packages', 'contact', 'admin'].includes(baseHash)) {
+        if (['home', 'projects', 'packages', 'contact', 'admin', 'privacy', 'terms'].includes(baseHash)) {
           setActiveSection(baseHash);
         }
         // Remove anchor link (#...) from URL bar so only clean domain shows
@@ -199,9 +203,10 @@ function AppShell() {
   };
 
   const handleDeletePackage = (id: string) => {
+    recordDeletedPackageId(id);
     setPackages((prev) => {
       const updated = prev.filter((p) => p.id !== id);
-      savePackages(updated);
+      savePackages(updated, id);
       return updated;
     });
   };
@@ -317,6 +322,18 @@ function AppShell() {
                   onClearAllProjects={handleClearAllProjects}
                 />
               )}
+
+              {activeSection === 'privacy' && (
+                <PrivacyPolicySection
+                  onNavigate={handleNavigate}
+                />
+              )}
+
+              {activeSection === 'terms' && (
+                <TermsSection
+                  onNavigate={handleNavigate}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         )}
@@ -324,6 +341,9 @@ function AppShell() {
 
       {/* Footer */}
       <Footer onNavigate={handleNavigate} />
+
+      {/* Cookie & Privacy Consent Banner */}
+      <CookieConsentBanner onNavigate={handleNavigate} />
     </div>
   );
 }

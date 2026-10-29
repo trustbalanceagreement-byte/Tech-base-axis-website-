@@ -198,30 +198,30 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                           >
                             <defs>
                               <filter id="about-hint-shadow" x="-30%" y="-30%" width="160%" height="160%">
-                                <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodColor="#000000" floodOpacity="0.9" />
+                                <feDropShadow dx="0" dy="1" stdDeviation="1.2" floodColor="#000000" floodOpacity="0.85" />
                               </filter>
                             </defs>
                             <path
                               d="M 91 10 C 80 40 80 85 91 114"
                               fill="none"
                               stroke="#ffffff"
-                              strokeWidth="2.4"
-                              strokeDasharray="4 3"
+                              strokeWidth="1.0"
+                              strokeDasharray="2.6 2.2"
                               strokeLinecap="round"
                               filter="url(#about-hint-shadow)"
-                              className="opacity-95"
+                              className="opacity-90"
                             />
                           </svg>
 
                           {/* Hand Pointer Gesture Icon on the Arc */}
                           <div 
                             className="absolute right-[14%] top-[54%] -translate-y-1/2 flex items-center justify-center pointer-events-none"
-                            style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.95))' }}
+                            style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.9))' }}
                           >
                             {/* Fingertip tap ripple ring */}
                             <motion.div
                               animate={{
-                                scale: [0.6, 2],
+                                scale: [0.6, 1.8],
                                 opacity: [0.85, 0],
                               }}
                               transition={{
@@ -229,7 +229,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                                 repeat: Infinity,
                                 ease: 'easeOut',
                               }}
-                              className="absolute -top-1 -left-1 w-6 h-6 rounded-full border-2 border-white/80"
+                              className="absolute -top-0.5 -left-0.5 w-5 h-5 rounded-full border border-white/80"
                             />
 
                             {/* Pointer Hand with gentle tap motion */}
@@ -245,7 +245,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                               }}
                               className="text-white"
                             >
-                              <Pointer className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-black/35 drop-shadow-lg" strokeWidth={2.2} />
+                              <Pointer className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-black/35 drop-shadow-md" strokeWidth={1.8} />
                             </motion.div>
                           </div>
                         </motion.div>
