@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ServicePackage, NavSection, ClientInquiry } from '../types';
-import { INITIAL_PACKAGES, isSubscriptionPackage, isMaintenancePackage, getDeletedPackageIds } from '../data/pricingData';
+import { isSubscriptionPackage, isMaintenancePackage, getDeletedPackageIds } from '../data/pricingData';
 import { PackageCardSkeleton } from './ui/Skeleton';
 import { 
   Check, 
@@ -42,7 +42,7 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
 
   // Available packages dynamically loaded from Admin panel or initial defaults, strictly excluding deleted packages
   const deletedIds = getDeletedPackageIds();
-  const rawPackages = (packages && Array.isArray(packages)) ? packages : INITIAL_PACKAGES;
+  const rawPackages = (packages && Array.isArray(packages)) ? packages : [];
   const allPackages = rawPackages.filter((p) => !deletedIds.includes(p.id));
 
   // Filter plans based on the active billing cycle strictly (zero overlap)

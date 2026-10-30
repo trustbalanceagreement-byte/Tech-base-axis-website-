@@ -271,13 +271,17 @@ export function isMaintenancePackage(pkg: ServicePackage): boolean {
 }
 
 /**
- * Loads saved packages from localStorage if available, or returns INITIAL_PACKAGES.
+ * Loads the packages the admin saved, from localStorage.
+ * Returns an empty list when nothing was saved: the built-in INITIAL_PACKAGES
+ * are NEVER used as a silent fallback, so only packages added through the
+ * Admin panel are shown (INITIAL_PACKAGES is used only by the explicit
+ * "Reset to default" action).
  * Guaranteed to exclude any package permanently deleted by admin.
  */
 export function loadSavedPackages(): ServicePackage[] {
   const deletedIds = getDeletedPackageIds();
   if (typeof window === 'undefined') {
-    return INITIAL_PACKAGES.filter((p) => !deletedIds.includes(p.id));
+    return [];
   }
   try {
     const raw = localStorage.getItem(PACKAGES_STORAGE_KEY);
@@ -288,9 +292,9 @@ export function loadSavedPackages(): ServicePackage[] {
       }
     }
   } catch (err) {
-    console.error('Failed to load packages from storage, using defaults:', err);
+    console.error('Failed to load packages from storage:', err);
   }
-  return INITIAL_PACKAGES.filter((p) => !deletedIds.includes(p.id));
+  return [];
 }
 
 /**
@@ -385,13 +389,8 @@ export async function fetchPublicPackages(): Promise<ServicePackage[]> {
     console.warn('[Cloud Firestore Packages Sync] Firestore read notice:', firestoreErr);
   }
 
-  // 4. Fallback to local persistent storage
-  const local = loadSavedPackages();
-  if (local.length > 0) {
-    return local;
-  }
-
-  return INITIAL_PACKAGES.filter(p => !deletedIds.includes(p.id));
+  // 4. Fallback to local persistent storage (admin-saved packages only, never the built-in defaults)
+  return loadSavedPackages();
 }
 
 /**

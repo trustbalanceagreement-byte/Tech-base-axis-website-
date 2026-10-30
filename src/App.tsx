@@ -84,22 +84,18 @@ function AppShell() {
   // Real-time synchronization of public packages & custom pricing from Cloud/Server for all live visitors
   useEffect(() => {
     const unsubscribe = subscribeToPublicPackages((livePackages) => {
-      if (Array.isArray(livePackages) && livePackages.length > 0) {
+      // An empty list is valid too (admin removed every package), so it must not be ignored
+      if (Array.isArray(livePackages)) {
         setPackages(livePackages);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // Ensure any existing custom packages configured on admin's device are synced to Cloud on startup
-  useEffect(() => {
-    try {
-      const saved = loadSavedPackages();
-      if (Array.isArray(saved) && saved.length > 0) {
-        savePackages(saved);
-      }
-    } catch (_) {}
-  }, []);
+  // NOTE: packages are written to the cloud ONLY from explicit Admin actions
+  // (create / edit / delete / reset). They are intentionally NOT re-uploaded on
+  // page load: doing so let any visitor's stale or default list overwrite the
+  // packages the admin configured.
 
   // Persist inquiries whenever changed
   useEffect(() => {
