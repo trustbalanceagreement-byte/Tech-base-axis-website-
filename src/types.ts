@@ -59,6 +59,9 @@ export interface ServicePackage {
   deliverables?: string[];
   techStack?: string[];
   popular?: boolean;
+  /** Save revision (epoch ms). Lets every device tell which copy of the list is newest. */
+  rev?: number;
+  updatedAt?: string;
 }
 
 export interface ClientInquiry {

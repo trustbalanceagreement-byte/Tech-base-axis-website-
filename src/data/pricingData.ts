@@ -321,98 +321,127 @@ export function sanitizePackageForFirestore(pkg: ServicePackage): Record<string,
       : [],
     deliverables: Array.isArray(pkg.deliverables) ? pkg.deliverables : [],
     techStack: Array.isArray(pkg.techStack) ? pkg.techStack : [],
-    updatedAt: new Date().toISOString()
+    rev: typeof pkg.rev === 'number' ? pkg.rev : Date.now(),
+    updatedAt: pkg.updatedAt || new Date().toISOString()
   };
 
   return clean;
 }
 
-/**
- * Fetches public packages with Supabase Cloud CDN, Server API and Cloud Firestore as sources of truth.
- * Ensures all visitors across any mobile phone, desktop, or incognito window
- * view the identical admin-configured prices without requiring authentication.
- */
-export async function fetchPublicPackages(): Promise<ServicePackage[]> {
-  const deletedIds = getDeletedPackageIds();
-  const filterDeleted = (list: ServicePackage[]) => list.filter(p => !deletedIds.includes(p.id));
-
-  // 1. Fetch directly from global Supabase Cloud CDN (public, global, 100% available without auth)
-  try {
-    const supaRes = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' });
-    if (supaRes.ok) {
-      const supaPackages = await supaRes.json();
-      if (Array.isArray(supaPackages)) {
-        const cleaned = filterDeleted(supaPackages);
-        try {
-          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleaned));
-        } catch (_) {}
-        return cleaned;
-      }
-    }
-  } catch (_) {}
-
-  // 2. Fetch from /api/packages server backend
-  try {
-    const res = await fetch('/api/packages');
-    if (res.ok) {
-      const serverPackages = await res.json();
-      if (Array.isArray(serverPackages)) {
-        const cleaned = filterDeleted(serverPackages);
-        try {
-          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleaned));
-        } catch (_) {}
-        return cleaned;
-      }
-    }
-  } catch (_) {}
-
-  // 3. Fallback to Cloud Firestore 'packages' collection
-  try {
-    const querySnapshot = await getDocs(collection(db, 'packages'));
-    if (!querySnapshot.empty) {
-      const firestorePackages: ServicePackage[] = [];
-      querySnapshot.forEach((d) => {
-        if (!deletedIds.includes(d.id)) {
-          const item = d.data() as ServicePackage;
-          firestorePackages.push({ ...item, id: d.id });
-        }
-      });
-
-      if (firestorePackages.length > 0) {
-        try {
-          localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(firestorePackages));
-        } catch (_) {}
-        return firestorePackages;
-      }
-    }
-  } catch (firestoreErr) {
-    console.warn('[Cloud Firestore Packages Sync] Firestore read notice:', firestoreErr);
+/** Revision of a list = newest save stamp found in it (0 for legacy lists without one). */
+export function getPackagesRev(list: ServicePackage[] | null | undefined): number {
+  if (!Array.isArray(list)) return 0;
+  let max = 0;
+  for (const p of list) {
+    const r = typeof p?.rev === 'number' ? p.rev : p?.updatedAt ? Date.parse(p.updatedAt) || 0 : 0;
+    if (r > max) max = r;
   }
+  return max;
+}
 
-  // 4. Fallback to local persistent storage (admin-saved packages only, never the built-in defaults)
-  return loadSavedPackages();
+async function readSupabasePackages(): Promise<ServicePackage[] | null> {
+  try {
+    const r = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-store' });
+    if (r.ok) {
+      const data = await r.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function readServerPackages(): Promise<ServicePackage[] | null> {
+  try {
+    const r = await fetch('/api/packages', { cache: 'no-store' });
+    if (r.ok) {
+      const data = await r.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function readFirestorePackages(): Promise<ServicePackage[] | null> {
+  try {
+    const snap = await getDocs(collection(db, 'packages'));
+    const list: ServicePackage[] = [];
+    snap.forEach((d) => list.push({ ...(d.data() as ServicePackage), id: d.id }));
+    return list;
+  } catch (_) {
+    return null;
+  }
 }
 
 /**
- * Real-time subscription to public packages across all devices.
- * Seamlessly syncs package prices, features, and details to every visitor's phone in real time.
+ * Picks the NEWEST copy of the package list among all cloud sources.
+ * Different sources can briefly disagree (a write to one of them may fail), so
+ * "newest save wins" is what keeps a package the admin just created from being
+ * overwritten by an older copy.
+ */
+export function pickNewestPackages(candidates: (ServicePackage[] | null)[]): ServicePackage[] | null {
+  const valid = candidates.filter((c): c is ServicePackage[] => Array.isArray(c));
+  if (valid.length === 0) return null;
+  let best = valid[0];
+  for (const c of valid.slice(1)) {
+    const diff = getPackagesRev(c) - getPackagesRev(best);
+    if (diff > 0 || (diff === 0 && best.length === 0 && c.length > 0)) best = c;
+  }
+  return best;
+}
+
+/** Newest list across Supabase, the server and Firestore. null when nothing is reachable. */
+export async function fetchCloudPackages(): Promise<ServicePackage[] | null> {
+  const [supa, fire, server] = await Promise.all([
+    readSupabasePackages(),
+    readFirestorePackages(),
+    readServerPackages()
+  ]);
+  return pickNewestPackages([supa, fire, server]);
+}
+
+/**
+ * Fetches public packages: newest cloud copy, else whatever the admin saved locally.
+ */
+export async function fetchPublicPackages(): Promise<ServicePackage[]> {
+  const deletedIds = getDeletedPackageIds();
+  const cloud = await fetchCloudPackages();
+  const list = cloud ?? loadSavedPackages();
+  return list.filter((p) => !deletedIds.includes(p.id));
+}
+
+/**
+ * Live subscription to public packages for every visitor / device.
+ * Sources: Supabase JSON, server JSON (polled) and Cloud Firestore (live listener).
+ * The newest save always wins and an older copy can never replace a newer one.
  */
 export function subscribeToPublicPackages(callback: (packages: ServicePackage[]) => void): () => void {
   let isMounted = true;
   let lastSerialized = '';
+  // Never go back to a copy older than what this device already shows / saved
+  let currentRev = getPackagesRev(loadSavedPackages());
 
-  // Single entry point for every update. Skips identical lists so the UI never
-  // re-renders / flickers when nothing actually changed.
-  const safeCallback = (incoming: ServicePackage[]) => {
-    if (!isMounted) return;
-    if (!Array.isArray(incoming)) return;
+  const sources: { supabase: ServicePackage[] | null; firestore: ServicePackage[] | null; server: ServicePackage[] | null } = {
+    supabase: null,
+    firestore: null,
+    server: null
+  };
+
+  const accept = (incoming: ServicePackage[] | null) => {
+    if (!isMounted || !Array.isArray(incoming)) return;
+
+    const rev = getPackagesRev(incoming);
+    if (rev < currentRev) return; // stale copy: ignore
 
     const deletedIds = getDeletedPackageIds();
     const cleanPackages = incoming.filter((p) => !deletedIds.includes(p.id));
 
     const serialized = JSON.stringify(cleanPackages);
-    if (serialized === lastSerialized) return;
+    if (serialized === lastSerialized) {
+      currentRev = Math.max(currentRev, rev);
+      return;
+    }
     lastSerialized = serialized;
+    currentRev = Math.max(currentRev, rev);
 
     callback(cleanPackages);
     try {
@@ -420,62 +449,69 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
     } catch (_) {}
   };
 
-  // SINGLE SOURCE OF TRUTH: the Supabase packages.json that the admin panel writes to.
-  // /api/packages is used only when Supabase cannot be reached. Firestore is NOT
-  // listened to live: it can hold stale documents and made the list flip between
-  // different versions every few seconds.
-  const pullLatest = async () => {
-    try {
-      const r = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' });
-      if (r.ok) {
-        const data = await r.json();
-        if (Array.isArray(data)) {
-          safeCallback(data);
-          return;
-        }
-      }
-    } catch (_) {}
+  const recompute = () => accept(pickNewestPackages([sources.supabase, sources.firestore, sources.server]));
 
-    try {
-      const r = await fetch('/api/packages');
-      if (r.ok) {
-        const data = await r.json();
-        if (Array.isArray(data)) safeCallback(data);
-      }
-    } catch (_) {}
+  const pullHttpSources = async () => {
+    const [supa, server] = await Promise.all([readSupabasePackages(), readServerPackages()]);
+    if (!isMounted) return;
+    if (supa) sources.supabase = supa;
+    if (server) sources.server = server;
+    recompute();
   };
 
-  // 1. Initial load
-  pullLatest();
+  // 1. Initial load + polling of the HTTP sources
+  pullHttpSources();
+  const intervalId = setInterval(pullHttpSources, 10000);
 
-  // 2. Local reactive event for instant same-tab updates (admin edits)
+  // 2. Cloud Firestore live listener (instant updates, no polling cost)
+  let unsubscribeFirestore: (() => void) | null = null;
+  try {
+    unsubscribeFirestore = onSnapshot(
+      collection(db, 'packages'),
+      (snapshot) => {
+        if (!isMounted) return;
+        const list: ServicePackage[] = [];
+        snapshot.forEach((d) => list.push({ ...(d.data() as ServicePackage), id: d.id }));
+        sources.firestore = list;
+        recompute();
+      },
+      (err) => {
+        if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+          console.warn('[Cloud Firestore Packages Sync] Snapshot listener notice:', err?.message || err);
+        }
+      }
+    );
+  } catch (err: any) {
+    if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
+      console.warn('[Cloud Firestore Packages Sync] onSnapshot setup notice:', err?.message || err);
+    }
+  }
+
+  // 3. Same-tab / cross-tab events fired by the admin panel right after a save
   const handleLocalUpdate = (e: any) => {
-    if (!isMounted) return;
     if (e.detail && Array.isArray(e.detail)) {
-      safeCallback(e.detail);
+      // The admin's own fresh save is the newest copy by definition
+      sources.supabase = e.detail;
+      sources.firestore = e.detail;
+      sources.server = e.detail;
+      accept(e.detail);
     }
   };
   window.addEventListener('tba_packages_updated', handleLocalUpdate);
 
-  // 3. BroadcastChannel for instant cross-tab updates (admin edits)
   let channel: BroadcastChannel | null = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
       channel = new BroadcastChannel('tba_packages_channel');
       channel.onmessage = (event) => {
-        if (!isMounted) return;
-        if (event.data && Array.isArray(event.data)) {
-          safeCallback(event.data);
-        }
+        if (event.data && Array.isArray(event.data)) accept(event.data);
       };
     }
   } catch (_) {}
 
-  // 4. Poll the single source every 10s so other devices pick up admin changes
-  const intervalId = setInterval(pullLatest, 10000);
-
   return () => {
     isMounted = false;
+    if (unsubscribeFirestore) unsubscribeFirestore();
     window.removeEventListener('tba_packages_updated', handleLocalUpdate);
     if (channel) channel.close();
     clearInterval(intervalId);
@@ -483,49 +519,29 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
 }
 
 /**
- * Saves packages permanently to localStorage, Server Cloud API, Supabase CDN, and Cloud Firestore.
- * Ensures that changes and deletions made by the admin are immediately and permanently removed everywhere.
+ * Saves packages to localStorage, Supabase, the server and Cloud Firestore.
+ * Every save is stamped with a revision so all devices can tell it is the newest copy.
+ * Returns true when at least one cloud store accepted the save; when none did, a
+ * 'tba_packages_sync_failed' event is fired so the admin panel can warn the admin.
  */
-export async function savePackages(packages: ServicePackage[], deletedId?: string): Promise<void> {
+export async function savePackages(packages: ServicePackage[], deletedId?: string): Promise<boolean> {
   if (deletedId) {
     recordDeletedPackageId(deletedId);
   }
 
   const deletedIds = getDeletedPackageIds();
-  const cleanPackages = (Array.isArray(packages) ? packages : []).filter((p) => !deletedIds.includes(p.id));
+  const rev = Date.now();
+  const cleanPackages: ServicePackage[] = (Array.isArray(packages) ? packages : [])
+    .filter((p) => !deletedIds.includes(p.id))
+    .map((p) => ({ ...p, rev, updatedAt: new Date(rev).toISOString() }));
 
-  // 0. IMMEDIATE LOCAL PERSISTENCE (Synchronous, guaranteed 0ms)
+  // 0. IMMEDIATE LOCAL PERSISTENCE
   try {
     localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleanPackages));
     localStorage.setItem(PACKAGES_INITIALIZED_KEY, 'true');
   } catch (_) {}
 
-  // 1. DIRECT SUPABASE CLOUD SYNC (Guarantees persistence on custom domains and static hosting)
-  try {
-    const jsonBlob = new Blob([JSON.stringify(cleanPackages, null, 2)], { type: 'application/json' });
-    await supabaseAdmin.storage
-      .from(SUPABASE_STORAGE_BUCKET)
-      .upload('packages/packages.json', jsonBlob, {
-        contentType: 'application/json',
-        upsert: true
-      })
-      .catch((supaErr) => {
-        console.warn('[Direct Supabase Package Sync] Notice:', supaErr?.message || supaErr);
-      });
-  } catch (err) {
-    console.warn('[Direct Supabase Package Sync] Init notice:', err);
-  }
-
-  // 2. SERVER SYNC (If backend proxy is running)
-  try {
-    await fetch('/api/packages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(cleanPackages)
-    }).catch(() => {});
-  } catch (_) {}
-
-  // 3. Dispatch instant reactive events across tabs & components
+  // 1. Instant reactive update across components / tabs
   try {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('tba_packages_updated', { detail: cleanPackages }));
@@ -537,33 +553,75 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
     }
   } catch (_) {}
 
-  // 4. BACKGROUND FIRESTORE SYNC (Non-blocking, runs in background)
-  (async () => {
+  // 2. Cloud writes in parallel. Each one reports whether it really succeeded.
+  const writeSupabase = async (): Promise<boolean> => {
+    try {
+      const jsonBlob = new Blob([JSON.stringify(cleanPackages, null, 2)], { type: 'application/json' });
+      const { error } = await supabaseAdmin.storage
+        .from(SUPABASE_STORAGE_BUCKET)
+        .upload('packages/packages.json', jsonBlob, {
+          contentType: 'application/json',
+          cacheControl: '0',
+          upsert: true
+        });
+      if (error) {
+        console.warn('[Direct Supabase Package Sync] Notice:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.warn('[Direct Supabase Package Sync] Init notice:', err);
+      return false;
+    }
+  };
+
+  const writeServer = async (): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cleanPackages)
+      });
+      return res.ok;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  const writeFirestore = async (): Promise<boolean> => {
     try {
       if (deletedId) {
         await deleteDoc(doc(db, 'packages', deletedId)).catch(() => {});
       }
 
-      // Check all existing documents in Firestore 'packages' collection and delete any removed ones
-      const snap = await getDocs(collection(db, 'packages')).catch(() => null);
-      if (snap) {
-        const activeIds = new Set(cleanPackages.map((p) => p.id));
-        const delIds = new Set(deletedIds);
-        snap.forEach(async (d) => {
-          if (delIds.has(d.id) || !activeIds.has(d.id)) {
-            await deleteDoc(doc(db, 'packages', d.id)).catch(() => {});
-          }
-        });
-      }
+      const snap = await getDocs(collection(db, 'packages'));
+      const activeIds = new Set(cleanPackages.map((p) => p.id));
+      const delIds = new Set(deletedIds);
+      const removals: Promise<unknown>[] = [];
+      snap.forEach((d) => {
+        if (delIds.has(d.id) || !activeIds.has(d.id)) {
+          removals.push(deleteDoc(doc(db, 'packages', d.id)));
+        }
+      });
+      await Promise.all(removals);
 
-      for (const pkg of cleanPackages) {
-        const sanitized = sanitizePackageForFirestore(pkg);
-        await setDoc(doc(db, 'packages', pkg.id), sanitized, { merge: true }).catch(() => {});
-      }
+      await Promise.all(
+        cleanPackages.map((pkg) => setDoc(doc(db, 'packages', pkg.id), sanitizePackageForFirestore(pkg), { merge: true }))
+      );
+      return true;
     } catch (firestoreErr) {
-      console.warn('[Cloud Firestore Sync] Packages background sync notice:', firestoreErr);
+      console.warn('[Cloud Firestore Sync] Packages sync notice:', firestoreErr);
+      return false;
     }
-  })();
+  };
+
+  const results = await Promise.all([writeSupabase(), writeServer(), writeFirestore()]);
+  const ok = results.some(Boolean);
+
+  if (!ok && typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tba_packages_sync_failed'));
+  }
+  return ok;
 }
 
 // ---------------------------------------------------------------------------
@@ -578,25 +636,6 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
 let lastSavedPackages: ServicePackage[] | null = null;
 let lastSavedAt = 0;
 let packageWriteQueue: Promise<unknown> = Promise.resolve();
-
-/** Latest list from the cloud source of truth (Supabase, then server). null when unreachable. */
-export async function fetchCloudPackages(): Promise<ServicePackage[] | null> {
-  try {
-    const r = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' });
-    if (r.ok) {
-      const data = await r.json();
-      if (Array.isArray(data)) return data;
-    }
-  } catch (_) {}
-  try {
-    const r = await fetch('/api/packages', { cache: 'no-cache' });
-    if (r.ok) {
-      const data = await r.json();
-      if (Array.isArray(data)) return data;
-    }
-  } catch (_) {}
-  return null;
-}
 
 /**
  * Applies `change` to the newest known package list and saves the result.
@@ -616,9 +655,11 @@ export function updatePackagesFromCloud(
     const next = change(base);
     await savePackages(next, deletedId);
 
-    lastSavedPackages = next.filter((p) => !getDeletedPackageIds().includes(p.id));
+    // Keep the stamped copy that savePackages just wrote locally
+    const stamped = loadSavedPackages();
+    lastSavedPackages = stamped;
     lastSavedAt = Date.now();
-    return lastSavedPackages;
+    return stamped;
   };
 
   const result = packageWriteQueue.then(run, run);

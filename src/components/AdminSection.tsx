@@ -559,6 +559,14 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     }, 4000);
   };
 
+  // Warn the admin when a package change could not be saved to ANY cloud store
+  useEffect(() => {
+    const onSyncFailed = () =>
+      triggerToast('Warning: package saved only on this device. Cloud sync failed, visitors will not see it. Check internet and try again.');
+    window.addEventListener('tba_packages_sync_failed', onSyncFailed);
+    return () => window.removeEventListener('tba_packages_sync_failed', onSyncFailed);
+  }, []);
+
   // Get current package draft or prop value
   const getPackageData = (pkg: ServicePackage): ServicePackage => {
     return editedPackages[pkg.id] || pkg;
