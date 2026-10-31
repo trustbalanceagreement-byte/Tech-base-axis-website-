@@ -90,7 +90,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-red-950/60 text-[#e61e2b] border border-red-600/30 mb-3">
-                <span className="w-2 h-2 rounded-full bg-[#e61e2b] animate-ping" />
+                <span aria-hidden="true" className="text-[#e61e2b] font-mono font-black leading-none tracking-tighter animate-pulse shrink-0">//</span>
                 <span>Showcase Under Preparation</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
@@ -164,7 +164,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-mono text-neutral-500">{project.year}</span>
                       <span className="text-[10px] sm:text-[11px] font-mono px-2 py-0.5 rounded-full bg-neutral-900 text-[#e61e2b] border border-red-600/30 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#e61e2b] animate-pulse" />
+                        <span aria-hidden="true" className="text-[#e61e2b] font-mono font-black leading-none tracking-tighter animate-pulse shrink-0">//</span>
                         {project.status}
                       </span>
                     </div>

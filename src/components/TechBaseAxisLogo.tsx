@@ -48,7 +48,7 @@ export const TechBaseAxisLogo: React.FC<TechBaseAxisLogoProps> = ({
           </div>
           {subtitle && (
             <div className={`text-neutral-400 font-mono tracking-wider sm:tracking-widest uppercase flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${dim.sub}`}>
-              <span className="w-1 sm:w-1.5 h-1 sm:h-1.5 rounded-full bg-[#e61e2b] inline-block animate-pulse shrink-0" />
+              <span aria-hidden="true" className="text-[#e61e2b] font-mono font-black leading-none tracking-tighter inline-block shrink-0">//</span>
               {subtitle.includes(' // ') ? (
                 <span>
                   <span>{subtitle.split(' // ')[0]}</span>

@@ -144,7 +144,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                 {/* Tagline */}
                 <div className="pt-2 pb-1">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#e61e2b] shrink-0 shadow-[0_0_10px_#e61e2b]" />
+                    <span aria-hidden="true" className="font-display text-2xl sm:text-3xl md:text-4xl text-[#e61e2b] font-black leading-tight tracking-tighter shrink-0 drop-shadow-[0_0_8px_rgba(230,30,43,0.55)]">//</span>
                     <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-black tracking-wide uppercase leading-tight">
                       WELCOME TO MY PORTFOLIO
                     </h2>

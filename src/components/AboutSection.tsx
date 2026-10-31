@@ -305,7 +305,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                   >
                     {/* Small Eyebrow Label */}
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-mono uppercase tracking-wider text-[#e61e2b] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#e61e2b]" />
+                      <span aria-hidden="true" className="text-[#e61e2b] font-mono font-black leading-none tracking-tighter shrink-0">//</span>
                       <span className="font-bold font-['Times_New_Roman',_Times,_serif]">About Me</span>
                     </div>
 
@@ -374,7 +374,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                   >
                     {/* Small Eyebrow Label */}
                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-xs font-mono uppercase tracking-wider text-[#e61e2b] font-semibold">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#e61e2b]" />
+                      <span aria-hidden="true" className="text-[#e61e2b] font-mono font-black leading-none tracking-tighter shrink-0">//</span>
                       <span className="font-bold font-['Times_New_Roman',_Times,_serif]">About Company</span>
                     </div>
 

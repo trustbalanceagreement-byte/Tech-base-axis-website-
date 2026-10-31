@@ -419,7 +419,7 @@ export const HowWeWorkSection: React.FC<HowWeWorkSectionProps> = ({ onNavigate }
                 <div className="space-y-1 sm:space-y-1.5">
                   {/* Section Tag */}
                   <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#e61e2b] font-bold">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#e61e2b] shadow-[0_0_10px_#e61e2b]" />
+                    <span aria-hidden="true" className="text-[#e61e2b] font-mono font-black leading-none tracking-tighter shrink-0">//</span>
                     <span>HOW WE WORK</span>
                   </div>
                   
