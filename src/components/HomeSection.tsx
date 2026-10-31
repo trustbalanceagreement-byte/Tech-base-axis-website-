@@ -110,13 +110,13 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                 {/* Mobile Top Row: Headline on left, Male photo in the boxed area on right! */}
                 <div className="flex items-center justify-between gap-3 sm:gap-5 md:block">
                   <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
-                    <h1 className="font-display text-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
+                    <h1 className="font-display text-[clamp(1.75rem,10vw,2.75rem)] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
                       HELLO, I'M
                     </h1>
-                    <h1 className="font-display text-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
+                    <h1 className="font-display text-[clamp(1.75rem,10vw,2.75rem)] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
                       BIKRAM
                     </h1>
-                    <h1 className="font-display text-2xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
+                    <h1 className="font-display text-[clamp(1.75rem,10vw,2.75rem)] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
                       GHOSH
                     </h1>
                   </div>
