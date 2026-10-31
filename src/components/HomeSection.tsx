@@ -190,7 +190,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
 
               {/* Desktop Right Column: Commanding & High-Impact Male Portrait with Red Circle */}
               <div className="hidden md:flex md:col-span-5 items-center justify-center">
-                <div className="relative w-64 md:w-72 lg:w-84 h-[320px] md:h-[380px] lg:h-[440px] flex items-center justify-center">
+                <div className="relative w-64 md:w-72 lg:w-84 h-[320px] md:h-[380px] lg:h-[440px] flex items-center justify-center md:-translate-y-12 lg:-translate-y-24">
                   {/* Solid Crimson Red Circular Disk Accent */}
                   <div className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 w-56 md:w-64 lg:w-72 h-56 md:h-64 lg:h-72 rounded-full bg-[#e61e2b] shadow-[0_0_45px_rgba(230,30,43,0.5)] z-0" />
                   
