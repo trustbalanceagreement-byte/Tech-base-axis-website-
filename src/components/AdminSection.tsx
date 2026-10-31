@@ -53,7 +53,7 @@ import {
   Calendar
 } from 'lucide-react';
 import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
-import { savePackages, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
+import { updatePackagesFromCloud, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 
 interface AdminSectionProps {
   inquiries: ClientInquiry[];
@@ -598,8 +598,16 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   const handleSyncAllPackagesToCloud = async () => {
     setIsSyncingPackages(true);
     try {
-      const currentList = packages.map((pkg) => editedPackages[pkg.id] || pkg);
-      await savePackages(currentList);
+      // Publish only the admin's edited drafts, applied on top of the latest cloud list
+      // (never re-upload a possibly stale local copy of every package).
+      const edits = Object.values(editedPackages) as ServicePackage[];
+      await updatePackagesFromCloud((list) =>
+        edits.reduce(
+          (acc, pkg) =>
+            acc.some((p) => p.id === pkg.id) ? acc.map((p) => (p.id === pkg.id ? pkg : p)) : [...acc, pkg],
+          list
+        )
+      );
       triggerToast('All package prices & details published to all phones & visitor devices in real time!');
     } catch (err) {
       console.error('Failed to sync packages:', err);

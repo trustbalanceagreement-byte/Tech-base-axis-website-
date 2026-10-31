@@ -503,7 +503,7 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
   // 1. DIRECT SUPABASE CLOUD SYNC (Guarantees persistence on custom domains and static hosting)
   try {
     const jsonBlob = new Blob([JSON.stringify(cleanPackages, null, 2)], { type: 'application/json' });
-    supabaseAdmin.storage
+    await supabaseAdmin.storage
       .from(SUPABASE_STORAGE_BUCKET)
       .upload('packages/packages.json', jsonBlob, {
         contentType: 'application/json',
@@ -564,4 +564,64 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
       console.warn('[Cloud Firestore Sync] Packages background sync notice:', firestoreErr);
     }
   })();
+}
+
+// ---------------------------------------------------------------------------
+// Admin edits: always apply the change on top of the LATEST cloud list.
+//
+// Previously every admin action saved the whole list held in the admin's
+// browser (localStorage / an old poll result). If that copy was stale (for
+// example it still contained old default packages), saving pushed those stale
+// packages back to the cloud and every visitor suddenly saw extra packages.
+// ---------------------------------------------------------------------------
+
+let lastSavedPackages: ServicePackage[] | null = null;
+let lastSavedAt = 0;
+let packageWriteQueue: Promise<unknown> = Promise.resolve();
+
+/** Latest list from the cloud source of truth (Supabase, then server). null when unreachable. */
+export async function fetchCloudPackages(): Promise<ServicePackage[] | null> {
+  try {
+    const r = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' });
+    if (r.ok) {
+      const data = await r.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (_) {}
+  try {
+    const r = await fetch('/api/packages', { cache: 'no-cache' });
+    if (r.ok) {
+      const data = await r.json();
+      if (Array.isArray(data)) return data;
+    }
+  } catch (_) {}
+  return null;
+}
+
+/**
+ * Applies `change` to the newest known package list and saves the result.
+ * Calls are serialized so quick consecutive admin actions cannot overwrite each other.
+ */
+export function updatePackagesFromCloud(
+  change: (current: ServicePackage[]) => ServicePackage[],
+  deletedId?: string
+): Promise<ServicePackage[]> {
+  const run = async (): Promise<ServicePackage[]> => {
+    const deletedIds = getDeletedPackageIds();
+    // A list we saved a moment ago may not be visible on the CDN yet: prefer it.
+    const recentlySaved = lastSavedPackages && Date.now() - lastSavedAt < 30000;
+    const cloud = recentlySaved ? lastSavedPackages : await fetchCloudPackages();
+    const base = (cloud ?? loadSavedPackages()).filter((p) => !deletedIds.includes(p.id));
+
+    const next = change(base);
+    await savePackages(next, deletedId);
+
+    lastSavedPackages = next.filter((p) => !getDeletedPackageIds().includes(p.id));
+    lastSavedAt = Date.now();
+    return lastSavedPackages;
+  };
+
+  const result = packageWriteQueue.then(run, run);
+  packageWriteQueue = result.catch(() => {});
+  return result;
 }

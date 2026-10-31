@@ -5,7 +5,7 @@ import { DEFAULT_INQUIRIES, PROJECTS_DATA, SERVICE_PACKAGES } from './data/mockD
 import { 
   INITIAL_PACKAGES, 
   loadSavedPackages, 
-  savePackages, 
+  updatePackagesFromCloud, 
   subscribeToPublicPackages,
   recordDeletedPackageId 
 } from './data/pricingData';
@@ -169,42 +169,42 @@ function AppShell() {
     setInquiries((prev) => prev.filter((item) => item.id !== id));
   };
 
+  // Every admin package action is applied on top of the LATEST cloud list (never on a
+  // possibly stale local copy) so old/default packages can't sneak back in.
+  const applyPackageChange = (
+    change: (list: ServicePackage[]) => ServicePackage[],
+    deletedId?: string
+  ) => {
+    setPackages((prev) => change(prev)); // instant UI feedback
+    updatePackagesFromCloud(change, deletedId)
+      .then((saved) => setPackages(saved))
+      .catch((err) => console.error('Failed to save packages:', err));
+  };
+
+  const upsertPackage = (list: ServicePackage[], pkg: ServicePackage) =>
+    list.some((p) => p.id === pkg.id)
+      ? list.map((p) => (p.id === pkg.id ? pkg : p))
+      : [...list, pkg];
+
   const handleUpdatePackagePrice = (id: string, newPrice: number) => {
-    setPackages((prev) => {
-      const updated = prev.map((pkg) => (pkg.id === id ? { ...pkg, price: newPrice } : pkg));
-      savePackages(updated);
-      return updated;
-    });
+    applyPackageChange((list) => list.map((pkg) => (pkg.id === id ? { ...pkg, price: newPrice } : pkg)));
   };
 
   const handleUpdatePackage = (updatedPkg: ServicePackage) => {
-    setPackages((prev) => {
-      const updated = prev.map((pkg) => (pkg.id === updatedPkg.id ? updatedPkg : pkg));
-      savePackages(updated);
-      return updated;
-    });
+    applyPackageChange((list) => upsertPackage(list, updatedPkg));
   };
 
   const handleResetPackagesToDefault = () => {
-    setPackages(INITIAL_PACKAGES);
-    savePackages(INITIAL_PACKAGES);
+    applyPackageChange(() => INITIAL_PACKAGES);
   };
 
   const handleCreatePackage = (newPkg: ServicePackage) => {
-    setPackages((prev) => {
-      const updated = [...prev, newPkg];
-      savePackages(updated);
-      return updated;
-    });
+    applyPackageChange((list) => upsertPackage(list, newPkg));
   };
 
   const handleDeletePackage = (id: string) => {
     recordDeletedPackageId(id);
-    setPackages((prev) => {
-      const updated = prev.filter((p) => p.id !== id);
-      savePackages(updated, id);
-      return updated;
-    });
+    applyPackageChange((list) => list.filter((p) => p.id !== id), id);
   };
 
   // Projects CRUD operations
