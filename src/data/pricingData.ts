@@ -399,7 +399,10 @@ export async function fetchPublicPackages(): Promise<ServicePackage[]> {
  */
 export function subscribeToPublicPackages(callback: (packages: ServicePackage[]) => void): () => void {
   let isMounted = true;
+  let lastSerialized = '';
 
+  // Single entry point for every update. Skips identical lists so the UI never
+  // re-renders / flickers when nothing actually changed.
   const safeCallback = (incoming: ServicePackage[]) => {
     if (!isMounted) return;
     if (!Array.isArray(incoming)) return;
@@ -407,48 +410,45 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
     const deletedIds = getDeletedPackageIds();
     const cleanPackages = incoming.filter((p) => !deletedIds.includes(p.id));
 
+    const serialized = JSON.stringify(cleanPackages);
+    if (serialized === lastSerialized) return;
+    lastSerialized = serialized;
+
     callback(cleanPackages);
     try {
-      localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleanPackages));
+      localStorage.setItem(PACKAGES_STORAGE_KEY, serialized);
     } catch (_) {}
   };
 
-  // 1. Initial fast load
-  fetchPublicPackages().then((pkgs) => {
-    if (isMounted && Array.isArray(pkgs)) {
-      safeCallback(pkgs);
-    }
-  }).catch(() => {});
-
-  // 2. PRIMARY: Real-time Cloud Firestore listener
-  let unsubscribeFirestore: (() => void) | null = null;
-  try {
-    unsubscribeFirestore = onSnapshot(collection(db, 'packages'), (snapshot) => {
-      if (!isMounted) return;
-      if (!snapshot.empty) {
-        const deletedIds = getDeletedPackageIds();
-        const livePackages: ServicePackage[] = [];
-        snapshot.forEach((d) => {
-          if (!deletedIds.includes(d.id)) {
-            const item = d.data() as ServicePackage;
-            livePackages.push({ ...item, id: d.id });
-          }
-        });
-
-        safeCallback(livePackages);
+  // SINGLE SOURCE OF TRUTH: the Supabase packages.json that the admin panel writes to.
+  // /api/packages is used only when Supabase cannot be reached. Firestore is NOT
+  // listened to live: it can hold stale documents and made the list flip between
+  // different versions every few seconds.
+  const pullLatest = async () => {
+    try {
+      const r = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' });
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data)) {
+          safeCallback(data);
+          return;
+        }
       }
-    }, (err) => {
-      if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
-        console.warn('[Cloud Firestore Packages Sync] Snapshot listener notice:', err?.message || err);
-      }
-    });
-  } catch (err: any) {
-    if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
-      console.warn('[Cloud Firestore Packages Sync] onSnapshot setup notice:', err?.message || err);
-    }
-  }
+    } catch (_) {}
 
-  // 3. Local reactive event listener for instant 0ms single-tab updates
+    try {
+      const r = await fetch('/api/packages');
+      if (r.ok) {
+        const data = await r.json();
+        if (Array.isArray(data)) safeCallback(data);
+      }
+    } catch (_) {}
+  };
+
+  // 1. Initial load
+  pullLatest();
+
+  // 2. Local reactive event for instant same-tab updates (admin edits)
   const handleLocalUpdate = (e: any) => {
     if (!isMounted) return;
     if (e.detail && Array.isArray(e.detail)) {
@@ -457,7 +457,7 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
   };
   window.addEventListener('tba_packages_updated', handleLocalUpdate);
 
-  // 4. BroadcastChannel for instant cross-tab reactivity
+  // 3. BroadcastChannel for instant cross-tab updates (admin edits)
   let channel: BroadcastChannel | null = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
@@ -471,42 +471,11 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
     }
   } catch (_) {}
 
-  // 5. Polling Supabase CDN & server every 3 seconds for instant multi-device live sync
-  const intervalId = setInterval(() => {
-    if (!isMounted) return;
-    fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-cache' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((supaData) => {
-        if (isMounted && Array.isArray(supaData)) {
-          safeCallback(supaData);
-        } else if (isMounted) {
-          fetch('/api/packages')
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-              if (isMounted && Array.isArray(data)) {
-                safeCallback(data);
-              }
-            })
-            .catch(() => {});
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          fetch('/api/packages')
-            .then((res) => (res.ok ? res.json() : null))
-            .then((data) => {
-              if (isMounted && Array.isArray(data)) {
-                safeCallback(data);
-              }
-            })
-            .catch(() => {});
-        }
-      });
-  }, 3000);
+  // 4. Poll the single source every 10s so other devices pick up admin changes
+  const intervalId = setInterval(pullLatest, 10000);
 
   return () => {
     isMounted = false;
-    if (unsubscribeFirestore) unsubscribeFirestore();
     window.removeEventListener('tba_packages_updated', handleLocalUpdate);
     if (channel) channel.close();
     clearInterval(intervalId);
