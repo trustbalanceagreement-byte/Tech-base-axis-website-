@@ -212,3 +212,24 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #e61e2b;
 }
+
+
+/* Contact page: dark glass card with a soft red edge glow */
+.contact-glass-card {
+  border-radius: 1.5rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, rgba(255, 255, 255, 0.012) 100%), rgba(10, 10, 14, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0 0 1px rgba(230, 30, 43, 0.06), 0 24px 60px -28px rgba(230, 30, 43, 0.4), 0 10px 30px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(10px);
+}
+
+@keyframes contact-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.contact-float {
+  animation: contact-float 6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .contact-float { animation: none; }
+}

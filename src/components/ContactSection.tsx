@@ -189,33 +189,127 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16 text-neutral-100">
-      {/* Header */}
-      <div className="max-w-3xl">
-        <div className="text-xs font-mono text-[#e61e2b] uppercase tracking-widest mb-2 flex items-center gap-2">
-          <Terminal className="w-4 h-4 text-[#e61e2b]" />
-          <span>INSTANT DISPATCH // TECH BASE AXIS</span>
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 sm:space-y-14 text-neutral-100">
+      {/* Ambient red glows behind the page */}
+      <div aria-hidden="true" className="pointer-events-none absolute -top-10 right-0 w-[640px] max-w-full h-[460px] bg-red-700/20 blur-[140px] rounded-full -z-10" />
+      <div aria-hidden="true" className="pointer-events-none absolute top-[420px] -left-24 w-[420px] h-[420px] bg-red-900/15 blur-[130px] rounded-full -z-10" />
+
+      {/* Hero */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-6 lg:gap-8">
+        <div className="lg:col-span-7">
+          <div className="text-[11px] sm:text-xs font-mono font-bold text-[#e61e2b] uppercase tracking-[0.22em] mb-4 sm:mb-5">
+            INSTANT DISPATCH // TECH BASE AXIS
+          </div>
+          <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.05] mb-5">
+            Connect Directly with
+            <span className="block text-[#e61e2b] drop-shadow-[0_0_28px_rgba(230,30,43,0.45)]">Bikram Ghosh</span>
+          </h1>
+          <p className="max-w-xl text-sm sm:text-base lg:text-lg text-neutral-300 leading-relaxed">
+            Book an architecture package, schedule a 1-on-1 technical consultation, or transmit your project brief. Notifications are instantly routed to Bikram Ghosh in real time.
+          </p>
+
+          <div className="mt-6 flex flex-wrap gap-2.5">
+            {['Real-time notification', '1-on-1 consultation', 'Architecture packages'].map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-mono text-neutral-200 bg-white/[0.04] border border-white/10"
+              >
+                <span className="text-[#e61e2b] font-black">//</span>
+                {chip}
+              </span>
+            ))}
+          </div>
         </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-4">
-          Connect Directly with Bikram Ghosh
-        </h1>
-        <p className="text-base sm:text-lg text-neutral-300 leading-relaxed">
-          Book an architecture package, schedule a 1-on-1 technical consultation, or transmit your project brief. Notifications are instantly routed to Bikram Ghosh in real time.
-        </p>
+
+        {/* Glowing envelope illustration */}
+        <div className="lg:col-span-5 flex justify-center lg:justify-end">
+          <div className="relative w-60 sm:w-80 lg:w-[26rem] contact-float">
+            <svg viewBox="0 0 440 340" className="w-full h-auto overflow-visible" role="img" aria-label="Glowing red envelope">
+              <defs>
+                <radialGradient id="cgGlow" cx="50%" cy="52%" r="55%">
+                  <stop offset="0%" stopColor="#e61e2b" stopOpacity="0.55" />
+                  <stop offset="55%" stopColor="#e61e2b" stopOpacity="0.14" />
+                  <stop offset="100%" stopColor="#e61e2b" stopOpacity="0" />
+                </radialGradient>
+                <linearGradient id="cgTile" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#34343b" />
+                  <stop offset="45%" stopColor="#17171c" />
+                  <stop offset="100%" stopColor="#09090c" />
+                </linearGradient>
+                <linearGradient id="cgRing" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#ff2d3d" stopOpacity="0" />
+                  <stop offset="30%" stopColor="#ff2d3d" stopOpacity="0.95" />
+                  <stop offset="70%" stopColor="#ff5a66" stopOpacity="1" />
+                  <stop offset="100%" stopColor="#ff2d3d" stopOpacity="0.1" />
+                </linearGradient>
+                <filter id="cgBlur" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="6" />
+                </filter>
+                <filter id="cgSoft" x="-20%" y="-20%" width="140%" height="140%">
+                  <feGaussianBlur stdDeviation="2.2" />
+                </filter>
+                <clipPath id="cgFront">
+                  <rect x="-20" y="196" width="500" height="200" />
+                </clipPath>
+              </defs>
+
+              {/* background glow */}
+              <ellipse cx="220" cy="175" rx="215" ry="150" fill="url(#cgGlow)" />
+
+              {/* orbit ring (back half) */}
+              <g transform="rotate(-16 220 190)">
+                <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="9" filter="url(#cgBlur)" opacity="0.8" />
+                <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="3.5" opacity="0.55" />
+              </g>
+
+              {/* 3D tile */}
+              <rect x="146" y="92" width="196" height="186" rx="40" fill="#050507" stroke="#e61e2b" strokeOpacity="0.25" />
+              <rect x="128" y="74" width="196" height="186" rx="40" fill="url(#cgTile)" stroke="#ffffff" strokeOpacity="0.14" />
+              <rect x="134" y="80" width="184" height="174" rx="34" fill="none" stroke="#ffffff" strokeOpacity="0.05" />
+
+              {/* envelope (glow + crisp line) */}
+              <g transform="translate(0 -2)">
+                <g filter="url(#cgSoft)" stroke="#ff2d3d" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.9">
+                  <rect x="164" y="118" width="124" height="88" rx="12" />
+                  <path d="M164 128 L226 176 L288 128" />
+                </g>
+                <rect x="164" y="118" width="124" height="88" rx="12" fill="#e61e2b" fillOpacity="0.1" stroke="#ff4351" strokeWidth="4.5" />
+                <path d="M164 128 L226 176 L288 128" fill="none" stroke="#ff4351" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M168 200 L210 160 M284 200 L242 160" fill="none" stroke="#ff4351" strokeOpacity="0.55" strokeWidth="2.5" strokeLinecap="round" />
+              </g>
+
+              {/* orbit ring (front half, passes in front of the tile) */}
+              <g clipPath="url(#cgFront)">
+                <g transform="rotate(-16 220 190)">
+                  <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="12" filter="url(#cgBlur)" />
+                  <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="4.5" />
+                </g>
+              </g>
+
+              {/* sparkles */}
+              <circle cx="58" cy="118" r="2.4" fill="#ff5a66" opacity="0.8" />
+              <circle cx="392" cy="86" r="2" fill="#ff5a66" opacity="0.7" />
+              <circle cx="372" cy="262" r="3" fill="#ff2d3d" opacity="0.6" />
+              <circle cx="90" cy="268" r="1.8" fill="#ffffff" opacity="0.5" />
+            </svg>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
         {/* Left Column: Direct Info & Quick Booking */}
         <div className="lg:col-span-5 space-y-6">
           {/* Direct Card */}
-          <div className="obsidian-card p-6 rounded-2xl border border-neutral-800 space-y-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-[#e61e2b]" />
+          <div className="contact-glass-card p-5 sm:p-7 space-y-6">
+            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-3">
+              <span className="w-9 h-9 rounded-xl bg-red-600/15 border border-red-500/40 text-[#e61e2b] flex items-center justify-center shadow-[0_0_18px_rgba(230,30,43,0.35)]">
+                <ShieldCheck className="w-5 h-5" />
+              </span>
               <span>Direct Engineering Channel</span>
             </h2>
 
             <div className="space-y-4 text-sm">
-              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-black/40 border border-white/10">
                 <OfficialGmailIcon className="w-5 h-5 mt-0.5 shrink-0" />
                 <div>
                   <div className="text-xs text-neutral-400 font-mono">Direct Founder Email</div>
@@ -228,7 +322,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-black/40 border border-white/10">
                 <OfficialWhatsAppIcon className="w-5 h-5 mt-0.5 shrink-0" />
                 <div>
                   <div className="text-xs text-neutral-400 font-mono">Official WhatsApp Business</div>
@@ -244,7 +338,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800 hover:border-neutral-700 transition-colors">
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-black/40 border border-white/10 hover:border-neutral-700 transition-colors">
                 <OfficialInstagramIcon className="w-5 h-5 mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="text-xs text-neutral-400 font-mono">Founder Instagram Profile</div>
@@ -262,7 +356,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-neutral-900/60 border border-neutral-800">
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-black/40 border border-white/10">
                 <MapPin className="w-4 h-4 text-[#e61e2b] mt-1 shrink-0" />
                 <div>
                   <div className="text-xs text-neutral-400 font-mono">Operating Headquarters</div>
@@ -300,7 +394,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
         {/* Right Column: Direct Client Portal & Client Protections */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="obsidian-card p-6 sm:p-8 rounded-2xl border border-neutral-800 relative">
+          <div className="contact-glass-card p-5 sm:p-8 relative">
             {submitted ? (
               <div className="text-center py-12 space-y-6">
                 <div className="w-16 h-16 rounded-2xl bg-red-950/60 border border-red-600/40 text-[#e61e2b] flex items-center justify-center mx-auto shadow-lg shadow-red-600/20">
@@ -349,7 +443,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
             ) : (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-1">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
                     Direct Client Portal
                   </h2>
                   <p className="text-xs text-neutral-400">
@@ -358,7 +452,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
 
                 {/* Purpose Tabs: Appointment, Quote Request & Client Enquiry */}
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-neutral-900/80 rounded-xl border border-neutral-800">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-black/40 rounded-xl border border-white/10">
                   <button
                     type="button"
                     onClick={() => setRequestType('appointment')}
@@ -410,7 +504,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       required
                       value={formData.clientName}
                       onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
+                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
                     />
                   </div>
 
@@ -423,7 +517,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       required
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
+                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
                     />
                   </div>
                 </div>
@@ -439,7 +533,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
+                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
                     />
                   </div>
 
@@ -451,7 +545,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       type="text"
                       value={formData.company}
                       onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
+                      className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
                     />
                   </div>
                 </div>
@@ -471,7 +565,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                           min={tomorrowStr}
                           value={formData.appointmentDate}
                           onChange={(e) => setFormData({ ...formData, appointmentDate: e.target.value })}
-                          className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                          className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                         />
                       </div>
 
@@ -483,7 +577,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                         <select
                           value={formData.appointmentTime}
                           onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
-                          className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                          className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                         >
                           <option value="10:00 AM - 11:00 AM IST">10:00 AM - 11:00 AM IST</option>
                           <option value="02:00 PM - 03:00 PM IST">02:00 PM - 03:00 PM IST</option>
@@ -501,7 +595,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       <select
                         value={formData.projectType}
                         onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                       >
                         <option value="Full-Stack Technical Consultation">Full-Stack Technical Consultation</option>
                         <option value="System Architecture Review">System Architecture & Scaling</option>
@@ -525,7 +619,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                         <select
                           value={formData.websiteType}
                           onChange={(e) => setFormData({ ...formData, websiteType: e.target.value })}
-                          className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                          className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                         >
                           <option value="E-Commerce Platform">E-Commerce Platform</option>
                           <option value="Full-Stack SaaS Platform">Full-Stack SaaS Platform</option>
@@ -543,7 +637,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                         <select
                           value={formData.budgetRange}
                           onChange={(e) => setFormData({ ...formData, budgetRange: e.target.value })}
-                          className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                          className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                         >
                           <option value="₹15,000 - ₹35,000">₹15,000 - ₹35,000</option>
                           <option value="₹35,000 - ₹75,000">₹35,000 - ₹75,000</option>
@@ -601,7 +695,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       <select
                         value={formData.projectType}
                         onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                       >
                         <option value="Enterprise Cloud Scalability">Enterprise Cloud Scalability</option>
                         <option value="Full-Stack Web Development">Full-Stack Web Development</option>
@@ -618,7 +712,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       <select
                         value={formData.timeline}
                         onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
+                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b]"
                       >
                         <option value="Immediate (< 1 week)">Immediate (&lt; 1 Week)</option>
                         <option value="1 Month">1 Month</option>
@@ -642,7 +736,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     rows={4}
                     value={formData.details}
                     onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                    className="w-full px-3.5 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
+                    className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-[#e61e2b] focus:ring-1 focus:ring-[#e61e2b]/50"
                   />
                 </div>
 
@@ -660,7 +754,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
 
           {/* Client Protections & Legal Transparency Card (Directly Below Direct Client Portal) */}
-          <div className="p-5 sm:p-6 rounded-2xl bg-[#0e0e12] border border-neutral-800/90 shadow-[0_10px_30px_rgba(0,0,0,0.6)] space-y-4">
+          <div className="contact-glass-card p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-neutral-800/80 pb-3">
               <div className="flex items-center gap-2 text-xs font-mono font-bold text-white uppercase tracking-wider">
                 <ShieldCheck className="w-4 h-4 text-[#e61e2b]" />
