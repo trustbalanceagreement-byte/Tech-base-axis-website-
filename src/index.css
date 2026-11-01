@@ -222,3 +222,18 @@
   box-shadow: 0 0 0 1px rgba(230, 30, 43, 0.06), 0 24px 60px -28px rgba(230, 30, 43, 0.4), 0 10px 30px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(10px);
 }
+
+/* Contact page: expanding rings under the red location pin */
+@keyframes contact-pin-pulse {
+  0% { transform: scale(0.35); opacity: 0.9; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+.contact-pin-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: contact-pin-pulse 2.8s ease-out infinite;
+}
+.contact-pin-ring-2 { animation-delay: 1.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .contact-pin-ring { animation: none; opacity: 0.35; transform: scale(1); }
+}

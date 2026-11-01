@@ -22,7 +22,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { OfficialGmailIcon, OfficialWhatsAppIcon, OfficialInstagramIcon } from './ui/SocialIcons';
-import { ContactSpaceBackdrop } from './ContactSpaceBackdrop';
+import { ContactGlobeBackdrop } from './ContactGlobeBackdrop';
 
 interface ContactSectionProps {
   packages?: ServicePackage[];
@@ -191,8 +191,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
 
   return (
     <div className="relative isolate max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 sm:space-y-14 text-neutral-100">
-      {/* Space backdrop: planet horizon with a red sun (full-bleed, behind everything) */}
-      <ContactSpaceBackdrop />
+      {/* Dotted globe with a red location pin (full-bleed, behind everything) */}
+      <ContactGlobeBackdrop />
 
       {/* Hero */}
       <div className="min-h-[300px] sm:min-h-[340px] lg:min-h-[400px] flex items-center pt-4 sm:pt-8">
