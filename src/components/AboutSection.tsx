@@ -170,7 +170,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                     {/* Bottom Info Overlay */}
                     <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 z-20 space-y-1">
                       <div className="flex items-center text-xs font-mono text-neutral-400">
-                        <span>Age: 22 Years</span>
+                        <span>Founder</span>
                       </div>
                       <h3 className="text-lg sm:text-xl font-bold text-white font-display">
                         Bikram Ghosh
@@ -316,7 +316,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
 
                     {/* Professional Paragraph */}
                     <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-normal">
-                      Hi, I’m Bikram Ghosh, a 22-year-old web developer passionate about creating modern, responsive and high-performance websites. I focus on combining clean design, smooth user experiences and powerful web technologies to build digital experiences that are both visually impressive and functional.
+                      Hi, I’m Bikram Ghosh, a Professional And Experience web developer passionate about creating modern, responsive and high-performance websites. I focus on combining clean design, smooth user experiences and powerful web technologies to build digital experiences that are both visually impressive and functional.
                     </p>
 
                     {/* Quick Core Strengths Grid */}
