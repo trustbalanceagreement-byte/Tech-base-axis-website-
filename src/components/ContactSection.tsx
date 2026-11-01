@@ -22,6 +22,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 import { OfficialGmailIcon, OfficialWhatsAppIcon, OfficialInstagramIcon } from './ui/SocialIcons';
+import { ContactSpaceBackdrop } from './ContactSpaceBackdrop';
 
 interface ContactSectionProps {
   packages?: ServicePackage[];
@@ -189,110 +190,23 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   };
 
   return (
-    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 sm:space-y-14 text-neutral-100">
-      {/* Ambient red glows behind the page */}
-      <div aria-hidden="true" className="pointer-events-none absolute -top-10 right-0 w-[640px] max-w-full h-[460px] bg-red-700/20 blur-[140px] rounded-full -z-10" />
-      <div aria-hidden="true" className="pointer-events-none absolute top-[420px] -left-24 w-[420px] h-[420px] bg-red-900/15 blur-[130px] rounded-full -z-10" />
+    <div className="relative isolate max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-10 sm:space-y-14 text-neutral-100">
+      {/* Space backdrop: planet horizon with a red sun (full-bleed, behind everything) */}
+      <ContactSpaceBackdrop />
 
       {/* Hero */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-6 lg:gap-8">
-        <div className="lg:col-span-7">
+      <div className="min-h-[300px] sm:min-h-[340px] lg:min-h-[400px] flex items-center pt-4 sm:pt-8">
+        <div className="max-w-2xl">
           <div className="text-[11px] sm:text-xs font-mono font-bold text-[#e61e2b] uppercase tracking-[0.22em] mb-4 sm:mb-5">
             INSTANT DISPATCH // TECH BASE AXIS
           </div>
-          <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.05] mb-5">
+          <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.08] mb-5">
             Connect Directly with
-            <span className="block text-[#e61e2b] drop-shadow-[0_0_28px_rgba(230,30,43,0.45)]">Bikram Ghosh</span>
+            <span className="block text-[#ff1f2e] drop-shadow-[0_0_26px_rgba(255,31,46,0.5)]">Bikram Ghosh</span>
           </h1>
-          <p className="max-w-xl text-sm sm:text-base lg:text-lg text-neutral-300 leading-relaxed">
+          <p className="max-w-xl text-sm sm:text-base lg:text-lg text-neutral-200 leading-relaxed [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
             Book an architecture package, schedule a 1-on-1 technical consultation, or transmit your project brief. Notifications are instantly routed to Bikram Ghosh in real time.
           </p>
-
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            {['Real-time notification', '1-on-1 consultation', 'Architecture packages'].map((chip) => (
-              <span
-                key={chip}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-mono text-neutral-200 bg-white/[0.04] border border-white/10"
-              >
-                <span className="text-[#e61e2b] font-black">//</span>
-                {chip}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Glowing envelope illustration */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end">
-          <div className="relative w-60 sm:w-80 lg:w-[26rem] contact-float">
-            <svg viewBox="0 0 440 340" className="w-full h-auto overflow-visible" role="img" aria-label="Glowing red envelope">
-              <defs>
-                <radialGradient id="cgGlow" cx="50%" cy="52%" r="55%">
-                  <stop offset="0%" stopColor="#e61e2b" stopOpacity="0.55" />
-                  <stop offset="55%" stopColor="#e61e2b" stopOpacity="0.14" />
-                  <stop offset="100%" stopColor="#e61e2b" stopOpacity="0" />
-                </radialGradient>
-                <linearGradient id="cgTile" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#34343b" />
-                  <stop offset="45%" stopColor="#17171c" />
-                  <stop offset="100%" stopColor="#09090c" />
-                </linearGradient>
-                <linearGradient id="cgRing" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#ff2d3d" stopOpacity="0" />
-                  <stop offset="30%" stopColor="#ff2d3d" stopOpacity="0.95" />
-                  <stop offset="70%" stopColor="#ff5a66" stopOpacity="1" />
-                  <stop offset="100%" stopColor="#ff2d3d" stopOpacity="0.1" />
-                </linearGradient>
-                <filter id="cgBlur" x="-30%" y="-30%" width="160%" height="160%">
-                  <feGaussianBlur stdDeviation="6" />
-                </filter>
-                <filter id="cgSoft" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="2.2" />
-                </filter>
-                <clipPath id="cgFront">
-                  <rect x="-20" y="196" width="500" height="200" />
-                </clipPath>
-              </defs>
-
-              {/* background glow */}
-              <ellipse cx="220" cy="175" rx="215" ry="150" fill="url(#cgGlow)" />
-
-              {/* orbit ring (back half) */}
-              <g transform="rotate(-16 220 190)">
-                <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="9" filter="url(#cgBlur)" opacity="0.8" />
-                <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="3.5" opacity="0.55" />
-              </g>
-
-              {/* 3D tile */}
-              <rect x="146" y="92" width="196" height="186" rx="40" fill="#050507" stroke="#e61e2b" strokeOpacity="0.25" />
-              <rect x="128" y="74" width="196" height="186" rx="40" fill="url(#cgTile)" stroke="#ffffff" strokeOpacity="0.14" />
-              <rect x="134" y="80" width="184" height="174" rx="34" fill="none" stroke="#ffffff" strokeOpacity="0.05" />
-
-              {/* envelope (glow + crisp line) */}
-              <g transform="translate(0 -2)">
-                <g filter="url(#cgSoft)" stroke="#ff2d3d" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.9">
-                  <rect x="164" y="118" width="124" height="88" rx="12" />
-                  <path d="M164 128 L226 176 L288 128" />
-                </g>
-                <rect x="164" y="118" width="124" height="88" rx="12" fill="#e61e2b" fillOpacity="0.1" stroke="#ff4351" strokeWidth="4.5" />
-                <path d="M164 128 L226 176 L288 128" fill="none" stroke="#ff4351" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M168 200 L210 160 M284 200 L242 160" fill="none" stroke="#ff4351" strokeOpacity="0.55" strokeWidth="2.5" strokeLinecap="round" />
-              </g>
-
-              {/* orbit ring (front half, passes in front of the tile) */}
-              <g clipPath="url(#cgFront)">
-                <g transform="rotate(-16 220 190)">
-                  <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="12" filter="url(#cgBlur)" />
-                  <ellipse cx="220" cy="190" rx="205" ry="56" fill="none" stroke="url(#cgRing)" strokeWidth="4.5" />
-                </g>
-              </g>
-
-              {/* sparkles */}
-              <circle cx="58" cy="118" r="2.4" fill="#ff5a66" opacity="0.8" />
-              <circle cx="392" cy="86" r="2" fill="#ff5a66" opacity="0.7" />
-              <circle cx="372" cy="262" r="3" fill="#ff2d3d" opacity="0.6" />
-              <circle cx="90" cy="268" r="1.8" fill="#ffffff" opacity="0.5" />
-            </svg>
-          </div>
         </div>
       </div>
 

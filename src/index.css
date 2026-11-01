@@ -222,14 +222,3 @@
   box-shadow: 0 0 0 1px rgba(230, 30, 43, 0.06), 0 24px 60px -28px rgba(230, 30, 43, 0.4), 0 10px 30px rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(10px);
 }
-
-@keyframes contact-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-.contact-float {
-  animation: contact-float 6s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .contact-float { animation: none; }
-}
