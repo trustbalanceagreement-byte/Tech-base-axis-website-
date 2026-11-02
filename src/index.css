@@ -254,7 +254,7 @@
   50% { transform: translateY(-8px); }
 }
 .tba-rise { opacity: 0; animation: tba-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards; animation-delay: var(--d, 0ms); }
-.tba-float { animation: tba-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards, tba-floaty 7s ease-in-out 1s infinite; animation-delay: var(--d, 0ms), 1s; }
+.tba-float { animation: tba-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards, tba-floaty 7s ease-in-out 1s infinite; animation-delay: var(--d, 0ms), var(--fd, 1s); }
 .tba-orbit, .tba-orbit-counter { transform-box: view-box; transform-origin: 0 0; }
 .tba-orbit-1 { animation: tba-spin 30s linear infinite; }
 .tba-orbit-2 { animation: tba-spin-rev 44s linear infinite; }
@@ -268,4 +268,15 @@
 @media (prefers-reduced-motion: reduce) {
   .tba-rise, .tba-float { animation: none; opacity: 1; }
   .tba-orbit, .tba-orbit-counter, .tba-hub-pulse { animation: none; }
+}
+
+@keyframes tba-dashmove { to { stroke-dashoffset: -40; } }
+@keyframes tba-shimmer { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes tba-nudge { 0%,100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+.tba-dash { stroke-dasharray: 5 7; animation: tba-dashmove 3s linear infinite; }
+.tba-spin-slow { animation: tba-spin 24s linear infinite; }
+.tba-shimmer { background-size: 200% 100%; animation: tba-shimmer 8s ease-in-out infinite; }
+.tba-nudge { animation: tba-nudge 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tba-dash, .tba-spin-slow, .tba-shimmer, .tba-nudge { animation: none; }
 }

@@ -1,5 +1,17 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { ArrowUpRight, Layers } from 'lucide-react';
+import React from 'react';
+import {
+  ArrowRight,
+  Bot,
+  Cloud,
+  Code2,
+  Lightbulb,
+  LayoutDashboard,
+  Rocket,
+  Settings,
+  ShoppingCart,
+  Smartphone,
+  Wrench
+} from 'lucide-react';
 import { Project, NavSection } from '../types';
 
 interface ProjectsHeroProps {
@@ -7,262 +19,145 @@ interface ProjectsHeroProps {
   onNavigate: (section: NavSection) => void;
 }
 
-interface Stat {
-  to: number;
-  decimals?: number;
-  suffix?: string;
+const delay = (ms: number, floatMs = 1000): React.CSSProperties =>
+  ({ ['--d' as any]: `${ms}ms`, ['--fd' as any]: `${floatMs}ms` });
+
+interface TechCardProps {
+  icon: React.ReactNode;
   label: string;
+  color: string; // rgb triplet, e.g. "96,165,250"
+  className?: string;
+  style?: React.CSSProperties;
 }
 
-const prefersReducedMotion = () =>
-  typeof window !== 'undefined' &&
-  typeof window.matchMedia === 'function' &&
-  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/** A number that counts up from 0 the first time it scrolls into view. */
-const CountUp: React.FC<{ to: number; decimals?: number; suffix?: string }> = ({ to, decimals = 0, suffix = '' }) => {
-  const ref = useRef<HTMLSpanElement | null>(null);
-  const [value, setValue] = useState<number>(to);
-
-  useLayoutEffect(() => {
-    if (!prefersReducedMotion() && typeof IntersectionObserver !== 'undefined') setValue(0);
-  }, [to]);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || prefersReducedMotion() || typeof IntersectionObserver === 'undefined') {
-      setValue(to);
-      return;
-    }
-
-    let frame = 0;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((e) => e.isIntersecting)) return;
-        observer.disconnect();
-        const start = performance.now();
-        const duration = 1400;
-        const tick = (now: number) => {
-          const t = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - t, 3);
-          setValue(to * eased);
-          if (t < 1) frame = requestAnimationFrame(tick);
-        };
-        frame = requestAnimationFrame(tick);
-      },
-      { threshold: 0.4 }
-    );
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(frame);
-    };
-  }, [to]);
-
-  return (
-    <span ref={ref}>
-      {value.toFixed(decimals)}
-      {suffix}
-    </span>
-  );
-};
-
-// Nodes orbiting the hub: [label, angle in degrees, highlighted]
-const RINGS: { r: number; cls: string; nodes: [string, number, boolean][] }[] = [
-  { r: 72, cls: '1', nodes: [['API', 20, true], ['DB', 200, false]] },
-  { r: 122, cls: '2', nodes: [['React', 90, false], ['Cloud', 210, true], ['Auth', 330, false]] },
-  { r: 172, cls: '3', nodes: [['AI', 40, true], ['Pay', 160, false], ['CDN', 280, false]] }
-];
-
-const OrbitVisual: React.FC = () => (
-  <svg viewBox="0 0 400 400" className="w-full h-auto overflow-visible" role="img" aria-label="Animated map of the technologies in every build">
-    <defs>
-      <radialGradient id="phGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stopColor="#e61e2b" stopOpacity="0.38" />
-        <stop offset="0.6" stopColor="#e61e2b" stopOpacity="0.08" />
-        <stop offset="1" stopColor="#e61e2b" stopOpacity="0" />
-      </radialGradient>
-      <linearGradient id="phHub" x1="0" y1="0" x2="1" y2="1">
-        <stop offset="0" stopColor="#2a2a31" />
-        <stop offset="1" stopColor="#0a0a0d" />
-      </linearGradient>
-      <filter id="phBlur" x="-50%" y="-50%" width="200%" height="200%">
-        <feGaussianBlur stdDeviation="6" />
-      </filter>
-    </defs>
-
-    <g transform="translate(200 200)">
-      <circle r="190" fill="url(#phGlow)" />
-
-      {/* static orbit tracks */}
-      {RINGS.map((ring) => (
-        <circle
-          key={ring.cls}
-          r={ring.r}
-          fill="none"
-          stroke="#ffffff"
-          strokeOpacity={ring.cls === '2' ? 0.14 : 0.09}
-          strokeWidth="1"
-          strokeDasharray={ring.cls === '2' ? '3 7' : undefined}
-        />
-      ))}
-
-      {/* rotating rings with their nodes */}
-      {RINGS.map((ring) => (
-        <g key={ring.cls} className={`tba-orbit tba-orbit-${ring.cls}`}>
-          {ring.nodes.map(([label, angle, hot]) => (
-            <g key={label} transform={`rotate(${angle}) translate(${ring.r} 0)`}>
-              <g transform={`rotate(${-angle})`}>
-                <g className={`tba-orbit-counter tba-orbit-counter-${ring.cls}`}>
-                  {hot && <circle r="17" fill="#e61e2b" opacity="0.35" filter="url(#phBlur)" />}
-                  <rect
-                    x="-24"
-                    y="-11"
-                    width="48"
-                    height="22"
-                    rx="11"
-                    fill="#0d0d11"
-                    stroke={hot ? '#ff4351' : '#ffffff'}
-                    strokeOpacity={hot ? 0.95 : 0.22}
-                    strokeWidth="1.2"
-                  />
-                  <text
-                    textAnchor="middle"
-                    y="3.6"
-                    fontSize="10.5"
-                    fontWeight="700"
-                    fill={hot ? '#ffb3b9' : '#d4d4d8'}
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
-                  >
-                    {label}
-                  </text>
-                </g>
-              </g>
-            </g>
-          ))}
-        </g>
-      ))}
-
-      {/* hub */}
-      <circle r="40" fill="none" stroke="#ff2d3d" strokeWidth="1.5" className="tba-hub-pulse" />
-      <circle r="40" fill="none" stroke="#ff2d3d" strokeWidth="1.5" className="tba-hub-pulse tba-hub-pulse-2" />
-      <circle r="36" fill="#e61e2b" opacity="0.4" filter="url(#phBlur)" />
-      <circle r="34" fill="url(#phHub)" stroke="#ff4351" strokeOpacity="0.8" strokeWidth="1.5" />
-      <text
-        textAnchor="middle"
-        y="5"
-        fontSize="15"
-        fontWeight="800"
-        fill="#ffffff"
-        letterSpacing="1"
-        style={{ fontFamily: "'JetBrains Mono', monospace" }}
-      >
-        <tspan fill="#ff4351">//</tspan>TBA
-      </text>
-    </g>
-  </svg>
+const TechCard: React.FC<TechCardProps> = ({ icon, label, color, className = '', style }) => (
+  <div
+    className={`tba-rise tba-float flex flex-col items-center justify-center gap-2 rounded-2xl px-4 py-4 backdrop-blur-sm ${className}`}
+    style={{
+      background: `linear-gradient(160deg, rgba(${color},0.14), rgba(10,10,13,0.85))`,
+      border: `1px solid rgba(${color},0.55)`,
+      boxShadow: `0 0 28px rgba(${color},0.16)`,
+      color: `rgb(${color})`,
+      ...style
+    }}
+  >
+    <span className="block [&>svg]:w-8 [&>svg]:h-8 sm:[&>svg]:w-10 sm:[&>svg]:h-10">{icon}</span>
+    <span className="text-xs sm:text-sm font-mono text-neutral-200">{label}</span>
+  </div>
 );
 
-export const ProjectsHero: React.FC<ProjectsHeroProps> = ({ projects, onNavigate }) => {
-  const count = Array.isArray(projects) ? projects.length : 0;
-  const disciplines = new Set((projects || []).map((p) => p.category).filter(Boolean)).size;
+const FlowCard: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className = '', style }) => (
+  <div
+    className={`tba-rise tba-float flex items-center justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 backdrop-blur-sm ${className}`}
+    style={style}
+  >
+    {[
+      { icon: <Lightbulb className="w-6 h-6" />, label: 'Idea' },
+      { icon: <Wrench className="w-6 h-6" />, label: 'Build' },
+      { icon: <Rocket className="w-6 h-6" />, label: 'Deploy' }
+    ].map((step, i) => (
+      <React.Fragment key={step.label}>
+        {i > 0 && <ArrowRight className="w-4 h-4 text-neutral-500 tba-nudge shrink-0" />}
+        <div className="flex flex-col items-center gap-1 text-neutral-400">
+          {step.icon}
+          <span className="text-[11px] font-mono">{step.label}</span>
+        </div>
+      </React.Fragment>
+    ))}
+  </div>
+);
 
-  const stats: Stat[] =
-    count > 0
-      ? [
-          { to: count, label: 'Live Projects' },
-          { to: disciplines, label: 'Disciplines' },
-          { to: 99.99, decimals: 2, suffix: '%', label: 'Uptime SLA' },
-          { to: 6, suffix: '+ Yrs', label: 'Engineering' }
-        ]
-      : [
-          { to: 45, suffix: '+', label: 'Deployments' },
-          { to: 99.99, decimals: 2, suffix: '%', label: 'Uptime SLA' },
-          { to: 3.8, decimals: 1, suffix: 'x', label: 'Speed Boost' },
-          { to: 6, suffix: '+ Yrs', label: 'Engineering' }
-        ];
-
+export const ProjectsHero: React.FC<ProjectsHeroProps> = () => {
   return (
-    <section className="contact-glass-card relative isolate overflow-hidden px-5 py-8 sm:px-8 sm:py-10 lg:px-12 lg:py-12">
-      {/* background: faint grid + red glows */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 opacity-60"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
-          maskImage: 'radial-gradient(ellipse at 70% 40%, black 10%, transparent 70%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at 70% 40%, black 10%, transparent 70%)'
-        }}
-      />
-      <div aria-hidden="true" className="pointer-events-none absolute -top-24 -left-16 w-80 h-80 rounded-full bg-red-700/20 blur-[110px] -z-10" />
-      <div aria-hidden="true" className="pointer-events-none absolute -bottom-28 right-0 w-96 h-96 rounded-full bg-red-900/20 blur-[120px] -z-10" />
+    <section className="relative isolate lg:min-h-[30rem]">
+      {/* Faint grid + glows */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-10 bottom-0 -z-10">
+        <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[34rem] max-w-full h-56 rounded-full bg-red-700/15 blur-[110px]" />
+        <div className="absolute top-8 right-0 w-72 h-72 rounded-full bg-violet-600/10 blur-[110px]" />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-6">
-        {/* Copy */}
-        <div className="lg:col-span-7">
-          <div className="tba-rise inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#e61e2b]" style={{ ['--d' as any]: '0ms' }}>
-            <Layers className="w-3.5 h-3.5" />
-            <span>// Portfolio &amp; Case Studies</span>
-          </div>
+      {/* ---------- Desktop: floating cards around the headline ---------- */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 hidden lg:block">
+        {/* connecting lines */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1000 400" preserveAspectRatio="none">
+          <path d="M596 70 L620 70" className="tba-dash" fill="none" stroke="rgba(180,160,255,0.4)" strokeWidth="1.4" />
+          <path d="M724 70 L800 70" className="tba-dash" fill="none" stroke="rgba(180,160,255,0.35)" strokeWidth="1.4" />
+          <path d="M690 152 C 700 200, 780 210, 790 258" className="tba-dash" fill="none" stroke="rgba(110,231,160,0.35)" strokeWidth="1.4" />
+          <path d="M910 115 C 930 150, 930 180, 930 208" className="tba-dash" fill="none" stroke="rgba(180,160,255,0.35)" strokeWidth="1.4" />
+        </svg>
 
-          <h1
-            className="tba-rise mt-5 font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.05]"
-            style={{ ['--d' as any]: '120ms' }}
-          >
-            Selected Work
-            <span className="block text-[#ff1f2e] drop-shadow-[0_0_26px_rgba(255,31,46,0.45)]">Engineered for Production</span>
-          </h1>
+        <Settings className="absolute left-[6%] top-[18%] w-9 h-9 text-neutral-700 tba-spin-slow" />
+        <Code2 className="absolute left-[11%] top-[66%] w-10 h-10 text-neutral-700 tba-float" style={delay(500, 400)} />
+        <Smartphone className="absolute left-[80%] top-[74%] w-9 h-9 text-neutral-700 tba-float" style={delay(700, 1400)} />
 
-          <p
-            className="tba-rise mt-5 max-w-xl text-sm sm:text-base lg:text-lg text-neutral-300 leading-relaxed"
-            style={{ ['--d' as any]: '240ms' }}
-          >
-            Full-stack platforms, cloud infrastructure and AI systems designed by Bikram Ghosh, built for reliability, security and speed.
-          </p>
+        <TechCard
+          icon={<Bot />}
+          label="Automation"
+          color="214,180,90"
+          className="absolute left-[50%] top-[0%] w-[7.5rem] h-[9.5rem] opacity-70"
+          style={delay(200, 0)}
+        />
+        <TechCard
+          icon={<Cloud />}
+          label="Cloud"
+          color="120,150,255"
+          className="absolute left-[62%] top-[0%] w-[7.5rem] h-[9.5rem] opacity-90"
+          style={delay(300, 700)}
+        />
+        <FlowCard className="absolute right-0 top-[2%] w-[15rem] opacity-80" style={delay(400, 300)} />
+        <TechCard
+          icon={<ShoppingCart />}
+          label="Ecommerce"
+          color="110,210,150"
+          className="absolute left-[74%] top-[62%] w-[7.5rem] h-[9.5rem] opacity-70"
+          style={delay(500, 1100)}
+        />
+        <TechCard
+          icon={<LayoutDashboard />}
+          label="Software Apps"
+          color="170,130,255"
+          className="absolute right-0 top-[50%] w-[11rem] h-[9.5rem] opacity-90"
+          style={delay(600, 500)}
+        />
+      </div>
 
-          <div className="tba-rise mt-7 flex flex-wrap items-center gap-3" style={{ ['--d' as any]: '360ms' }}>
-            <button
-              type="button"
-              onClick={() => onNavigate('contact')}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#e61e2b] hover:bg-red-500 text-white text-xs font-mono font-bold tracking-wider shadow-lg shadow-red-600/25 transition-all hover:-translate-y-0.5 cursor-pointer"
-            >
-              <span>START A PROJECT</span>
-              <ArrowUpRight className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => onNavigate('packages')}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-neutral-100 border border-white/10 hover:border-white/20 text-xs font-mono font-bold tracking-wider transition-all cursor-pointer"
-            >
-              <span>VIEW PACKAGES</span>
-            </button>
-          </div>
-
-          {/* Animated stats */}
-          <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {stats.map((stat, i) => (
-              <div
-                key={stat.label}
-                className="tba-rise rounded-2xl bg-black/40 border border-white/10 px-4 py-3.5"
-                style={{ ['--d' as any]: `${480 + i * 90}ms` }}
-              >
-                <div className="font-display text-2xl sm:text-[1.7rem] font-bold text-white leading-none tabular-nums">
-                  <CountUp to={stat.to} decimals={stat.decimals} suffix={stat.suffix} />
-                </div>
-                <div className="mt-1.5 text-[11px] font-mono uppercase tracking-wider text-neutral-400">{stat.label}</div>
-              </div>
-            ))}
-          </div>
+      {/* ---------- Copy ---------- */}
+      <div className="relative z-10 mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl text-center pt-2 pb-8 sm:pt-6 sm:pb-12 lg:pt-40 lg:pb-16">
+        <div
+          className="tba-rise inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#e61e2b]"
+          style={delay(0)}
+        >
+          <span>// Our Body of Work</span>
         </div>
 
-        {/* Animated orbit */}
-        <div className="lg:col-span-5 flex justify-center">
-          <div className="tba-rise tba-float w-full max-w-[17rem] sm:max-w-[22rem] lg:max-w-[26rem]" style={{ ['--d' as any]: '300ms' }}>
-            <OrbitVisual />
-          </div>
+        <h1
+          className="tba-rise mt-5 font-sans font-extrabold text-white tracking-tight leading-[1.08] text-[clamp(1.9rem,8vw,2.75rem)] sm:text-5xl lg:text-[2.6rem] xl:text-5xl 2xl:text-6xl"
+          style={delay(120)}
+        >
+          Building the Future:
+          <span className="block bg-gradient-to-r from-white via-[#ffb7a8] to-[#ff3b30] bg-clip-text text-transparent tba-shimmer">
+            Digital Solutions. Automation. Commerce.
+          </span>
+        </h1>
+
+        <p
+          className="tba-rise mt-5 mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-neutral-300 leading-relaxed"
+          style={delay(240)}
+        >
+          From custom software and seamless automation to robust e-commerce platforms, we deliver high-performance digital
+          solutions engineered for reliability, security, and exceptional user experiences. Discover our body of work.
+        </p>
+      </div>
+
+      {/* ---------- Mobile / tablet: cards below the copy ---------- */}
+      <div className="lg:hidden relative z-10 mx-auto max-w-xl pb-6 space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          <TechCard icon={<Bot />} label="Automation" color="214,180,90" style={delay(300, 0)} />
+          <TechCard icon={<Cloud />} label="Cloud" color="120,150,255" style={delay(380, 600)} />
+          <TechCard icon={<ShoppingCart />} label="Ecommerce" color="110,210,150" style={delay(460, 1100)} />
+          <TechCard icon={<LayoutDashboard />} label="Software Apps" color="170,130,255" style={delay(540, 400)} />
         </div>
+        <FlowCard className="w-full justify-around" style={delay(620, 800)} />
       </div>
     </section>
   );
