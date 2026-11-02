@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ProjectsHero } from './ProjectsHero';
 import { Project, NavSection } from '../types';
 import { PROJECTS_DATA } from '../data/mockData';
 import { ProjectMediaPlayer } from './ProjectMediaPlayer';
@@ -64,19 +65,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 text-neutral-100">
-      {/* Header */}
-      <div className="max-w-3xl">
-        <div className="text-xs font-mono text-[#e61e2b] uppercase tracking-widest mb-2 flex items-center gap-2">
-          <Layers className="w-4 h-4 text-[#e61e2b]" />
-          <span>PROJECTS & ARCHITECTURE SHOWCASE</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-4">
-          Production Systems Engineered by Tech Base Axis
-        </h1>
-        <p className="text-base sm:text-lg text-neutral-300 leading-relaxed">
-          Explore production-grade architectures built by Bikram Ghosh. Each project reflects strict engineering principles: zero-downtime reliability, bank-grade data security, and high-performance UI responsiveness.
-        </p>
-      </div>
+      <ProjectsHero projects={sourceProjects} onNavigate={onNavigate} />
 
       {/* When no projects are published yet by Admin */}
       {sourceProjects.length === 0 ? (
