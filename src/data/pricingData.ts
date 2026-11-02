@@ -177,14 +177,26 @@ export const INITIAL_PACKAGES: ServicePackage[] = [
   }
 ];
 
-export const PACKAGES_STORAGE_KEY = 'tech_base_axis_pricing_packages_v4';
-export const PACKAGES_INITIALIZED_KEY = 'tech_base_axis_packages_initialized';
+// ---------------------------------------------------------------------------
+// Storage layout (v2)
+//
+// Older versions of the site (still cached in some visitors' browsers) keep
+// writing their built-in default plans to the OLD locations: the Firestore
+// 'packages' collection, packages/packages.json on Supabase and /api/packages.
+// Those writes replaced the plans the admin created. The live package list now
+// lives in NEW, separate locations that older versions never touch.
+// ---------------------------------------------------------------------------
+export const PACKAGES_STORAGE_KEY = 'tech_base_axis_packages_v2_envelope';
 export const DELETED_PACKAGES_STORAGE_KEY = 'tech_base_axis_deleted_packages_v1';
 
-import { db, collection, getDocs, setDoc, doc, deleteDoc, onSnapshot } from '../lib/firebase';
+import { db, doc, getDoc, setDoc, onSnapshot } from '../lib/firebase';
 import { supabaseAdmin, SUPABASE_STORAGE_BUCKET } from '../lib/supabaseClient';
 
-export const SUPABASE_PACKAGES_URL = 'https://httjpsskqtgjtmjgrjgs.supabase.co/storage/v1/object/public/Tech%20Base%20Axis%20Storege/packages/packages.json';
+export const SUPABASE_PACKAGES_URL = 'https://httjpsskqtgjtmjgrjgs.supabase.co/storage/v1/object/public/Tech%20Base%20Axis%20Storege/packages/packages-v2.json';
+const SUPABASE_PACKAGES_PATH = 'packages/packages-v2.json';
+const SERVER_PACKAGES_ENDPOINT = '/api/packages-v2';
+const FIRESTORE_PACKAGES_COLLECTION = 'packages_v2';
+const FIRESTORE_PACKAGES_DOC = 'current';
 
 export type PackageCategory = 'subscription' | 'maintenance';
 
@@ -270,189 +282,145 @@ export function isMaintenancePackage(pkg: ServicePackage): boolean {
   return getPackageCategory(pkg) === 'maintenance';
 }
 
-/**
- * Loads the packages the admin saved, from localStorage.
- * Returns an empty list when nothing was saved: the built-in INITIAL_PACKAGES
- * are NEVER used as a silent fallback, so only packages added through the
- * Admin panel are shown (INITIAL_PACKAGES is used only by the explicit
- * "Reset to default" action).
- * Guaranteed to exclude any package permanently deleted by admin.
- */
-export function loadSavedPackages(): ServicePackage[] {
-  const deletedIds = getDeletedPackageIds();
-  if (typeof window === 'undefined') {
-    return [];
-  }
+// ---------------------------------------------------------------------------
+// The package list travels as an "envelope": { v: 2, rev, packages }.
+// `rev` is the time of the save. Every store (browser, Supabase, server,
+// Firestore) holds a copy and the copy with the highest `rev` always wins, so an
+// older copy can never replace a newer one, and an empty list (admin deleted
+// everything) is still a valid, newer state.
+// ---------------------------------------------------------------------------
+export interface PackagesEnvelope {
+  v: 2;
+  rev: number;
+  packages: ServicePackage[];
+}
+
+function isEnvelope(x: any): x is PackagesEnvelope {
+  return Boolean(x) && typeof x === 'object' && typeof x.rev === 'number' && Array.isArray(x.packages);
+}
+
+function readLocalEnvelope(): PackagesEnvelope | null {
   try {
     const raw = localStorage.getItem(PACKAGES_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed.filter((p) => !deletedIds.includes(p.id));
-      }
+      if (isEnvelope(parsed)) return parsed;
     }
-  } catch (err) {
-    console.error('Failed to load packages from storage:', err);
-  }
-  return [];
+  } catch (_) {}
+  return null;
+}
+
+function writeLocalEnvelope(env: PackagesEnvelope): void {
+  try {
+    localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(env));
+  } catch (_) {}
 }
 
 /**
- * Cleans package object for Firestore storage (prevents undefined values)
+ * The packages this device last saved or received. Returns an empty list when
+ * nothing was saved: the built-in INITIAL_PACKAGES are NEVER used as a silent
+ * fallback, so only packages the admin created are ever shown.
  */
-export function sanitizePackageForFirestore(pkg: ServicePackage): Record<string, any> {
-  const clean: Record<string, any> = {
-    id: pkg.id,
-    name: pkg.name || 'Service Package',
-    badge: pkg.badge || '',
-    theme: pkg.theme || 'green',
-    price: typeof pkg.price === 'number' ? pkg.price : 0,
-    period: pkg.period || '/month',
-    cycle: pkg.cycle || (getPackageCategory(pkg) === 'maintenance' ? 'maintenance' : 'monthly'),
-    description: pkg.description || '',
-    turnaround: pkg.turnaround || 'Instant Setup',
-    idealFor: pkg.idealFor || '',
-    popular: Boolean(pkg.popular),
-    features: Array.isArray(pkg.features)
-      ? pkg.features.map((f) => ({
-          text: typeof f === 'string' ? f : f.text,
-          included: typeof f === 'string' ? true : Boolean(f.included)
-        }))
-      : [],
-    deliverables: Array.isArray(pkg.deliverables) ? pkg.deliverables : [],
-    techStack: Array.isArray(pkg.techStack) ? pkg.techStack : [],
-    rev: typeof pkg.rev === 'number' ? pkg.rev : Date.now(),
-    updatedAt: pkg.updatedAt || new Date().toISOString()
-  };
-
-  return clean;
+export function loadSavedPackages(): ServicePackage[] {
+  if (typeof window === 'undefined') return [];
+  return readLocalEnvelope()?.packages ?? [];
 }
 
-/** Revision of a list = newest save stamp found in it (0 for legacy lists without one). */
-export function getPackagesRev(list: ServicePackage[] | null | undefined): number {
-  if (!Array.isArray(list)) return 0;
-  let max = 0;
-  for (const p of list) {
-    const r = typeof p?.rev === 'number' ? p.rev : p?.updatedAt ? Date.parse(p.updatedAt) || 0 : 0;
-    if (r > max) max = r;
+export function pickNewestEnvelope(candidates: (PackagesEnvelope | null | undefined)[]): PackagesEnvelope | null {
+  let best: PackagesEnvelope | null = null;
+  for (const c of candidates) {
+    if (!isEnvelope(c)) continue;
+    if (!best || c.rev > best.rev) best = c;
   }
-  return max;
+  return best;
 }
 
-async function readSupabasePackages(): Promise<ServicePackage[] | null> {
+async function readSupabaseEnvelope(): Promise<PackagesEnvelope | null> {
   try {
     const r = await fetch(`${SUPABASE_PACKAGES_URL}?t=${Date.now()}`, { cache: 'no-store' });
     if (r.ok) {
       const data = await r.json();
-      if (Array.isArray(data)) return data;
+      if (isEnvelope(data)) return data;
     }
   } catch (_) {}
   return null;
 }
 
-async function readServerPackages(): Promise<ServicePackage[] | null> {
+async function readServerEnvelope(): Promise<PackagesEnvelope | null> {
   try {
-    const r = await fetch('/api/packages', { cache: 'no-store' });
+    const r = await fetch(SERVER_PACKAGES_ENDPOINT, { cache: 'no-store' });
     if (r.ok) {
       const data = await r.json();
-      if (Array.isArray(data)) return data;
+      if (isEnvelope(data)) return data;
     }
   } catch (_) {}
   return null;
 }
 
-async function readFirestorePackages(): Promise<ServicePackage[] | null> {
+function envelopeFromFirestore(data: any): PackagesEnvelope | null {
   try {
-    const snap = await getDocs(collection(db, 'packages'));
-    const list: ServicePackage[] = [];
-    snap.forEach((d) => list.push({ ...(d.data() as ServicePackage), id: d.id }));
-    return list;
+    if (!data || typeof data.rev !== 'number') return null;
+    const list = typeof data.json === 'string' ? JSON.parse(data.json) : null;
+    return Array.isArray(list) ? { v: 2, rev: data.rev, packages: list } : null;
   } catch (_) {
     return null;
   }
 }
 
-/**
- * Picks the NEWEST copy of the package list among all cloud sources.
- * Different sources can briefly disagree (a write to one of them may fail), so
- * "newest save wins" is what keeps a package the admin just created from being
- * overwritten by an older copy.
- */
-export function pickNewestPackages(candidates: (ServicePackage[] | null)[]): ServicePackage[] | null {
-  const valid = candidates.filter((c): c is ServicePackage[] => Array.isArray(c));
-  if (valid.length === 0) return null;
-  let best = valid[0];
-  for (const c of valid.slice(1)) {
-    const diff = getPackagesRev(c) - getPackagesRev(best);
-    if (diff > 0 || (diff === 0 && best.length === 0 && c.length > 0)) best = c;
+async function readFirestoreEnvelope(): Promise<PackagesEnvelope | null> {
+  try {
+    const snap = await getDoc(doc(db, FIRESTORE_PACKAGES_COLLECTION, FIRESTORE_PACKAGES_DOC));
+    return snap.exists() ? envelopeFromFirestore(snap.data()) : null;
+  } catch (_) {
+    return null;
   }
-  return best;
 }
 
-/** Newest list across Supabase, the server and Firestore. null when nothing is reachable. */
-export async function fetchCloudPackages(): Promise<ServicePackage[] | null> {
-  const [supa, fire, server] = await Promise.all([
-    readSupabasePackages(),
-    readFirestorePackages(),
-    readServerPackages()
+/** Newest copy across Supabase, the server and Firestore. null when none is reachable / nothing saved yet. */
+export async function fetchCloudEnvelope(): Promise<PackagesEnvelope | null> {
+  const [supa, server, fire] = await Promise.all([
+    readSupabaseEnvelope(),
+    readServerEnvelope(),
+    readFirestoreEnvelope()
   ]);
-  return pickNewestPackages([supa, fire, server]);
+  return pickNewestEnvelope([supa, server, fire]);
 }
 
 /**
- * Fetches public packages: newest cloud copy, else whatever the admin saved locally.
- */
-export async function fetchPublicPackages(): Promise<ServicePackage[]> {
-  const deletedIds = getDeletedPackageIds();
-  const cloud = await fetchCloudPackages();
-  const list = cloud ?? loadSavedPackages();
-  return list.filter((p) => !deletedIds.includes(p.id));
-}
-
-/**
- * Live subscription to public packages for every visitor / device.
- * Sources: Supabase JSON, server JSON (polled) and Cloud Firestore (live listener).
- * The newest save always wins and an older copy can never replace a newer one.
+ * Live subscription to the public packages for every visitor / device.
+ * Sources: Supabase JSON + server (polled) and Cloud Firestore (live listener).
+ * The newest save always wins; an older copy can never replace a newer one.
  */
 export function subscribeToPublicPackages(callback: (packages: ServicePackage[]) => void): () => void {
   let isMounted = true;
   let lastSerialized = '';
-  // Never go back to a copy older than what this device already shows / saved
-  let currentRev = getPackagesRev(loadSavedPackages());
+  // Never go back to a copy older than what this device already has
+  let currentRev = readLocalEnvelope()?.rev ?? 0;
 
-  const sources: { supabase: ServicePackage[] | null; firestore: ServicePackage[] | null; server: ServicePackage[] | null } = {
+  const sources: { supabase: PackagesEnvelope | null; server: PackagesEnvelope | null; firestore: PackagesEnvelope | null } = {
     supabase: null,
-    firestore: null,
-    server: null
+    server: null,
+    firestore: null
   };
 
-  const accept = (incoming: ServicePackage[] | null) => {
-    if (!isMounted || !Array.isArray(incoming)) return;
+  const accept = (env: PackagesEnvelope | null) => {
+    if (!isMounted || !isEnvelope(env)) return;
+    if (env.rev < currentRev) return; // stale copy: ignore
 
-    const rev = getPackagesRev(incoming);
-    if (rev < currentRev) return; // stale copy: ignore
-
-    const deletedIds = getDeletedPackageIds();
-    const cleanPackages = incoming.filter((p) => !deletedIds.includes(p.id));
-
-    const serialized = JSON.stringify(cleanPackages);
-    if (serialized === lastSerialized) {
-      currentRev = Math.max(currentRev, rev);
-      return;
-    }
+    const serialized = JSON.stringify(env.packages);
+    const changed = serialized !== lastSerialized || env.rev > currentRev;
+    currentRev = Math.max(currentRev, env.rev);
+    if (!changed) return;
     lastSerialized = serialized;
-    currentRev = Math.max(currentRev, rev);
 
-    callback(cleanPackages);
-    try {
-      localStorage.setItem(PACKAGES_STORAGE_KEY, serialized);
-    } catch (_) {}
+    writeLocalEnvelope(env);
+    callback(env.packages);
   };
 
-  const recompute = () => accept(pickNewestPackages([sources.supabase, sources.firestore, sources.server]));
+  const recompute = () => accept(pickNewestEnvelope([sources.supabase, sources.server, sources.firestore]));
 
   const pullHttpSources = async () => {
-    const [supa, server] = await Promise.all([readSupabasePackages(), readServerPackages()]);
+    const [supa, server] = await Promise.all([readSupabaseEnvelope(), readServerEnvelope()]);
     if (!isMounted) return;
     if (supa) sources.supabase = supa;
     if (server) sources.server = server;
@@ -467,45 +435,33 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
   let unsubscribeFirestore: (() => void) | null = null;
   try {
     unsubscribeFirestore = onSnapshot(
-      collection(db, 'packages'),
-      (snapshot) => {
+      doc(db, FIRESTORE_PACKAGES_COLLECTION, FIRESTORE_PACKAGES_DOC),
+      (snap: any) => {
         if (!isMounted) return;
-        const list: ServicePackage[] = [];
-        snapshot.forEach((d) => list.push({ ...(d.data() as ServicePackage), id: d.id }));
-        sources.firestore = list;
+        sources.firestore = snap.exists() ? envelopeFromFirestore(snap.data()) : null;
         recompute();
       },
-      (err) => {
+      (err: any) => {
         if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
           console.warn('[Cloud Firestore Packages Sync] Snapshot listener notice:', err?.message || err);
         }
       }
     );
   } catch (err: any) {
-    if (err?.code !== 'unavailable' && err?.code !== 'permission-denied') {
-      console.warn('[Cloud Firestore Packages Sync] onSnapshot setup notice:', err?.message || err);
-    }
+    console.warn('[Cloud Firestore Packages Sync] onSnapshot setup notice:', err?.message || err);
   }
 
   // 3. Same-tab / cross-tab events fired by the admin panel right after a save
   const handleLocalUpdate = (e: any) => {
-    if (e.detail && Array.isArray(e.detail)) {
-      // The admin's own fresh save is the newest copy by definition
-      sources.supabase = e.detail;
-      sources.firestore = e.detail;
-      sources.server = e.detail;
-      accept(e.detail);
-    }
+    if (isEnvelope(e?.detail)) accept(e.detail);
   };
   window.addEventListener('tba_packages_updated', handleLocalUpdate);
 
   let channel: BroadcastChannel | null = null;
   try {
     if (typeof BroadcastChannel !== 'undefined') {
-      channel = new BroadcastChannel('tba_packages_channel');
-      channel.onmessage = (event) => {
-        if (event.data && Array.isArray(event.data)) accept(event.data);
-      };
+      channel = new BroadcastChannel('tba_packages_channel_v2');
+      channel.onmessage = (event) => accept(event.data);
     }
   } catch (_) {}
 
@@ -518,10 +474,12 @@ export function subscribeToPublicPackages(callback: (packages: ServicePackage[])
   };
 }
 
+let highestRev = 0;
+
 /**
- * Saves packages to localStorage, Supabase, the server and Cloud Firestore.
- * Every save is stamped with a revision so all devices can tell it is the newest copy.
- * Returns true when at least one cloud store accepted the save; when none did, a
+ * Saves the package list to this browser, Supabase, the server and Cloud Firestore.
+ * Every save gets a new, higher revision so all devices know it is the newest copy.
+ * Returns true when at least one cloud store accepted it; when none did, a
  * 'tba_packages_sync_failed' event is fired so the admin panel can warn the admin.
  */
 export async function savePackages(packages: ServicePackage[], deletedId?: string): Promise<boolean> {
@@ -529,58 +487,50 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
     recordDeletedPackageId(deletedId);
   }
 
-  const deletedIds = getDeletedPackageIds();
-  const rev = Date.now();
-  const cleanPackages: ServicePackage[] = (Array.isArray(packages) ? packages : [])
-    .filter((p) => !deletedIds.includes(p.id))
-    .map((p) => ({ ...p, rev, updatedAt: new Date(rev).toISOString() }));
+  const rev = Math.max(Date.now(), (readLocalEnvelope()?.rev ?? 0) + 1, highestRev + 1);
+  highestRev = rev;
+  const iso = new Date(rev).toISOString();
+  const env: PackagesEnvelope = {
+    v: 2,
+    rev,
+    packages: (Array.isArray(packages) ? packages : []).map((p) => ({ ...p, rev, updatedAt: iso }))
+  };
 
-  // 0. IMMEDIATE LOCAL PERSISTENCE
+  // 0. Immediate local persistence + instant update of every open tab / component
+  writeLocalEnvelope(env);
   try {
-    localStorage.setItem(PACKAGES_STORAGE_KEY, JSON.stringify(cleanPackages));
-    localStorage.setItem(PACKAGES_INITIALIZED_KEY, 'true');
-  } catch (_) {}
-
-  // 1. Instant reactive update across components / tabs
-  try {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tba_packages_updated', { detail: cleanPackages }));
-    }
+    window.dispatchEvent(new CustomEvent('tba_packages_updated', { detail: env }));
     if (typeof BroadcastChannel !== 'undefined') {
-      const channel = new BroadcastChannel('tba_packages_channel');
-      channel.postMessage(cleanPackages);
+      const channel = new BroadcastChannel('tba_packages_channel_v2');
+      channel.postMessage(env);
       setTimeout(() => channel.close(), 100);
     }
   } catch (_) {}
 
-  // 2. Cloud writes in parallel. Each one reports whether it really succeeded.
+  // 1. Cloud writes in parallel; each reports whether it really succeeded
   const writeSupabase = async (): Promise<boolean> => {
     try {
-      const jsonBlob = new Blob([JSON.stringify(cleanPackages, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(env, null, 2)], { type: 'application/json' });
       const { error } = await supabaseAdmin.storage
         .from(SUPABASE_STORAGE_BUCKET)
-        .upload('packages/packages.json', jsonBlob, {
-          contentType: 'application/json',
-          cacheControl: '0',
-          upsert: true
-        });
+        .upload(SUPABASE_PACKAGES_PATH, blob, { contentType: 'application/json', cacheControl: '0', upsert: true });
       if (error) {
-        console.warn('[Direct Supabase Package Sync] Notice:', error.message);
+        console.warn('[Supabase Package Sync] Notice:', error.message);
         return false;
       }
       return true;
     } catch (err) {
-      console.warn('[Direct Supabase Package Sync] Init notice:', err);
+      console.warn('[Supabase Package Sync] Notice:', err);
       return false;
     }
   };
 
   const writeServer = async (): Promise<boolean> => {
     try {
-      const res = await fetch('/api/packages', {
+      const res = await fetch(SERVER_PACKAGES_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(cleanPackages)
+        body: JSON.stringify(env)
       });
       return res.ok;
     } catch (_) {
@@ -590,27 +540,15 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
 
   const writeFirestore = async (): Promise<boolean> => {
     try {
-      if (deletedId) {
-        await deleteDoc(doc(db, 'packages', deletedId)).catch(() => {});
-      }
-
-      const snap = await getDocs(collection(db, 'packages'));
-      const activeIds = new Set(cleanPackages.map((p) => p.id));
-      const delIds = new Set(deletedIds);
-      const removals: Promise<unknown>[] = [];
-      snap.forEach((d) => {
-        if (delIds.has(d.id) || !activeIds.has(d.id)) {
-          removals.push(deleteDoc(doc(db, 'packages', d.id)));
-        }
+      await setDoc(doc(db, FIRESTORE_PACKAGES_COLLECTION, FIRESTORE_PACKAGES_DOC), {
+        v: 2,
+        rev,
+        json: JSON.stringify(env.packages),
+        updatedAt: iso
       });
-      await Promise.all(removals);
-
-      await Promise.all(
-        cleanPackages.map((pkg) => setDoc(doc(db, 'packages', pkg.id), sanitizePackageForFirestore(pkg), { merge: true }))
-      );
       return true;
-    } catch (firestoreErr) {
-      console.warn('[Cloud Firestore Sync] Packages sync notice:', firestoreErr);
+    } catch (err) {
+      console.warn('[Cloud Firestore Package Sync] Notice:', err);
       return false;
     }
   };
@@ -625,41 +563,30 @@ export async function savePackages(packages: ServicePackage[], deletedId?: strin
 }
 
 // ---------------------------------------------------------------------------
-// Admin edits: always apply the change on top of the LATEST cloud list.
-//
-// Previously every admin action saved the whole list held in the admin's
-// browser (localStorage / an old poll result). If that copy was stale (for
-// example it still contained old default packages), saving pushed those stale
-// packages back to the cloud and every visitor suddenly saw extra packages.
+// Admin edits are always applied on top of the NEWEST known copy (never on a
+// possibly stale list held in the admin's browser), and one at a time, so quick
+// consecutive edits cannot overwrite each other.
 // ---------------------------------------------------------------------------
-
-let lastSavedPackages: ServicePackage[] | null = null;
+let lastSavedEnvelope: PackagesEnvelope | null = null;
 let lastSavedAt = 0;
 let packageWriteQueue: Promise<unknown> = Promise.resolve();
 
-/**
- * Applies `change` to the newest known package list and saves the result.
- * Calls are serialized so quick consecutive admin actions cannot overwrite each other.
- */
 export function updatePackagesFromCloud(
   change: (current: ServicePackage[]) => ServicePackage[],
   deletedId?: string
 ): Promise<ServicePackage[]> {
   const run = async (): Promise<ServicePackage[]> => {
-    const deletedIds = getDeletedPackageIds();
-    // A list we saved a moment ago may not be visible on the CDN yet: prefer it.
-    const recentlySaved = lastSavedPackages && Date.now() - lastSavedAt < 30000;
-    const cloud = recentlySaved ? lastSavedPackages : await fetchCloudPackages();
-    const base = (cloud ?? loadSavedPackages()).filter((p) => !deletedIds.includes(p.id));
+    // A copy we saved a moment ago may not be visible in the cloud yet: prefer it.
+    const recentlySaved = lastSavedEnvelope && Date.now() - lastSavedAt < 30000;
+    const cloud = recentlySaved ? lastSavedEnvelope : await fetchCloudEnvelope();
+    const base = pickNewestEnvelope([cloud, readLocalEnvelope()]);
 
-    const next = change(base);
+    const next = change(base ? base.packages : []);
     await savePackages(next, deletedId);
 
-    // Keep the stamped copy that savePackages just wrote locally
-    const stamped = loadSavedPackages();
-    lastSavedPackages = stamped;
+    lastSavedEnvelope = readLocalEnvelope();
     lastSavedAt = Date.now();
-    return stamped;
+    return lastSavedEnvelope ? lastSavedEnvelope.packages : next;
   };
 
   const result = packageWriteQueue.then(run, run);

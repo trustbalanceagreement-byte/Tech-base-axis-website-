@@ -18,12 +18,17 @@ import {
   syncProjectsToSupabase, 
   getProjectsFromSupabase,
   syncPackagesToSupabase,
-  getPackagesFromSupabase
+  getPackagesFromSupabase,
+  syncPackagesEnvelopeToSupabase,
+  getPackagesEnvelopeFromSupabase
 } from "./server/supabaseHelper.ts";
 import {
   getActivityDashboard,
   recordActivityEvent,
-  deleteActivityUser
+  deleteActivityUser,
+  getPackagesEnvelope,
+  savePackagesEnvelope,
+  isPackagesEnvelope
 } from "./server/activityHelper.ts";
 
 const app = express();
@@ -140,6 +145,36 @@ app.post("/api/projects", (req, res) => {
   } catch (err: any) {
     console.error("Error saving projects:", err);
     res.status(500).json({ error: err?.message || "Failed to save projects" });
+  }
+});
+
+// GET /api/packages-v2 - newest packages envelope { v, rev, packages } (local file vs Supabase copy)
+app.get("/api/packages-v2", async (_req, res) => {
+  try {
+    const local = getPackagesEnvelope();
+    const supa = await getPackagesEnvelopeFromSupabase();
+    const best = local && supa ? (supa.rev > local.rev ? supa : local) : (local || supa || null);
+    res.setHeader("Cache-Control", "no-store");
+    return res.status(200).json(best);
+  } catch (err) {
+    console.error("Error reading packages v2:", err);
+    return res.status(200).json(null);
+  }
+});
+
+// POST /api/packages-v2 - saves the packages envelope from the admin console
+app.post("/api/packages-v2", (req, res) => {
+  try {
+    const env = req.body;
+    if (!isPackagesEnvelope(env)) {
+      return res.status(400).json({ error: "Expected { v: 2, rev: number, packages: [] }" });
+    }
+    savePackagesEnvelope(env);
+    syncPackagesEnvelopeToSupabase(env).catch(() => {});
+    return res.status(200).json({ success: true, rev: env.rev, count: env.packages.length });
+  } catch (err: any) {
+    console.error("Error saving packages v2:", err);
+    return res.status(500).json({ error: err?.message || "Failed to save packages" });
   }
 });
 

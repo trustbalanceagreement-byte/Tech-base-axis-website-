@@ -41,6 +41,7 @@ if (!fs.existsSync(dataDir)) {
 const activityFilePath = path.join(dataDir, 'user_activity.json');
 const projectsFilePath = path.join(dataDir, 'projects.json');
 const packagesFilePath = path.join(dataDir, 'packages.json');
+const packagesEnvelopePath = path.join(dataDir, 'packages-v2.json');
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   try {
@@ -712,6 +713,44 @@ export function savePackagesList(packages: any[]): boolean {
     return true;
   } catch (err) {
     console.error('Error saving packages list:', err);
+    return false;
+  }
+}
+
+/**
+ * Packages v2: stored as one envelope { v: 2, rev, packages } in its own file.
+ * The old packages.json is never touched, so older cached site versions that
+ * still write their built-in default plans to it cannot overwrite the new data.
+ */
+export function isPackagesEnvelope(x: any): boolean {
+  return Boolean(x) && typeof x === 'object' && typeof x.rev === 'number' && Array.isArray(x.packages);
+}
+
+export function getPackagesEnvelope(): any | null {
+  try {
+    if (fs.existsSync(packagesEnvelopePath)) {
+      const parsed = JSON.parse(fs.readFileSync(packagesEnvelopePath, 'utf8'));
+      if (isPackagesEnvelope(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error('Error reading packages v2 file:', err);
+  }
+  return null;
+}
+
+export function savePackagesEnvelope(env: any): boolean {
+  if (!isPackagesEnvelope(env)) return false;
+  try {
+    const current = getPackagesEnvelope();
+    // Never replace a newer copy with an older one
+    if (current && current.rev > env.rev) return true;
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(packagesEnvelopePath, JSON.stringify(env, null, 2), 'utf8');
+    return true;
+  } catch (err) {
+    console.error('Error saving packages v2 file:', err);
     return false;
   }
 }

@@ -167,6 +167,44 @@ export async function getPackagesFromSupabase(): Promise<any[] | null> {
 }
 
 /**
+ * Packages v2 envelope { v: 2, rev, packages } in its own file, separate from the
+ * legacy packages/packages.json that older site versions keep overwriting.
+ */
+export async function syncPackagesEnvelopeToSupabase(env: any): Promise<boolean> {
+  try {
+    const jsonBuffer = Buffer.from(JSON.stringify(env, null, 2), 'utf8');
+    const { error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .upload('packages/packages-v2.json', jsonBuffer, {
+        contentType: 'application/json',
+        cacheControl: '0',
+        upsert: true
+      });
+    if (error) {
+      console.warn('[Supabase Sync] Warning syncing packages-v2.json:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Supabase Sync] Packages v2 sync notice:', err);
+    return false;
+  }
+}
+
+export async function getPackagesEnvelopeFromSupabase(): Promise<any | null> {
+  try {
+    const { data, error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .download('packages/packages-v2.json');
+    if (error || !data) return null;
+    const parsed = JSON.parse(await data.text());
+    return parsed && typeof parsed.rev === 'number' && Array.isArray(parsed.packages) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
  * Express / Connect request handler for /api/supabase/upload
  * Handles incoming raw binary streams or form data and pipes directly into Supabase Storage
  */

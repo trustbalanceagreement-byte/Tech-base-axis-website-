@@ -15,6 +15,13 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Packages v2: a single document (packages_v2/current) holding the live package list.
+    // Separate from the legacy "packages" collection that older site versions keep overwriting.
+    match /packages_v2/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // User activity and real-time presence tracking
     match /user_activity/{userId} {
       allow read, write: if true;

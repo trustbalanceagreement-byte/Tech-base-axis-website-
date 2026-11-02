@@ -19,6 +19,9 @@ import {
   saveProjectsList,
   getPackagesList,
   savePackagesList,
+  getPackagesEnvelope,
+  savePackagesEnvelope,
+  isPackagesEnvelope,
   handleUpload
 } from './server/activityHelper';
 import {
@@ -30,7 +33,9 @@ import {
   syncProjectsToSupabase,
   getProjectsFromSupabase,
   syncPackagesToSupabase,
-  getPackagesFromSupabase
+  getPackagesFromSupabase,
+  syncPackagesEnvelopeToSupabase,
+  getPackagesEnvelopeFromSupabase
 } from './server/supabaseHelper';
 
 function onesignalDevApiPlugin(): Plugin {
@@ -158,6 +163,51 @@ function onesignalDevApiPlugin(): Plugin {
               res.setHeader('Content-Type', 'application/json');
               res.statusCode = 400;
               res.end(JSON.stringify({ error: err?.message || 'Invalid projects format' }));
+            }
+          });
+          return;
+        }
+
+        res.statusCode = 405;
+        res.end(JSON.stringify({ error: 'Method not allowed' }));
+      });
+
+      // Packages v2: newest envelope { v, rev, packages } (own file, never touched by older site versions)
+      server.middlewares.use('/api/packages-v2', async (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-store');
+        if (req.method === 'GET') {
+          try {
+            const local = getPackagesEnvelope();
+            const supa = await getPackagesEnvelopeFromSupabase();
+            const best = local && supa ? (supa.rev > local.rev ? supa : local) : (local || supa || null);
+            res.statusCode = 200;
+            res.end(JSON.stringify(best));
+          } catch (_) {
+            res.statusCode = 200;
+            res.end('null');
+          }
+          return;
+        }
+
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const env = JSON.parse(body || '{}');
+              if (!isPackagesEnvelope(env)) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Expected { v: 2, rev: number, packages: [] }' }));
+                return;
+              }
+              savePackagesEnvelope(env);
+              syncPackagesEnvelopeToSupabase(env).catch(() => {});
+              res.statusCode = 200;
+              res.end(JSON.stringify({ success: true, rev: env.rev, count: env.packages.length }));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err?.message || 'Invalid packages payload' }));
             }
           });
           return;
