@@ -71,7 +71,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
           <span>PROJECTS & ARCHITECTURE SHOWCASE</span>
         </div>
         <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight mb-4">
-          Describe Our Work Elevating Digital Experience Showcase Our Project Demo
+          Production Systems Engineered by Tech Base Axis
         </h1>
         <p className="text-base sm:text-lg text-neutral-300 leading-relaxed">
           Explore production-grade architectures built by Bikram Ghosh. Each project reflects strict engineering principles: zero-downtime reliability, bank-grade data security, and high-performance UI responsiveness.
