@@ -122,16 +122,9 @@ export const ProjectsHero: React.FC<ProjectsHeroProps> = () => {
       </div>
 
       {/* ---------- Copy ---------- */}
-      <div className="relative z-10 mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl text-center pt-2 pb-8 sm:pt-6 sm:pb-12 lg:pt-40 lg:pb-16">
-        <div
-          className="tba-rise inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-[11px] font-mono font-bold uppercase tracking-[0.2em] text-[#e61e2b]"
-          style={delay(0)}
-        >
-          <span>// Our Body of Work</span>
-        </div>
-
+      <div className="relative z-10 mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl text-center pt-0 pb-8 sm:pt-2 sm:pb-12 lg:pt-36 lg:pb-16">
         <h1
-          className="tba-rise mt-5 font-sans font-extrabold text-white tracking-tight leading-[1.08] text-[clamp(1.9rem,8vw,2.75rem)] sm:text-5xl lg:text-[2.6rem] xl:text-5xl 2xl:text-6xl"
+          className="tba-rise font-sans font-extrabold text-white tracking-tight leading-[1.08] text-[clamp(1.9rem,8vw,2.75rem)] sm:text-5xl lg:text-[2.6rem] xl:text-5xl 2xl:text-6xl"
           style={delay(120)}
         >
           Building the Future:
