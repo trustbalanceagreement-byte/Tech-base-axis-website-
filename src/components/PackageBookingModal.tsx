@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavSection, ClientInquiry } from '../types';
 import { UpiPaymentModal, PaymentOrderData } from './UpiPaymentModal';
 import { launchRazorpayCheckout } from '../services/razorpayService';
@@ -128,6 +128,14 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
   const [isProcessingRazorpay, setIsProcessingRazorpay] = useState(false);
   const [razorpayError, setRazorpayError] = useState<string | null>(null);
   const [fallbackPaymentLink, setFallbackPaymentLink] = useState<string | null>(null);
+  const [showAddOns, setShowAddOns] = useState(false);
+  const addOnsRef = useRef<HTMLDivElement | null>(null);
+
+  // Reveal the add-ons list on demand and scroll it into view
+  const openAddOns = () => {
+    setShowAddOns(true);
+    setTimeout(() => addOnsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
 
   // Reset fields when modal opens
   useEffect(() => {
@@ -139,6 +147,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
       setFallbackPaymentLink(null);
       setIsProcessingRazorpay(false);
       setSelectedAddOnIds([]);
+      setShowAddOns(false);
       setClientName('');
       setEmail('');
       setPhone('');
@@ -471,20 +480,11 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
           <div className="space-y-4 sm:max-h-[85vh] sm:overflow-y-auto sm:pr-1">
             {/* Header with Professional Theme Badges */}
             <div>
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md text-[11px] font-mono font-bold uppercase tracking-wider bg-red-950/60 text-[#ff4d5a] border border-red-600/40 shadow-sm shadow-red-950/50">
-                    {plan.name}
-                  </span>
-                  <span className="text-xs font-mono text-neutral-400">Subscription Package</span>
-                </div>
-              </div>
-
               <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Package Customization &amp; Extra Add-ons
               </h3>
               <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                Enter your details below to book. Want more? Scroll down and click <span className="text-white font-semibold">"+ Add"</span> to include extra modules (Cloud Storage, Authentication, etc.).
+                Enter your details below to book. Want more? Click <span className="text-white font-semibold">"Add-ons"</span> to include extra modules (Cloud Storage, Authentication, etc.).
               </p>
             </div>
 
@@ -518,6 +518,14 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                     <span className="text-neutral-500 font-normal">None selected</span>
                   )}
                 </div>
+                <button
+                  type="button"
+                  onClick={openAddOns}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-red-500/50 transition-all cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add-ons</span>
+                </button>
               </div>
             </div>
 
@@ -681,6 +689,17 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                       )}
                     </button>
 
+                    {/* Add-ons button */}
+                    <button
+                      type="button"
+                      onClick={openAddOns}
+                      disabled={isProcessingRazorpay}
+                      className="py-3 px-4 rounded-xl font-mono text-neutral-300 hover:text-white text-xs font-semibold bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-red-500/50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add-ons</span>
+                    </button>
+
                     {/* Secondary Button: Manual UPI QR / Transfer */}
                     <button
                       id="confirm-booking-btn"
@@ -696,6 +715,8 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
               </div>
             </form>
 
+            {showAddOns && (
+            <div ref={addOnsRef} className="scroll-mt-16">
             {/* Extra Add-ons Selection List */}
             <div className="space-y-2.5 pt-2 border-t border-neutral-800">
               <div className="flex items-center justify-between">
@@ -779,6 +800,8 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                 })}
               </div>
             </div>
+            </div>
+            )}
           </div>
         )}
 
