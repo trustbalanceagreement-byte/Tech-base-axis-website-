@@ -350,9 +350,9 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
       <div 
-        className="relative w-full max-w-2xl my-auto rounded-2xl bg-[#0b0c10] border border-neutral-800 shadow-[0_25px_70px_rgba(0,0,0,0.9)] p-5 sm:p-7 text-neutral-100 overflow-hidden"
+        className="relative w-full max-w-2xl min-h-full sm:min-h-0 sm:my-auto rounded-none sm:rounded-2xl bg-[#0b0c10] border-0 sm:border border-neutral-800 shadow-[0_25px_70px_rgba(0,0,0,0.9)] p-4 pt-16 sm:p-7 text-neutral-100 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Ambient Top Crimson Glow matching Tech Base Axis branding */}
@@ -364,7 +364,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer border border-neutral-800 z-10 active:scale-95"
+          className="fixed sm:absolute top-3 sm:top-4 right-3 sm:right-4 p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer border border-neutral-800 z-10 active:scale-95"
           aria-label="Close booking modal"
         >
           <X className="w-4 h-4" />
@@ -468,7 +468,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
           </div>
         ) : (
           /* STATE: ADD-ONS CUSTOMIZATION & CONFIRM BOOKING */
-          <div className="space-y-4 max-h-[85vh] overflow-y-auto pr-1">
+          <div className="space-y-4 sm:max-h-[85vh] sm:overflow-y-auto sm:pr-1">
             {/* Header with Professional Theme Badges */}
             <div>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
@@ -484,7 +484,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                 Package Customization &amp; Extra Add-ons
               </h3>
               <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                Customize your subscription by adding extra modules (Cloud Storage, Authentication, etc.). Click <span className="text-white font-semibold">"+ Add"</span> beside any item.
+                Enter your details below to book. Want more? Scroll down and click <span className="text-white font-semibold">"+ Add"</span> to include extra modules (Cloud Storage, Authentication, etc.).
               </p>
             </div>
 
@@ -518,90 +518,6 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                     <span className="text-neutral-500 font-normal">None selected</span>
                   )}
                 </div>
-              </div>
-            </div>
-
-            {/* Extra Add-ons Selection List */}
-            <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-bold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#e61e2b]" />
-                  <span>Available Engineering Add-ons</span>
-                </label>
-                <span className="text-[11px] font-mono text-neutral-500">
-                  Click "+ Add" to include
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                {EXTRA_ADD_ONS.map((addon) => {
-                  const isAdded = selectedAddOnIds.includes(addon.id);
-                  const Icon = addon.icon;
-
-                  return (
-                    <div
-                      key={addon.id}
-                      className={`p-3 rounded-xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                        isAdded
-                          ? 'bg-red-950/20 border-red-600/50 shadow-[0_0_20px_rgba(230,30,43,0.12)]'
-                          : 'bg-neutral-900/50 border-neutral-800/80 hover:border-neutral-700/80 hover:bg-neutral-900/80'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                          isAdded 
-                            ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-md shadow-red-600/30' 
-                            : 'bg-neutral-900 text-neutral-400 border border-neutral-800'
-                        }`}>
-                          <Icon className="w-4 h-4" />
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs sm:text-sm font-semibold text-white">
-                              {addon.name}
-                            </span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-950 text-neutral-400 border border-neutral-800">
-                              {addon.category}
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-neutral-400 leading-relaxed mt-0.5 line-clamp-2">
-                            {addon.description}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right side: Price & Add Button */}
-                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-800/80">
-                        <div className="font-mono text-xs sm:text-sm font-bold text-white">
-                          +₹{addon.price.toLocaleString('en-IN')}
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleAddOn(addon.id)}
-                          className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
-                            isAdded
-                              ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/30 border border-red-500/50'
-                              : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-red-500/50'
-                          }`}
-                        >
-                          {isAdded ? (
-                            <>
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Added</span>
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="w-3.5 h-3.5" />
-                              <span>Add</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </div>
 
@@ -779,6 +695,90 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                 </div>
               </div>
             </form>
+
+            {/* Extra Add-ons Selection List */}
+            <div className="space-y-2.5 pt-2 border-t border-neutral-800">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-bold flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#e61e2b]" />
+                  <span>Available Engineering Add-ons</span>
+                </label>
+                <span className="text-[11px] font-mono text-neutral-500">
+                  Click "+ Add" to include
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {EXTRA_ADD_ONS.map((addon) => {
+                  const isAdded = selectedAddOnIds.includes(addon.id);
+                  const Icon = addon.icon;
+
+                  return (
+                    <div
+                      key={addon.id}
+                      className={`p-3 rounded-xl border transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isAdded
+                          ? 'bg-red-950/20 border-red-600/50 shadow-[0_0_20px_rgba(230,30,43,0.12)]'
+                          : 'bg-neutral-900/50 border-neutral-800/80 hover:border-neutral-700/80 hover:bg-neutral-900/80'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+                          isAdded 
+                            ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-md shadow-red-600/30' 
+                            : 'bg-neutral-900 text-neutral-400 border border-neutral-800'
+                        }`}>
+                          <Icon className="w-4 h-4" />
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs sm:text-sm font-semibold text-white">
+                              {addon.name}
+                            </span>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-neutral-950 text-neutral-400 border border-neutral-800">
+                              {addon.category}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-neutral-400 leading-relaxed mt-0.5 line-clamp-2">
+                            {addon.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Right side: Price & Add Button */}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-neutral-800/80">
+                        <div className="font-mono text-xs sm:text-sm font-bold text-white">
+                          +₹{addon.price.toLocaleString('en-IN')}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleAddOn(addon.id)}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                            isAdded
+                              ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-600/30 border border-red-500/50'
+                              : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-red-500/50'
+                          }`}
+                        >
+                          {isAdded ? (
+                            <>
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Added</span>
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
