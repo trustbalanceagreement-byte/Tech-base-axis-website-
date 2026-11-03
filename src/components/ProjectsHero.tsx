@@ -122,7 +122,7 @@ export const ProjectsHero: React.FC<ProjectsHeroProps> = () => {
       </div>
 
       {/* ---------- Copy ---------- */}
-      <div className="relative z-10 mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl text-center pt-0 pb-8 sm:pt-2 sm:pb-12 lg:pt-36 lg:pb-16">
+      <div className="relative z-10 mx-auto max-w-4xl lg:max-w-5xl xl:max-w-6xl text-center pt-0 pb-8 sm:pt-2 sm:pb-12 lg:pt-3 lg:pb-16">
         <h1
           className="tba-rise font-sans font-extrabold text-white tracking-tight leading-[1.08] text-[clamp(1.9rem,8vw,2.75rem)] sm:text-5xl lg:text-[2.6rem] xl:text-5xl 2xl:text-6xl"
           style={delay(120)}
