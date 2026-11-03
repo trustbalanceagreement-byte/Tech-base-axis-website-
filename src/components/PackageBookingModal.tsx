@@ -128,14 +128,24 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
   const [isProcessingRazorpay, setIsProcessingRazorpay] = useState(false);
   const [razorpayError, setRazorpayError] = useState<string | null>(null);
   const [fallbackPaymentLink, setFallbackPaymentLink] = useState<string | null>(null);
-  const [showAddOns, setShowAddOns] = useState(false);
-  const addOnsRef = useRef<HTMLDivElement | null>(null);
+  const [view, setView] = useState<'details' | 'addons'>('details');
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Reveal the add-ons list on demand and scroll it into view
-  const openAddOns = () => {
-    setShowAddOns(true);
-    setTimeout(() => addOnsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  // Switch between the Booking Details page and the Add-ons page
+  const goTo = (next: 'details' | 'addons') => {
+    setView(next);
+    scrollRef.current?.scrollTo({ top: 0 });
   };
+
+  // Lock the page behind the full-screen booking view
+  useEffect(() => {
+    if (!isOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen]);
 
   // Reset fields when modal opens
   useEffect(() => {
@@ -147,7 +157,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
       setFallbackPaymentLink(null);
       setIsProcessingRazorpay(false);
       setSelectedAddOnIds([]);
-      setShowAddOns(false);
+      setView('details');
       setClientName('');
       setEmail('');
       setPhone('');
@@ -359,25 +369,58 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div 
-        className="relative w-full max-w-2xl min-h-full sm:min-h-0 sm:my-auto rounded-none sm:rounded-2xl bg-[#0b0c10] border-0 sm:border border-neutral-800 shadow-[0_25px_70px_rgba(0,0,0,0.9)] p-4 pt-16 sm:p-7 text-neutral-100 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Ambient Top Crimson Glow matching Tech Base Axis branding */}
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-48 bg-[#e61e2b]/15 rounded-full blur-[90px] pointer-events-none" />
+    <div
+      ref={scrollRef}
+      className="fixed inset-0 z-50 bg-[#0b0c10] overflow-y-auto overscroll-contain animate-in fade-in duration-200"
+    >
+      {/* Ambient crimson glow */}
+      <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[28rem] max-w-full h-48 bg-[#e61e2b]/15 rounded-full blur-[90px]" />
 
-        {/* Top edge subtle reflection */}
-        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-600/40 to-transparent pointer-events-none" />
+      <div className="relative mx-auto w-full max-w-3xl min-h-full px-4 sm:px-8 pb-10 text-neutral-100" onClick={(e) => e.stopPropagation()}>
+        {/* Sticky top bar: page switch + close */}
+        <div className="sticky top-0 z-20 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 mb-4 bg-[#0b0c10]/95 backdrop-blur border-b border-neutral-800/80 flex items-center justify-between gap-3">
+          {confirmedInquiry ? (
+            <span className="text-xs font-mono text-neutral-400">Booking confirmed</span>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => goTo('details')}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border transition-all cursor-pointer active:scale-95 ${
+                  view === 'details'
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white border-red-500/50 shadow-md shadow-red-600/25'
+                    : 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:border-red-500/50'
+                }`}
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Booking Details</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => goTo('addons')}
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 border transition-all cursor-pointer active:scale-95 ${
+                  view === 'addons'
+                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white border-red-500/50 shadow-md shadow-red-600/25'
+                    : 'bg-neutral-900 text-neutral-300 border-neutral-700 hover:border-red-500/50'
+                }`}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add-ons</span>
+                {selectedAddOns.length > 0 && (
+                  <span className="px-1.5 rounded bg-black/40 border border-white/10 text-[10px]">{selectedAddOns.length}</span>
+                )}
+              </button>
+            </div>
+          )}
 
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="fixed sm:absolute top-3 sm:top-4 right-3 sm:right-4 p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer border border-neutral-800 z-10 active:scale-95"
-          aria-label="Close booking modal"
-        >
-          <X className="w-4 h-4" />
-        </button>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors cursor-pointer border border-neutral-800 active:scale-95"
+            aria-label="Close booking page"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
 
         {confirmedInquiry ? (
           /* STATE: BOOKING CONFIRMED SCREEN */
@@ -477,7 +520,9 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
           </div>
         ) : (
           /* STATE: ADD-ONS CUSTOMIZATION & CONFIRM BOOKING */
-          <div className="space-y-4 sm:max-h-[85vh] sm:overflow-y-auto sm:pr-1">
+          <div className="space-y-4">
+            {view === 'details' && (
+            <>
             {/* Header with Professional Theme Badges */}
             <div>
               <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
@@ -518,14 +563,6 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                     <span className="text-neutral-500 font-normal">None selected</span>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={openAddOns}
-                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 hover:border-red-500/50 transition-all cursor-pointer active:scale-95"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add-ons</span>
-                </button>
               </div>
             </div>
 
@@ -689,15 +726,14 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                       )}
                     </button>
 
-                    {/* Add-ons button */}
+                    {/* Book Now */}
                     <button
-                      type="button"
-                      onClick={openAddOns}
+                      id="book-now-btn"
+                      type="submit"
                       disabled={isProcessingRazorpay}
-                      className="py-3 px-4 rounded-xl font-mono text-neutral-300 hover:text-white text-xs font-semibold bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-red-500/50 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      className="py-3 px-5 rounded-xl font-mono font-bold text-white text-xs sm:text-sm bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 border border-red-500/40 shadow-[0_4px_25px_rgba(230,30,43,0.45)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Add-ons</span>
+                      <span>Book Now</span>
                     </button>
 
                     {/* Secondary Button: Manual UPI QR / Transfer */}
@@ -715,10 +751,17 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
               </div>
             </form>
 
-            {showAddOns && (
-            <div ref={addOnsRef} className="scroll-mt-16">
+            </>
+            )}
+
+            {view === 'addons' && (
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Extra Add-ons</h3>
+                <p className="text-xs text-neutral-400 mt-1 leading-relaxed">Choose any extra modules you want with your plan. Your total updates as you add them.</p>
+              </div>
             {/* Extra Add-ons Selection List */}
-            <div className="space-y-2.5 pt-2 border-t border-neutral-800">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-bold flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#e61e2b]" />
@@ -800,6 +843,20 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                 })}
               </div>
             </div>
+
+              <div className="sticky bottom-0 -mx-4 sm:-mx-8 px-4 sm:px-8 py-3 bg-[#0b0c10]/95 backdrop-blur border-t border-neutral-800 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-neutral-400">Total</div>
+                  <div className="text-lg font-extrabold text-white font-mono">₹{totalPrice.toLocaleString('en-IN')}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => goTo('details')}
+                  className="py-3 px-5 rounded-xl font-mono font-bold text-white text-xs sm:text-sm bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 border border-red-500/40 shadow-[0_4px_25px_rgba(230,30,43,0.45)] cursor-pointer active:scale-95"
+                >
+                  Continue to Booking
+                </button>
+              </div>
             </div>
             )}
           </div>
