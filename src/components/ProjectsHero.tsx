@@ -69,7 +69,7 @@ const FlowCard: React.FC<{ className?: string; style?: React.CSSProperties }> = 
 
 export const ProjectsHero: React.FC<ProjectsHeroProps> = () => {
   return (
-    <section className="relative isolate lg:min-h-[30rem]">
+    <section className="relative isolate mb-3 sm:mb-12 lg:min-h-[30rem]">
       {/* Faint grid + glows */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-10 bottom-0 -z-10">
         <div className="absolute -top-16 left-1/2 -translate-x-1/2 w-[34rem] max-w-full h-56 rounded-full bg-red-700/15 blur-[110px]" />
@@ -143,7 +143,7 @@ export const ProjectsHero: React.FC<ProjectsHeroProps> = () => {
       </div>
 
       {/* ---------- Mobile / tablet: cards below the copy ---------- */}
-      <div className="lg:hidden relative z-10 mx-auto max-w-xl pb-4 space-y-2 sm:space-y-3">
+      <div className="lg:hidden relative z-10 mx-auto max-w-xl pb-0 sm:pb-4 space-y-2 sm:space-y-3">
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
           <TechCard icon={<Bot />} label="Automation" color="214,180,90" style={delay(300, 0)} />
           <TechCard icon={<Cloud />} label="Cloud" color="120,150,255" style={delay(380, 600)} />
