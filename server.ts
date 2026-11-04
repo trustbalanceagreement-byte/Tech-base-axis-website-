@@ -8,6 +8,7 @@ import {
   registerAdminSubscription,
   type AdminNotificationEvent 
 } from "./server/onesignalService.ts";
+import { processVerifyPayment } from "./server/verifyPayment.ts";
 import { generateSitemapXml } from "./server/sitemapService.ts";
 import { 
   handleCreateRazorpayOrder, 
@@ -439,112 +440,8 @@ app.post("/api/create-order", async (req, res) => {
 // STEP 3: Backend Verify Payment Signature (Razorpay & Webhooks)
 // Only triggers notification AFTER successful backend validation (idempotent)
 app.post("/api/verify-payment", async (req, res) => {
-  try {
-    const { 
-      razorpay_order_id, 
-      razorpay_payment_id, 
-      razorpay_signature,
-      paymentId, 
-      orderId, 
-      amount, 
-      clientName, 
-      email, 
-      phone, 
-      packageName, 
-      projectId, 
-      status, 
-      utrNumber, 
-      selectedApp 
-    } = req.body;
-
-    const isRazorpayVerification = Boolean(
-      razorpay_signature || 
-      (razorpay_order_id && razorpay_payment_id)
-    );
-
-    if (isRazorpayVerification) {
-      // 1. Verify Razorpay HMAC-SHA256 signature
-      const verifyResult = handleVerifyRazorpaySignature(req.body);
-      if (!verifyResult.verified) {
-        return res.status(verifyResult.statusCode).json({ 
-          success: false, 
-          verified: false, 
-          error: verifyResult.error || 'Invalid signature' 
-        });
-      }
-
-      // 2. Verified successfully - Trigger admin notification
-      const resolvedPaymentId = razorpay_payment_id || paymentId;
-      const resolvedOrderId = razorpay_order_id || orderId;
-      const numericAmount = Number(amount) || 0;
-
-      const result = await sendAdminOneSignalNotification({
-        eventType: "payment_success",
-        clientName: clientName || "Valued Client",
-        email: email || "",
-        phone: phone || "",
-        amount: numericAmount,
-        paymentId: resolvedPaymentId,
-        orderId: resolvedOrderId,
-        packageName: packageName || "Service Package",
-        projectId: projectId || packageName || "Razorpay Gateway",
-        timestamp: new Date().toISOString()
-      });
-
-      return res.status(200).json({
-        success: true,
-        verified: true,
-        order_id: resolvedOrderId,
-        payment_id: resolvedPaymentId,
-        amount: numericAmount,
-        message: 'Payment verified successfully',
-        notification: result,
-        verifiedAt: new Date().toISOString()
-      });
-    }
-
-    // Legacy direct UPI verification fallback
-    if (!paymentId || !amount) {
-      return res.status(400).json({ error: "Invalid payment payload: paymentId and amount required" });
-    }
-
-    const numericAmount = Number(amount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      return res.status(400).json({ error: "Invalid amount: must be a positive numeric value" });
-    }
-
-    // Only confirm notification when status is confirmed/captured
-    if (status !== "success" && status !== "captured" && status !== "paid" && status !== undefined) {
-      return res.status(400).json({ error: `Payment not verified. Status: ${status}` });
-    }
-
-    // Trigger admin notification only after verified payment
-    const result = await sendAdminOneSignalNotification({
-      eventType: "payment_success",
-      clientName: clientName || "Valued Client",
-      email: email || "",
-      phone: phone || "",
-      amount: numericAmount,
-      paymentId: paymentId,
-      orderId: orderId || `ord_${Date.now()}`,
-      packageName: packageName || "Service Package",
-      projectId: projectId || packageName || "Package Architecture",
-      timestamp: new Date().toISOString()
-    });
-
-    return res.status(200).json({
-      verified: true,
-      paymentId,
-      orderId,
-      amount: numericAmount,
-      utrNumber: utrNumber || null,
-      selectedApp: selectedApp || 'UPI',
-      notification: result,
-      verifiedAt: new Date().toISOString()
-    });
-  } catch (error: any) {
-    return res.status(500).json({ error: error?.message || "Payment verification failed" });
-  }
+  const result = await processVerifyPayment(req.body, { sendAdminOneSignalNotification, handleVerifyRazorpaySignature });
+  return res.status(result.status).json(result.body);
 });
 
 // Ensure any unhandled API request returns JSON rather than HTML
