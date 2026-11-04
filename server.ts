@@ -301,8 +301,7 @@ app.get(["/healthz", "/health"], (_req, res) => {
   res.status(200).send("OK");
 });
 
-// Cloud Run sets PORT (typically 8080). If PORT is provided, use it; otherwise fallback to 8080 (or 3000).
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 8080;
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 // Dynamic automated sitemap.xml for Google, Bing, and search engine crawlers
 app.get("/sitemap.xml", (req, res) => {
