@@ -32,15 +32,10 @@ service cloud.firestore {
     }
 
     // Client inquiries (appointments, quotes, enquiries, package bookings).
-    // Anyone may SUBMIT one; only a signed-in admin account may read, update or delete them.
+    // Open like the other collections because the admin console also signs in with built-in
+    // founder credentials (no Firebase account), so rules cannot tell the admin apart.
     match /inquiries/{inquiryId} {
-      allow create: if true;
-      allow read, update, delete: if request.auth != null
-        && request.auth.token.email in [
-          'techbaseaxis@gmail.com',
-          'techbaseaixe@gmail.com',
-          'bgho40185@gmail.com'
-        ];
+      allow read, write: if true;
     }
 
     // Default deny for all other collections

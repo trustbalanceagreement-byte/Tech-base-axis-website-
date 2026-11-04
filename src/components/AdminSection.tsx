@@ -1751,7 +1751,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
               {inquirySyncError && (
                 <div className="w-full text-xs font-mono px-3 py-2 rounded-lg border leading-relaxed bg-amber-950/40 text-amber-300 border-amber-700/40">
-                  Cloud inquiries could not be loaded ({inquirySyncError}). Sign in with an admin Google/Firebase account on this device and make sure the latest firestore.rules are published in the Firebase Console. Until then only inquiries from this device are shown.
+                  Cloud inquiries could not be loaded ({inquirySyncError}). The /api/inquiries function is not deployed and Firestore is blocking access. Publish the latest firestore.rules in the Firebase Console and redeploy on Vercel. Until then only inquiries from this device are shown.
                 </div>
               )}
 
