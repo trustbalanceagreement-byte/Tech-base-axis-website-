@@ -347,6 +347,55 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     });
   }, [isAdmin]);
 
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  // Sends a real test alert and shows exactly where it fails (backend missing, key missing, no admin device...)
+  const handleTestAlert = async () => {
+    setTestBusy(true);
+    setTestResult(null);
+    try {
+      let status: any = null;
+      let statusCode = 0;
+      try {
+        const sr = await fetch('/api/notification-status', { cache: 'no-store' });
+        statusCode = sr.status;
+        status = await sr.json();
+      } catch (_) {}
+
+      if (!status) {
+        setTestResult({ ok: false, text: `Backend not reachable: /api/notification-status returned HTTP ${statusCode || 'error'}. The /api functions are not deployed on this host yet.` });
+        return;
+      }
+      if (!status.onesignalReady) {
+        setTestResult({ ok: false, text: 'OneSignal REST API key is missing on the server. Add ONESIGNAL_REST_API_KEY in Vercel > Settings > Environment Variables, then Redeploy.' });
+        return;
+      }
+
+      const r = await fetch('/api/notify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'contact_enquiry',
+          clientName: 'TEST ALERT',
+          email: user?.email || 'test@techbaseaxis.com',
+          subject: 'Test notification from Admin panel',
+          message: 'If you can read this on your phone, admin alerts work.',
+          idempotencyKey: `test:${Date.now()}`
+        })
+      });
+      const data: any = await r.json().catch(() => ({}));
+      if (data?.success) {
+        setTestResult({ ok: true, text: 'Test alert sent to OneSignal. It should appear on this admin device in a few seconds. If it does not, check the phone\'s notification settings for this browser.' });
+      } else {
+        const detail = JSON.stringify(data?.errors || data?.error || data).slice(0, 400);
+        setTestResult({ ok: false, text: `OneSignal did not deliver the alert: ${detail}. Tip: sign in as admin on this device, allow notifications, reload and try again. Also check that ONESIGNAL_APP_ID matches the app the REST key belongs to.` });
+      }
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
   const handleEnablePush = async () => {
     setPushLoading(true);
     try {
@@ -1714,6 +1763,29 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                   <Bell className={`w-3.5 h-3.5 ${pushPermission ? 'text-emerald-400' : 'text-indigo-400'}`} />
                   <span>{pushPermission ? 'Push Alerts Active' : 'Enable Push Alerts'}</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={handleTestAlert}
+                  disabled={testBusy}
+                  className="px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 disabled:opacity-50"
+                  title="Send a real test notification to this admin device"
+                >
+                  <Bell className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{testBusy ? 'Sending...' : 'Send Test Alert'}</span>
+                </button>
+
+                {testResult && (
+                  <div
+                    className={`w-full text-xs font-mono px-3 py-2 rounded-lg border leading-relaxed ${
+                      testResult.ok
+                        ? 'bg-emerald-950/40 text-emerald-300 border-emerald-700/40'
+                        : 'bg-rose-950/50 text-rose-300 border-rose-700/50'
+                    }`}
+                  >
+                    {testResult.text}
+                  </div>
+                )}
 
                 <Filter className="w-3.5 h-3.5 text-neutral-500 mr-1" />
                 {['All', 'New', 'Reviewing', 'Proposal Sent', 'In Development', 'Completed'].map((st) => (
