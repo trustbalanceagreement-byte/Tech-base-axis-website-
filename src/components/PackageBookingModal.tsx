@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavSection, ClientInquiry } from '../types';
 import { UpiPaymentModal, PaymentOrderData } from './UpiPaymentModal';
 import { launchRazorpayCheckout } from '../services/razorpayService';
+import { useAddOnPrices } from '../data/addOnData';
 import { 
   X, 
   CheckCircle2, 
@@ -117,6 +118,9 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
   onNavigate
 }) => {
   const [selectedAddOnIds, setSelectedAddOnIds] = useState<string[]>([]);
+  // Prices the admin set in the admin panel override the built-in defaults
+  const addOnPrices = useAddOnPrices();
+  const addOnList = EXTRA_ADD_ONS.map((a) => ({ ...a, price: addOnPrices[a.id] ?? a.price }));
   const [clientName, setClientName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -175,7 +179,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
     );
   };
 
-  const selectedAddOns = EXTRA_ADD_ONS.filter((item) => selectedAddOnIds.includes(item.id));
+  const selectedAddOns = addOnList.filter((item) => selectedAddOnIds.includes(item.id));
   const addOnsTotal = selectedAddOns.reduce((sum, item) => sum + item.price, 0);
   const basePrice = plan.price;
   const totalPrice = basePrice + addOnsTotal;
@@ -763,17 +767,13 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
             {/* Extra Add-ons Selection List */}
             <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-bold flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#e61e2b]" />
+                <label className="text-xs font-mono uppercase tracking-wider text-neutral-300 font-bold">
                   <span>Available Engineering Add-ons</span>
                 </label>
-                <span className="text-[11px] font-mono text-neutral-500">
-                  Click "+ Add" to include
-                </span>
               </div>
 
               <div className="space-y-2">
-                {EXTRA_ADD_ONS.map((addon) => {
+                {addOnList.map((addon) => {
                   const isAdded = selectedAddOnIds.includes(addon.id);
                   const Icon = addon.icon;
 

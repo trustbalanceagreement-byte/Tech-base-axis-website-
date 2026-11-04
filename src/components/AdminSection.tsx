@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import tabLogo from '../assets/images/tab_logo_hd_transparent.png';
 import { ClientInquiry, NavSection, ServicePackage, PackageFeature, Project } from '../types';
 import { AdminProjectsManager } from './AdminProjectsManager';
+import { AdminAddOnPrices } from './AdminAddOnPrices';
 import { AdminActivityManager } from './AdminActivityManager';
 import { useAuth, ADMIN_EMAILS, FOUNDER_CREDENTIALS } from '../context/AuthContext';
 import { 
@@ -1254,6 +1255,9 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
               </button>
             </div>
           </div>
+
+          {/* Booking add-on prices (admin editable) */}
+          <AdminAddOnPrices />
 
           {/* Cards Grid: Direct Editable Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
