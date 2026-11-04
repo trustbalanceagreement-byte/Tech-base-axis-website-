@@ -14,6 +14,8 @@ import {
   saveProjects, 
   subscribeToPublicProjects 
 } from './data/projectData';
+import { auth, onAuthStateChanged } from './lib/firebase';
+import { saveInquiryToCloud, updateInquiryInCloud, deleteInquiryFromCloud, subscribeToCloudInquiries } from './data/inquiryData';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { HomeSection } from './components/HomeSection';
@@ -97,6 +99,34 @@ function AppShell() {
   // page load: doing so let any visitor's stale or default list overwrite the
   // packages the admin configured.
 
+  // Admin: load every client inquiry from the cloud, live, on any device
+  const [inquirySyncError, setInquirySyncError] = useState<string | null>(null);
+  const [firebaseAuthTick, setFirebaseAuthTick] = useState(0);
+  // Firestore only lets a signed-in admin read inquiries, so re-subscribe whenever Firebase auth changes
+  useEffect(() => {
+    try {
+      return onAuthStateChanged(auth, () => setFirebaseAuthTick((t) => t + 1));
+    } catch (_) {
+      return undefined;
+    }
+  }, []);
+  useEffect(() => {
+    if (!isAdmin) return;
+    setInquirySyncError(null);
+    const unsubscribe = subscribeToCloudInquiries(
+      (cloudList) => {
+        setInquirySyncError(null);
+        setInquiries((local) => {
+          const cloudIds = new Set(cloudList.map((i) => i.id));
+          const localOnly = local.filter((i) => !cloudIds.has(i.id));
+          return [...cloudList, ...localOnly];
+        });
+      },
+      (message) => setInquirySyncError(message)
+    );
+    return () => unsubscribe();
+  }, [isAdmin, firebaseAuthTick]);
+
   // Persist inquiries whenever changed
   useEffect(() => {
     try {
@@ -148,9 +178,12 @@ function AppShell() {
 
   const handleInquirySubmitted = (newInquiry: ClientInquiry) => {
     setInquiries((prev) => [newInquiry, ...prev]);
+    // Shared cloud copy so the admin panel receives it on any device
+    saveInquiryToCloud(newInquiry);
   };
 
   const handleUpdateInquiryStatus = (id: string, status: ClientInquiry['status'], notes?: string) => {
+    updateInquiryInCloud(id, notes !== undefined ? { status, notes } : { status });
     setInquiries((prev) =>
       prev.map((item) => {
         if (item.id === id) {
@@ -166,6 +199,7 @@ function AppShell() {
   };
 
   const handleDeleteInquiry = (id: string) => {
+    deleteInquiryFromCloud(id);
     setInquiries((prev) => prev.filter((item) => item.id !== id));
   };
 
@@ -302,6 +336,7 @@ function AppShell() {
               {activeSection === 'admin' && (
                 <AdminSection
                   inquiries={inquiries}
+                  inquirySyncError={inquirySyncError}
                   onUpdateInquiryStatus={handleUpdateInquiryStatus}
                   onDeleteInquiry={handleDeleteInquiry}
                   onNavigate={handleNavigate}

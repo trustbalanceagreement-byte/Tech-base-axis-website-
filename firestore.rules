@@ -31,6 +31,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Client inquiries (appointments, quotes, enquiries, package bookings).
+    // Anyone may SUBMIT one; only a signed-in admin account may read, update or delete them.
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null
+        && request.auth.token.email in [
+          'techbaseaxis@gmail.com',
+          'techbaseaixe@gmail.com',
+          'bgho40185@gmail.com'
+        ];
+    }
+
     // Default deny for all other collections
     match /{document=**} {
       allow read, write: if false;

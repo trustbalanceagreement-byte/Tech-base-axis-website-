@@ -60,6 +60,7 @@ import { updatePackagesFromCloud, isSubscriptionPackage, isMaintenancePackage } 
 
 interface AdminSectionProps {
   inquiries: ClientInquiry[];
+  inquirySyncError?: string | null;
   onUpdateInquiryStatus: (id: string, status: ClientInquiry['status'], notes?: string) => void;
   onDeleteInquiry: (id: string) => void;
   onNavigate: (section: NavSection) => void;
@@ -160,6 +161,7 @@ const formatCountdown = (lockedUntil: number | null): string => {
 
 export const AdminSection: React.FC<AdminSectionProps> = ({
   inquiries,
+  inquirySyncError,
   onUpdateInquiryStatus,
   onDeleteInquiry,
   onNavigate,
@@ -1746,6 +1748,12 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
                   Live database tracking prospective contracts and client communications.
                 </p>
               </div>
+
+              {inquirySyncError && (
+                <div className="w-full text-xs font-mono px-3 py-2 rounded-lg border leading-relaxed bg-amber-950/40 text-amber-300 border-amber-700/40">
+                  Cloud inquiries could not be loaded ({inquirySyncError}). Sign in with an admin Google/Firebase account on this device and make sure the latest firestore.rules are published in the Firebase Console. Until then only inquiries from this device are shown.
+                </div>
+              )}
 
               {/* Filter Pills & Push Alerts */}
               <div className="flex flex-wrap items-center gap-2">
