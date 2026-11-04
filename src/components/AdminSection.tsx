@@ -226,7 +226,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   }, [attemptState.isLocked, attemptState.lockedUntil]);
 
   // Tab: 'packages' | 'projects' | 'inquiries' | 'activity'
-  const [activeAdminTab, setActiveAdminTab] = useState<'packages' | 'projects' | 'inquiries' | 'activity'>(() => {
+  const [activeAdminTab, setActiveAdminTab] = useState<'addons' | 'packages' | 'projects' | 'inquiries' | 'activity'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.toLowerCase();
       if (hash.includes('activity')) return 'activity';
@@ -1069,6 +1069,19 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b border-neutral-800 pb-3">
         <button
           type="button"
+          onClick={() => setActiveAdminTab('addons')}
+          className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+            activeAdminTab === 'addons'
+              ? 'bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30'
+              : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>ADD-ONS</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveAdminTab('packages')}
           className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
             activeAdminTab === 'packages'
@@ -1134,6 +1147,13 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
           <span>ACTIVITY</span>
         </button>
       </div>
+
+      {/* TAB: BOOKING ADD-ON PRICES */}
+      {activeAdminTab === 'addons' && (
+        <div className="animate-in fade-in duration-200">
+          <AdminAddOnPrices />
+        </div>
+      )}
 
       {/* TAB 1: PACKAGES & PRICING MANAGEMENT */}
       {activeAdminTab === 'packages' && (
@@ -1255,9 +1275,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Booking add-on prices (admin editable) */}
-          <AdminAddOnPrices />
 
           {/* Cards Grid: Direct Editable Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
