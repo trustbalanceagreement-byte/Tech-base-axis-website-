@@ -324,6 +324,9 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   };
 
   useEffect(() => {
+    // Only a signed-in admin may turn this device into an admin alert device.
+    // Merely opening the admin page (or being a client) must never register it.
+    if (!isAdmin) return;
     runWithOneSignal((OneSignal) => {
       if (OneSignal.Notifications) {
         const isGranted = Boolean(OneSignal.Notifications.permission);
@@ -342,7 +345,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       }
       registerCurrentDeviceAsAdmin(OneSignal);
     });
-  }, []);
+  }, [isAdmin]);
 
   const handleEnablePush = async () => {
     setPushLoading(true);

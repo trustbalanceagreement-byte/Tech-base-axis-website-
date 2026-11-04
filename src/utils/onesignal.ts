@@ -119,6 +119,10 @@ export const identifyOneSignalUser = (userId: string, tags?: Record<string, stri
 export const logoutOneSignalUser = (): void => {
   runWithOneSignal(async (OneSignal) => {
     try {
+      // Stop this device from being treated as an admin device after sign-out
+      if (OneSignal.User?.removeTags) {
+        await OneSignal.User.removeTags(['role', 'is_active_admin']);
+      }
       if (OneSignal.logout) {
         await OneSignal.logout();
       }

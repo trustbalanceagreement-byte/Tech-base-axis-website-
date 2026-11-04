@@ -22,7 +22,8 @@ export interface AdminNotificationEvent {
     | 'payment_success'
     | 'proposal_accepted'
     | 'revision_request'
-    | 'support_request';
+    | 'support_request'
+    | 'review_submitted';
   
   // Client identification
   clientId?: string;
@@ -71,6 +72,11 @@ export interface AdminNotificationEvent {
   ticketId?: string;
   priority?: string;
 
+  // Client review specifics
+  rating?: number | string;
+  reviewText?: string;
+  reviewerRole?: string;
+
   // Common metadata
   timestamp?: string;
   idempotencyKey?: string;
@@ -97,6 +103,18 @@ export interface OneSignalNotificationResponse {
 const DEFAULT_APP_ID = 'f9cfc686-a78c-445f-a436-8b6bb2e6bdff';
 const DEFAULT_ADMIN_PLAYER_ID = '99a86c9f-366e-4625-9506-5af191a0297d';
 const DEFAULT_ADMIN_SUBSCRIPTION_ID = 'f860ea79-2143-41ca-8f77-e7008dd7d025';
+
+// Admin accounts. Their devices are linked to OneSignal as external_id = email
+// (the website calls OneSignal.login(email) when an admin is signed in), so alerts
+// follow the admin's phone/browser and reach NOBODY else. Override with ADMIN_EMAILS (comma separated).
+function getAdminEmails(): string[] {
+  const fromEnv = (process.env.ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (fromEnv.length) return fromEnv;
+  return ['techbaseaxis@gmail.com', 'techbaseaixe@gmail.com', 'bgho40185@gmail.com'];
+}
 
 // Store of actively registered admin phone/browser subscription IDs
 const activeAdminSubscriptions = new Set<string>();
@@ -280,6 +298,18 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       break;
     }
 
+    case 'review_submitted': {
+      const stars = Number(event.rating) || 0;
+      const text = (event.reviewText || event.message || '').trim();
+      const short = text.length > 140 ? `${text.slice(0, 137)}...` : text;
+      title = stars ? `⭐ New Client Review (${stars}/5)` : '⭐ New Client Review';
+      body = short
+        ? `${clientName} reviewed: "${short}"`
+        : `${clientName} submitted a new review.`;
+      deepLink = `${baseUrl}#admin`;
+      break;
+    }
+
     case 'support_request': {
       title = '🛠️ New Support Request';
       body = `${clientName} submitted a support request.`;
@@ -378,11 +408,18 @@ export async function sendAdminOneSignalNotification(
     deepLink: deepLink
   };
 
-  let primaryResponse: any = null;
-  let finalResult: OneSignalNotificationResponse = { success: false };
+  const baseBody = {
+    app_id: appId,
+    headings: { en: title },
+    contents: { en: body },
+    web_url: deepLink,
+    priority: 10,
+    chrome_web_icon: 'https://www.tbaonline.online/tab_logo.png',
+    chrome_web_badge: 'https://www.tbaonline.online/tab_logo.png',
+    data: commonNotificationData
+  };
 
-  // Dispatch Strategy 1: If active admin subscriptions are available, send directly to those device(s)
-  if (combinedAdminSubs.length > 0) {
+  const post = async (label: string, targeting: Record<string, any>) => {
     try {
       const response = await fetch('https://api.onesignal.com/notifications', {
         method: 'POST',
@@ -390,66 +427,55 @@ export async function sendAdminOneSignalNotification(
           'Content-Type': 'application/json; charset=utf-8',
           'Authorization': `Key ${apiKey}`
         },
-        body: JSON.stringify({
-          app_id: appId,
-          include_subscription_ids: combinedAdminSubs,
-          headings: { en: title },
-          contents: { en: body },
-          web_url: deepLink,
-          priority: 10,
-          chrome_web_icon: 'https://www.tbaonline.online/tab_logo.png',
-          chrome_web_badge: 'https://www.tbaonline.online/tab_logo.png',
-          data: commonNotificationData
-        })
+        body: JSON.stringify({ ...baseBody, ...targeting })
       });
-      primaryResponse = await response.json();
-      if (response.ok && primaryResponse?.id) {
-        finalResult = {
-          success: true,
-          id: primaryResponse.id,
-          recipients: primaryResponse.recipients,
-          data: primaryResponse
-        };
-      }
+      const json: any = await response.json().catch(() => ({}));
+      const ok = response.ok && Boolean(json?.id);
+      console.log(`[OneSignal] ${label}: ${ok ? 'sent' : 'not delivered'} (HTTP ${response.status})${ok ? '' : ' ' + JSON.stringify(json?.errors || json)}`);
+      return { ok, json };
     } catch (err: any) {
-      console.warn('[OneSignal] Direct admin device dispatch notice:', err?.message || err);
+      console.warn(`[OneSignal] ${label} failed:`, err?.message || err);
+      return { ok: false, json: { errors: [err?.message || String(err)] } };
     }
+  };
+
+  let finalResult: OneSignalNotificationResponse = { success: false };
+  const adminEmails = getAdminEmails();
+  const errors: string[] = [];
+
+  // Admin-only delivery. ONE push is sent: the first route that works wins (no duplicates).
+  //  1) Devices where an admin is signed in (external_id = admin email). Survives server restarts.
+  //  2) Admin devices registered by the open Admin panel / configured subscription ids.
+  //  3) Devices tagged role=admin.
+  // Clients (role=client) are never targeted.
+  const routes: { label: string; targeting: Record<string, any>; skip?: boolean }[] = [
+    {
+      label: 'admin accounts (external_id)',
+      targeting: { include_aliases: { external_id: adminEmails }, target_channel: 'push' }
+    },
+    {
+      label: 'registered admin devices',
+      targeting: { include_subscription_ids: combinedAdminSubs },
+      skip: combinedAdminSubs.length === 0
+    },
+    {
+      label: 'tag role=admin',
+      targeting: { filters: [{ field: 'tag', key: 'role', relation: '=', value: 'admin' }] }
+    }
+  ];
+
+  for (const route of routes) {
+    if (route.skip) continue;
+    const { ok, json } = await post(route.label, route.targeting);
+    if (ok) {
+      finalResult = { success: true, id: json.id, recipients: json.recipients, data: json };
+      break;
+    }
+    errors.push(`${route.label}: ${JSON.stringify(json?.errors || json)}`);
   }
 
-  // Dispatch Strategy 2: Filter by tag role='admin' to guarantee delivery ONLY to Admin devices
-  // Clients (tagged as role='client') are 100% excluded!
-  try {
-    const tagFilterResponse = await fetch('https://api.onesignal.com/notifications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Authorization': `Key ${apiKey}`
-      },
-      body: JSON.stringify({
-        app_id: appId,
-        filters: [
-          { field: 'tag', key: 'role', relation: '=', value: 'admin' }
-        ],
-        headings: { en: title },
-        contents: { en: body },
-        web_url: deepLink,
-        priority: 10,
-        chrome_web_icon: 'https://www.tbaonline.online/tab_logo.png',
-        chrome_web_badge: 'https://www.tbaonline.online/tab_logo.png',
-        data: commonNotificationData
-      })
-    });
-    const tagFilterData = await tagFilterResponse.json();
-    if (tagFilterResponse.ok && tagFilterData?.id && !finalResult.success) {
-      finalResult = {
-        success: true,
-        id: tagFilterData.id,
-        recipients: tagFilterData.recipients,
-        data: tagFilterData
-      };
-    }
-  } catch (err: any) {
-    console.warn('[OneSignal] Role filter dispatch notice:', err?.message || err);
+  if (!finalResult.success) {
+    finalResult = { success: false, errors };
   }
 
   // Store in idempotency cache
@@ -460,7 +486,7 @@ export async function sendAdminOneSignalNotification(
     });
   }
 
-  console.log(`[OneSignal] Admin-Only push alert sent: "${title}" (Devices: ${combinedAdminSubs.length || 'role=admin'})`);
+  console.log(`[OneSignal] "${title}" -> ${finalResult.success ? 'delivered to admin device(s)' : 'NOT delivered to any admin device'}`);
   return finalResult;
 }
 

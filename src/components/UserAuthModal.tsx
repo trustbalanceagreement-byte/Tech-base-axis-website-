@@ -41,6 +41,25 @@ const PORTAL_MAX_ATTEMPTS = 3;
 const LOCKOUT_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours in ms
 const DEVICE_STORAGE_KEY = 'tba_device_portal_lockout_v2';
 
+// Tell the admin's device that a new client account was created (never sent to clients)
+const notifyAdminNewAccount = (name: string, email: string, userId?: string) => {
+  try {
+    fetch('/api/notify-admin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventType: 'account_created',
+        clientId: userId || email,
+        clientName: name || email.split('@')[0],
+        clientEmail: email,
+        email,
+        idempotencyKey: `signup:${userId || email}`,
+        timestamp: new Date().toISOString()
+      })
+    }).catch(() => {});
+  } catch (_) {}
+};
+
 export interface DeviceLockoutState {
   count: number;
   remaining: number;
@@ -380,6 +399,9 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
           type: 'signup',
           details: `${name.trim()} created a new account on Tech Base Axis`
         });
+        if (!isUserAdmin) {
+          notifyAdminNewAccount(name.trim(), userCredential.user.email || emailTrim, userCredential.user.uid);
+        }
 
         onClose();
         if (onLoginSuccess) onLoginSuccess(isUserAdmin);
@@ -434,6 +456,14 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
           ? `${userCredential.user.displayName || 'User'} created a new account via Google`
           : `${userCredential.user.displayName || 'Google User'} signed in with Google`
       });
+
+      if (isNewUser && !isUserAdmin) {
+        notifyAdminNewAccount(
+          userCredential.user.displayName || 'Google User',
+          userCredential.user.email || '',
+          userCredential.user.uid
+        );
+      }
 
       onClose();
       if (onLoginSuccess) onLoginSuccess(isUserAdmin);

@@ -78,6 +78,23 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
     const updated = [newItem, ...testimonialsList];
     setTestimonialsList(updated);
 
+    // Alert the admin's device about the new review (admin only)
+    try {
+      fetch('/api/notify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventType: 'review_submitted',
+          clientName: data.name,
+          reviewerRole: data.role,
+          rating: data.rating,
+          reviewText: data.testimonial,
+          idempotencyKey: `review:${newItem.tempId}`,
+          timestamp: new Date().toISOString()
+        })
+      }).catch(() => {});
+    } catch (_) {}
+
     try {
       const saved = localStorage.getItem('techbase_client_reviews');
       const prevCustom = saved ? JSON.parse(saved) : [];
