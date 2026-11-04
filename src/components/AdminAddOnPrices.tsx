@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Sparkles, Save, RotateCcw } from 'lucide-react';
+import { Puzzle, Save, RotateCcw } from 'lucide-react';
 import { EXTRA_ADD_ONS } from './PackageBookingModal';
 import { AddOnPrices, fetchLatestAddOnPrices, saveAddOnPrices, useAddOnPrices } from '../data/addOnData';
 
@@ -59,7 +59,7 @@ export const AdminAddOnPrices: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="text-sm sm:text-base font-bold text-white flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#e61e2b]" />
+            <Puzzle className="w-4 h-4 text-[#e61e2b]" />
             <span>Booking Add-on Prices</span>
           </h3>
           <p className="text-xs text-neutral-400 mt-0.5">Increase or decrease the price of each extra add-on shown on the booking page.</p>

@@ -7,7 +7,7 @@ import {
   ChevronDown, 
   Terminal,
   Layers,
-  Sparkles,
+  Gem,
   CreditCard
 } from 'lucide-react';
 import { PackageBookingModal, BookingPlan } from './PackageBookingModal';

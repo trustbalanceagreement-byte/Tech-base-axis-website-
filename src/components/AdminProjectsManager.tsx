@@ -23,7 +23,7 @@ import {
   Github,
   Check,
   CheckCircle2,
-  Sparkles,
+  Gem,
   Save,
   X,
   Search,

@@ -8,7 +8,7 @@ import {
   CheckCircle2, 
   CreditCard, 
   ShieldCheck, 
-  Sparkles, 
+  Gem, 
   Users,
   HardDrive,
   Key,
@@ -658,7 +658,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
                 <div className="p-3.5 rounded-xl bg-gradient-to-r from-red-950/80 via-black to-red-950/60 border border-red-500/60 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-lg shadow-red-950/50 animate-in fade-in">
                   <div>
                     <div className="text-xs font-bold text-white font-mono flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <Gem className="w-3.5 h-3.5 text-amber-400" />
                       <span>Razorpay Official Hosted Portal (rzp.io)</span>
                     </div>
                     <div className="text-[11px] text-neutral-300 font-mono mt-0.5">

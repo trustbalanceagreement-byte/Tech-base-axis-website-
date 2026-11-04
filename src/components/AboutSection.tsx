@@ -6,7 +6,7 @@ import founderImage from '../assets/images/bikram-ghosh-lead-architect-kolkata.w
 import companyCoverAiImage from '../assets/images/tech-base-axis-engineering-hq-kolkata.webp';
 import { 
   ArrowUpRight, 
-  Sparkles, 
+  Gem, 
   RefreshCw, 
   Send, 
   Code2, 

@@ -35,7 +35,9 @@ import {
   LogIn,
   LogOut,
   Package,
-  Sparkles,
+  Gem,
+  Puzzle,
+  ChevronDown,
   Save,
   RotateCcw,
   Check,
@@ -226,6 +228,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   }, [attemptState.isLocked, attemptState.lockedUntil]);
 
   // Tab: 'packages' | 'projects' | 'inquiries' | 'activity'
+  const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'addons' | 'packages' | 'projects' | 'inquiries' | 'activity'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.toLowerCase();
@@ -1065,88 +1068,79 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         </div>
       </div>
 
-      {/* Admin Module Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b border-neutral-800 pb-3">
-        <button
-          type="button"
-          onClick={() => setActiveAdminTab('addons')}
-          className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'addons'
-              ? 'bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30'
-              : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>ADD-ONS</span>
-        </button>
+      {/* Admin Module Navigation (dropdown menu) */}
+      {(() => {
+        const adminTabs: { id: 'addons' | 'packages' | 'projects' | 'inquiries' | 'activity'; label: string; icon: React.ElementType; badge?: string }[] = [
+          { id: 'addons', label: 'ADD-ONS', icon: Puzzle },
+          { id: 'packages', label: 'PRICE CONTROL', icon: IndianRupee, badge: String(packages.length) },
+          { id: 'projects', label: 'PROJECTS', icon: FolderGit2, badge: String(projects.length) },
+          { id: 'inquiries', label: 'CLIENT INQUIRIES', icon: Users, badge: `${newInquiries} NEW` },
+          { id: 'activity', label: 'ACTIVITY', icon: Activity }
+        ];
+        const current = adminTabs.find((t) => t.id === activeAdminTab) || adminTabs[0];
+        const CurrentIcon = current.icon;
 
-        <button
-          type="button"
-          onClick={() => setActiveAdminTab('packages')}
-          className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'packages'
-              ? 'bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30'
-              : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
-          }`}
-        >
-          <IndianRupee className="w-4 h-4" />
-          <span>PRICE CONTROL</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-            activeAdminTab === 'packages' ? 'bg-black/30 text-white' : 'bg-neutral-800 text-neutral-300'
-          }`}>
-            {packages.length}
-          </span>
-        </button>
+        return (
+          <div className="relative border-b border-neutral-800 pb-3">
+            <button
+              type="button"
+              onClick={() => setTabMenuOpen((o) => !o)}
+              aria-haspopup="listbox"
+              aria-expanded={tabMenuOpen}
+              className="w-full sm:w-80 px-4 py-3 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2.5 bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30 cursor-pointer"
+            >
+              <CurrentIcon className="w-4 h-4 shrink-0" />
+              <span className="flex-1 text-left truncate">{current.label}</span>
+              {current.badge && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/30 text-white">{current.badge}</span>
+              )}
+              <ChevronDown className={`w-4 h-4 shrink-0 transition-transform duration-200 ${tabMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveAdminTab('projects')}
-          className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'projects'
-              ? 'bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30'
-              : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
-          }`}
-        >
-          <FolderGit2 className="w-4 h-4" />
-          <span>PROJECTS</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-            activeAdminTab === 'projects' ? 'bg-black/30 text-white' : 'bg-neutral-800 text-neutral-300'
-          }`}>
-            {projects.length}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveAdminTab('inquiries')}
-          className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'inquiries'
-              ? 'bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30'
-              : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          <span>CLIENT INQUIRIES</span>
-          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-            activeAdminTab === 'inquiries' ? 'bg-black/30 text-white' : 'bg-neutral-800 text-neutral-300'
-          }`}>
-            {newInquiries} NEW
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveAdminTab('activity')}
-          className={`px-4 sm:px-5 py-2.5 rounded-xl font-mono text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
-            activeAdminTab === 'activity'
-              ? 'bg-[#e61e2b] text-white font-bold shadow-lg shadow-red-600/30'
-              : 'bg-neutral-900/80 text-neutral-400 hover:text-white border border-neutral-800'
-          }`}
-        >
-          <Activity className="w-4 h-4" />
-          <span>ACTIVITY</span>
-        </button>
-      </div>
+            {tabMenuOpen && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Close menu"
+                  className="fixed inset-0 z-30 cursor-default"
+                  onClick={() => setTabMenuOpen(false)}
+                />
+                <div
+                  role="listbox"
+                  className="absolute left-0 top-full -mt-2 z-40 w-full sm:w-80 rounded-xl bg-[#0d0e12] border border-neutral-700 shadow-2xl shadow-black/70 p-1.5 space-y-1 animate-in fade-in zoom-in-95 duration-150"
+                >
+                  {adminTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    const active = tab.id === activeAdminTab;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => {
+                          setActiveAdminTab(tab.id);
+                          setTabMenuOpen(false);
+                        }}
+                        className={`w-full px-3.5 py-3 rounded-lg font-mono text-xs uppercase tracking-wider flex items-center gap-2.5 transition-colors cursor-pointer ${
+                          active ? 'bg-red-950/60 text-white border border-red-600/40' : 'text-neutral-300 hover:bg-neutral-800/80 hover:text-white border border-transparent'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 shrink-0 ${active ? 'text-[#ff4d5a]' : ''}`} />
+                        <span className="flex-1 text-left truncate">{tab.label}</span>
+                        {tab.badge && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-neutral-800 text-neutral-300">{tab.badge}</span>
+                        )}
+                        {active && <Check className="w-4 h-4 text-[#ff4d5a] shrink-0" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* TAB: BOOKING ADD-ON PRICES */}
       {activeAdminTab === 'addons' && (
@@ -2120,7 +2114,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
               <div className="p-4 rounded-xl bg-neutral-900/70 border border-neutral-800 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-mono uppercase text-emerald-400 font-bold flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                    <Gem className="w-3.5 h-3.5 text-emerald-400" />
                     <span>Configured Engineering Add-ons ({selectedInquiry.addOns.length})</span>
                   </h4>
                   {selectedInquiry.totalPrice && (

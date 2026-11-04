@@ -15,7 +15,7 @@ import {
   CheckCircle2, 
   ArrowRight, 
   RotateCcw,
-  Sparkles,
+  Gem,
   Info,
   Clock,
   CreditCard

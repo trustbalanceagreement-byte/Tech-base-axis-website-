@@ -12,7 +12,7 @@ import {
   Terminal, 
   Cpu, 
   Zap, 
-  Sparkles, 
+  Gem, 
   Code2, 
   Server,
   Layers,
@@ -303,7 +303,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                     { name: "Redux Toolkit", icon: Workflow },
                     { name: "Zustand", icon: Boxes },
                     { name: "Vite", icon: Zap },
-                    { name: "Motion / Animations", icon: Sparkles },
+                    { name: "Motion / Animations", icon: Gem },
                     { name: "WebSockets", icon: Radio }
                   ].map((skill, idx) => {
                     const IconComp = skill.icon;

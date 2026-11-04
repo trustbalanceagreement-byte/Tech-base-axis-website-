@@ -18,7 +18,7 @@ import {
   Key,
   Shield,
   Send,
-  Sparkles
+  Gem
 } from 'lucide-react';
 import {
   fetchUserActivityDashboard,

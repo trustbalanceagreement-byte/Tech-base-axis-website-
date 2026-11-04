@@ -9,7 +9,7 @@ import {
   MapPin, 
   ShieldCheck, 
   Terminal, 
-  Sparkles, 
+  Gem, 
   ExternalLink,
   MessageSquare,
   MessageCircle,
