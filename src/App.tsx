@@ -15,7 +15,15 @@ import {
   subscribeToPublicProjects 
 } from './data/projectData';
 import { auth, onAuthStateChanged } from './lib/firebase';
-import { saveInquiryToCloud, updateInquiryInCloud, deleteInquiryFromCloud, subscribeToCloudInquiries } from './data/inquiryData';
+import { 
+  saveInquiryToCloud, 
+  updateInquiryInCloud, 
+  deleteInquiryFromCloud, 
+  subscribeToCloudInquiries,
+  fetchServerInquiries,
+  getDeletedInquiryIds,
+  recordDeletedInquiryId
+} from './data/inquiryData';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { HomeSection } from './components/HomeSection';
@@ -52,15 +60,19 @@ function AppShell() {
 
   // Initialize inquiries from localStorage or fallback to initial realistic inquiries
   const [inquiries, setInquiries] = useState<ClientInquiry[]>(() => {
+    const deleted = getDeletedInquiryIds();
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
+      if (stored !== null) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((i) => i && i.id && !deleted.has(i.id));
+        }
       }
     } catch (err) {
       console.error('Failed to load stored inquiries:', err);
     }
-    return DEFAULT_INQUIRIES;
+    return DEFAULT_INQUIRIES.filter((i) => i && i.id && !deleted.has(i.id));
   });
 
   // Initialize service & subscription packages from cloud or localStorage
@@ -99,6 +111,16 @@ function AppShell() {
   // page load: doing so let any visitor's stale or default list overwrite the
   // packages the admin configured.
 
+  // Fetch latest inquiries from server on initial load
+  useEffect(() => {
+    fetchServerInquiries().then((list) => {
+      if (Array.isArray(list)) {
+        const deleted = getDeletedInquiryIds();
+        setInquiries(list.filter((i) => i && i.id && !deleted.has(i.id)));
+      }
+    }).catch(() => {});
+  }, []);
+
   // Admin: load every client inquiry from the cloud, live, on any device
   const [inquirySyncError, setInquirySyncError] = useState<string | null>(null);
   const [firebaseAuthTick, setFirebaseAuthTick] = useState(0);
@@ -116,16 +138,24 @@ function AppShell() {
     const unsubscribe = subscribeToCloudInquiries(
       (cloudList) => {
         setInquirySyncError(null);
-        setInquiries((local) => {
-          const cloudIds = new Set(cloudList.map((i) => i.id));
-          const localOnly = local.filter((i) => !cloudIds.has(i.id));
-          return [...cloudList, ...localOnly];
-        });
+        const deleted = getDeletedInquiryIds();
+        const cleanList = cloudList.filter((i) => i && i.id && !deleted.has(i.id));
+        setInquiries(cleanList);
       },
       (message) => setInquirySyncError(message)
     );
     return () => unsubscribe();
   }, [isAdmin, firebaseAuthTick]);
+
+  const handleRefreshInquiries = async () => {
+    try {
+      const list = await fetchServerInquiries();
+      if (Array.isArray(list)) {
+        const deleted = getDeletedInquiryIds();
+        setInquiries(list.filter((i) => i && i.id && !deleted.has(i.id)));
+      }
+    } catch (_) {}
+  };
 
   // Persist inquiries whenever changed
   useEffect(() => {
@@ -199,6 +229,7 @@ function AppShell() {
   };
 
   const handleDeleteInquiry = (id: string) => {
+    recordDeletedInquiryId(id);
     deleteInquiryFromCloud(id);
     setInquiries((prev) => prev.filter((item) => item.id !== id));
   };
@@ -340,6 +371,7 @@ function AppShell() {
                   onUpdateInquiryStatus={handleUpdateInquiryStatus}
                   onDeleteInquiry={handleDeleteInquiry}
                   onNavigate={handleNavigate}
+                  onRefreshInquiries={handleRefreshInquiries}
                   packages={packages}
                   onUpdatePackagePrice={handleUpdatePackagePrice}
                   onUpdatePackage={handleUpdatePackage}

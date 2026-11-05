@@ -308,7 +308,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
       : ' | No Extra Add-ons';
 
     const orderData: PaymentOrderData = {
-      bookingId: `inq-${Date.now().toString().slice(-4)}`,
+      bookingId: `inq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       clientName: trimmedName,
       email: trimmedEmail,
       phone: phone.trim() || undefined,

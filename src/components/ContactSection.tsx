@@ -85,9 +85,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     e.preventDefault();
     if (!formData.clientName || !formData.email) return;
 
-    setIsSubmitting(true);
-
-    const generatedId = `inq-${Date.now().toString().slice(-4)}`;
+    const generatedId = `inq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
     let scopeDetails = formData.details;
     if (requestType === 'appointment') {

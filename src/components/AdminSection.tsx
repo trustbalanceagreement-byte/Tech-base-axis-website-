@@ -64,6 +64,7 @@ interface AdminSectionProps {
   onUpdateInquiryStatus: (id: string, status: ClientInquiry['status'], notes?: string) => void;
   onDeleteInquiry: (id: string) => void;
   onNavigate: (section: NavSection) => void;
+  onRefreshInquiries?: () => void;
   packages: ServicePackage[];
   onUpdatePackagePrice: (id: string, newPrice: number) => void;
   onUpdatePackage: (pkg: ServicePackage) => void;
@@ -165,6 +166,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   onUpdateInquiryStatus,
   onDeleteInquiry,
   onNavigate,
+  onRefreshInquiries,
   packages,
   onUpdatePackagePrice,
   onUpdatePackage,
@@ -304,6 +306,19 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   // OneSignal push notifications state
   const [pushPermission, setPushPermission] = useState<boolean>(false);
   const [pushLoading, setPushLoading] = useState<boolean>(false);
+  const [isRefreshingInquiries, setIsRefreshingInquiries] = useState<boolean>(false);
+
+  const handleManualRefreshInquiries = async () => {
+    if (onRefreshInquiries) {
+      setIsRefreshingInquiries(true);
+      try {
+        await onRefreshInquiries();
+        triggerToast('Client inquiries refreshed from server!');
+      } finally {
+        setTimeout(() => setIsRefreshingInquiries(false), 500);
+      }
+    }
+  };
 
   // Automatically register this exact device/phone where Admin Console is open as the active admin device
   const registerCurrentDeviceAsAdmin = (OneSignal: any) => {
@@ -1757,6 +1772,17 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
               {/* Filter Pills & Push Alerts */}
               <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleManualRefreshInquiries}
+                  disabled={isRefreshingInquiries}
+                  className="px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 disabled:opacity-50"
+                  title="Refresh latest inquiries from server"
+                >
+                  <RotateCcw className={`w-3.5 h-3.5 text-neutral-400 ${isRefreshingInquiries ? 'animate-spin text-red-400' : ''}`} />
+                  <span>{isRefreshingInquiries ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleEnablePush}

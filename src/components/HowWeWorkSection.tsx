@@ -17,11 +17,11 @@ import {
 gsap.registerPlugin(ScrollTrigger);
 
 // Import AI-generated 16:9 photorealistic corporate technology showcase images
-import imgAutomation from '../assets/images/workflow-automation-systems.webp';
-import imgCustomApp from '../assets/images/custom-app-development-architecture.webp';
-import imgSoftwareDev from '../assets/images/enterprise-software-development-systems.webp';
-import imgWebDev from '../assets/images/full-stack-web-development-kolkata.webp';
-import imgAiSystems from '../assets/images/ai-intelligence-neural-systems.webp';
+import imgAutomation from '../assets/images/regenerated_image_1793910323333.jpg';
+import imgCustomApp from '../assets/images/regenerated_image_1793910325500.jpg';
+import imgSoftwareDev from '../assets/images/regenerated_image_1793913809500.jpg';
+import imgWebDev from '../assets/images/regenerated_image_1793913814463.jpg';
+import imgAiSystems from '../assets/images/regenerated_image_1793913816389.jpg';
 import imgDigitalSol from '../assets/images/bespoke-digital-business-solutions.webp';
 
 interface HowWeWorkSectionProps {

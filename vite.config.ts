@@ -37,6 +37,13 @@ import {
   syncPackagesEnvelopeToSupabase,
   getPackagesEnvelopeFromSupabase
 } from './server/supabaseHelper';
+import {
+  getInquiriesList,
+  saveInquiry,
+  updateInquiry,
+  deleteInquiry,
+  recordInquiryFromNotification
+} from './server/inquiryHelper';
 
 function onesignalDevApiPlugin(): Plugin {
   return {
@@ -108,6 +115,92 @@ function onesignalDevApiPlugin(): Plugin {
             res.statusCode = 500;
             res.end(JSON.stringify({ error: err?.message || 'Server error' }));
           }
+          return;
+        }
+
+        res.statusCode = 405;
+        res.end(JSON.stringify({ error: 'Method not allowed' }));
+      });
+
+      // Client Inquiries Sync (Appointments, Quotes, Enquiries, Package Bookings)
+      server.middlewares.use('/api/inquiries', (req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-store');
+
+        if (req.method === 'GET') {
+          try {
+            const list = getInquiriesList();
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, inquiries: list }));
+          } catch (err: any) {
+            res.statusCode = 500;
+            res.end(JSON.stringify({ error: err?.message || 'Failed to get inquiries', inquiries: [] }));
+          }
+          return;
+        }
+
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const payload = JSON.parse(body || '{}');
+              const result = saveInquiry(payload);
+              res.statusCode = 200;
+              res.end(JSON.stringify(result));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err?.message || 'Invalid inquiry payload' }));
+            }
+          });
+          return;
+        }
+
+        if (req.method === 'PUT') {
+          let body = '';
+          req.on('data', (chunk) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const parsed = JSON.parse(body || '{}');
+              const id = parsed.id;
+              if (!id) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing inquiry ID' }));
+                return;
+              }
+              const result = updateInquiry(id, parsed.patch || parsed);
+              res.statusCode = 200;
+              res.end(JSON.stringify(result));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err?.message || 'Failed to update inquiry' }));
+            }
+          });
+          return;
+        }
+
+        if (req.method === 'DELETE') {
+          let body = '';
+          req.on('data', (chunk) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const url = new URL(req.url || '', 'http://localhost');
+              let parsedBody: any = {};
+              try { parsedBody = JSON.parse(body); } catch (_) {}
+              const id = url.searchParams.get('id') || parsedBody.id;
+              if (!id) {
+                res.statusCode = 400;
+                res.end(JSON.stringify({ error: 'Missing inquiry ID' }));
+                return;
+              }
+              const result = deleteInquiry(id);
+              res.statusCode = 200;
+              res.end(JSON.stringify(result));
+            } catch (err: any) {
+              res.statusCode = 400;
+              res.end(JSON.stringify({ error: err?.message || 'Failed to delete inquiry' }));
+            }
+          });
           return;
         }
 
@@ -399,6 +492,9 @@ function onesignalDevApiPlugin(): Plugin {
         req.on('end', async () => {
           try {
             const payload = JSON.parse(body || '{}');
+            try {
+              recordInquiryFromNotification(payload);
+            } catch (_) {}
             const result = await sendOneSignalPushNotification(payload);
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = result.success ? 200 : 502;
@@ -424,6 +520,9 @@ function onesignalDevApiPlugin(): Plugin {
         req.on('end', async () => {
           try {
             const eventData: AdminNotificationEvent = JSON.parse(body || '{}');
+            try {
+              recordInquiryFromNotification(eventData);
+            } catch (_) {}
             const result = await sendAdminOneSignalNotification(eventData);
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = result.success ? 200 : 502;
@@ -602,7 +701,7 @@ export default defineConfig(() => {
       port: 3000,
       host: '0.0.0.0',
       strictPort: true,
-      allowedHosts: true,
+      allowedHosts: true as const,
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},
     },

@@ -31,6 +31,13 @@ import {
   savePackagesEnvelope,
   isPackagesEnvelope
 } from "./server/activityHelper.ts";
+import {
+  getInquiriesList,
+  saveInquiry,
+  updateInquiry,
+  deleteInquiry,
+  recordInquiryFromNotification
+} from "./server/inquiryHelper.ts";
 
 const app = express();
 app.use(express.json({ limit: "200mb" }));
@@ -52,6 +59,63 @@ const activityFilePath = path.join(dataDir, "user_activity.json");
 
 // Static route for uploaded media
 app.use("/uploads", express.static(uploadsDir));
+
+// GET /api/inquiries - List client inquiries for Admin Console
+app.get("/api/inquiries", (_req, res) => {
+  try {
+    const inquiries = getInquiriesList();
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({ success: true, inquiries });
+  } catch (err: any) {
+    console.error("Error fetching inquiries:", err);
+    res.status(500).json({ error: "Failed to load inquiries", inquiries: [] });
+  }
+});
+
+// POST /api/inquiries - Save new client inquiry
+app.post("/api/inquiries", (req, res) => {
+  try {
+    const payload = req.body;
+    if (!payload || typeof payload !== "object") {
+      return res.status(400).json({ error: "Invalid inquiry payload" });
+    }
+    const result = saveInquiry(payload);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error("Error saving inquiry:", err);
+    res.status(500).json({ error: err?.message || "Failed to save inquiry" });
+  }
+});
+
+// PUT /api/inquiries - Update inquiry status or notes
+app.put("/api/inquiries", (req, res) => {
+  try {
+    const { id, patch } = req.body || {};
+    if (!id) {
+      return res.status(400).json({ error: "Missing inquiry ID" });
+    }
+    const result = updateInquiry(id, patch || req.body);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error("Error updating inquiry:", err);
+    res.status(500).json({ error: err?.message || "Failed to update inquiry" });
+  }
+});
+
+// DELETE /api/inquiries - Remove an inquiry
+app.delete("/api/inquiries", (req, res) => {
+  try {
+    const id = (req.query.id || req.body?.id || "").toString();
+    if (!id) {
+      return res.status(400).json({ error: "Missing inquiry ID" });
+    }
+    const result = deleteInquiry(id);
+    res.status(200).json(result);
+  } catch (err: any) {
+    console.error("Error deleting inquiry:", err);
+    res.status(500).json({ error: err?.message || "Failed to delete inquiry" });
+  }
+});
 
 // GET /api/activity - Real-time activity dashboard, online/offline presence & user directory
 app.get("/api/activity", (_req, res) => {
@@ -382,6 +446,10 @@ app.post("/api/notify-booking", async (req, res) => {
       return res.status(400).json({ error: "Missing required clientName or email" });
     }
 
+    try {
+      recordInquiryFromNotification(payload);
+    } catch (_) {}
+
     const result = await sendOneSignalPushNotification(payload);
     res.status(result.success ? 200 : 502).json(result);
   } catch (error: any) {
@@ -415,6 +483,13 @@ app.post("/api/notify-admin", async (req, res) => {
       clientName: eventData.clientName || (eventData.email ? eventData.email.split('@')[0] : 'Client'),
       email: eventData.email || eventData.clientEmail || ''
     };
+
+    // Auto-record inquiry in persistent store so it is NEVER lost
+    try {
+      recordInquiryFromNotification(normalizedEvent);
+    } catch (saveErr) {
+      console.warn('[Inquiries] Error auto-recording from notification:', saveErr);
+    }
 
     const result = await sendAdminOneSignalNotification(normalizedEvent);
     res.status(result.success ? 200 : 200).json(result);
