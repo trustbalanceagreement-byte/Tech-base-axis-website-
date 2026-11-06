@@ -64,6 +64,11 @@ export async function saveInquiryToCloud(inquiry: ClientInquiry): Promise<boolea
     cloudSavedAt: new Date().toISOString()
   });
 
+  // Broadcast locally for instant 0ms UI update across tabs/components
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tba_new_inquiry_saved', { detail: cleanedInquiry }));
+  }
+
   // 1. Direct server store (persisted to disk & instant access across all devices)
   const viaServer = api('POST', '/api/inquiries', cleanedInquiry)
     .then((j) => Boolean(j?.success))
@@ -126,7 +131,7 @@ export async function fetchServerInquiries(): Promise<ClientInquiry[]> {
   return [];
 }
 
-/** Live list of every inquiry: server store (polled every 5s) merged with Firestore live stream. */
+/** Live list of every inquiry: server store (polled every 2s) merged with Firestore live stream. */
 export function subscribeToCloudInquiries(
   onData: (list: ClientInquiry[]) => void,
   onError: (message: string) => void
@@ -168,8 +173,18 @@ export function subscribeToCloudInquiries(
 
   // Immediate poll
   pollServer();
-  // Poll every 5 seconds for fast updates when clients book appointments or submit quotes
-  const timer = setInterval(pollServer, 5000);
+  // Poll every 2 seconds for near real-time updates when clients book appointments or submit quotes
+  const timer = setInterval(pollServer, 2000);
+
+  const handleInstantInquiry = (e: any) => {
+    if (e?.detail) {
+      server = [e.detail, ...server.filter((x) => x.id !== e.detail.id)];
+      emit();
+    }
+  };
+  if (typeof window !== 'undefined') {
+    window.addEventListener('tba_new_inquiry_saved', handleInstantInquiry);
+  }
 
   let unsub: () => void = () => {};
   try {
@@ -196,6 +211,9 @@ export function subscribeToCloudInquiries(
   return () => {
     alive = false;
     clearInterval(timer);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('tba_new_inquiry_saved', handleInstantInquiry);
+    }
     unsub();
   };
 }

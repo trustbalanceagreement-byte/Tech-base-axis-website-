@@ -205,6 +205,103 @@ export async function getPackagesEnvelopeFromSupabase(): Promise<any | null> {
 }
 
 /**
+ * Persists client inquiries to Supabase Storage Bucket
+ * Guarantees that across all containers and serverless lambdas, inquiries are synchronized!
+ */
+export async function syncInquiriesToSupabase(inquiries: any[]): Promise<boolean> {
+  try {
+    const jsonBuffer = Buffer.from(JSON.stringify(inquiries, null, 2), 'utf8');
+    const { error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .upload('inquiries/inquiries.json', jsonBuffer, {
+        contentType: 'application/json',
+        cacheControl: '0',
+        upsert: true
+      });
+    if (error) {
+      console.warn('[Supabase Sync] Warning syncing inquiries.json:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err: any) {
+    console.warn('[Supabase Sync] Inquiries sync notice:', err?.message || err);
+    return false;
+  }
+}
+
+export async function getInquiriesFromSupabase(): Promise<any[] | null> {
+  try {
+    const { data, error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .download('inquiries/inquiries.json');
+    if (error || !data) return null;
+    const parsed = JSON.parse(await data.text());
+    return Array.isArray(parsed) ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+export async function syncDeletedInquiriesToSupabase(deletedIds: string[]): Promise<boolean> {
+  try {
+    const jsonBuffer = Buffer.from(JSON.stringify(deletedIds, null, 2), 'utf8');
+    const { error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .upload('inquiries/deleted_inquiries.json', jsonBuffer, {
+        contentType: 'application/json',
+        cacheControl: '0',
+        upsert: true
+      });
+    return !error;
+  } catch (_) {
+    return false;
+  }
+}
+
+export async function getDeletedInquiriesFromSupabase(): Promise<string[] | null> {
+  try {
+    const { data, error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .download('inquiries/deleted_inquiries.json');
+    if (error || !data) return null;
+    const parsed = JSON.parse(await data.text());
+    return Array.isArray(parsed) ? parsed.map(String) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+export async function syncAdminDevicesToSupabase(deviceIds: string[]): Promise<boolean> {
+  try {
+    const jsonBuffer = Buffer.from(JSON.stringify(deviceIds, null, 2), 'utf8');
+    const { error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .upload('admin/devices.json', jsonBuffer, {
+        contentType: 'application/json',
+        cacheControl: '0',
+        upsert: true
+      });
+    return !error;
+  } catch (_) {
+    return false;
+  }
+}
+
+export async function getAdminDevicesFromSupabase(): Promise<string[] | null> {
+  try {
+    const { data, error } = await supabaseServerClient.storage
+      .from(SUPABASE_BUCKET_NAME)
+      .download('admin/devices.json');
+    if (error || !data) return null;
+    const parsed = JSON.parse(await data.text());
+    return Array.isArray(parsed) ? parsed.map(String) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+
+/**
  * Express / Connect request handler for /api/supabase/upload
  * Handles incoming raw binary streams or form data and pipes directly into Supabase Storage
  */

@@ -1,4 +1,7 @@
 import "dotenv/config";
+import fs from 'fs';
+import path from 'path';
+import { syncAdminDevicesToSupabase, getAdminDevicesFromSupabase } from './supabaseHelper.ts';
 
 /**
  * OneSignal Admin Notification Automation Service (Server-Side Only)
@@ -116,16 +119,51 @@ function getAdminEmails(): string[] {
   return ['techbaseaxis@gmail.com', 'techbaseaixe@gmail.com', 'bgho40185@gmail.com'];
 }
 
+const dataDir = path.join(process.cwd(), 'data');
+const adminDevicesFilePath = path.join(dataDir, 'admin_devices.json');
+
+function loadStoredAdminDevices(): Set<string> {
+  const set = new Set<string>();
+  try {
+    if (fs.existsSync(adminDevicesFilePath)) {
+      const parsed = JSON.parse(fs.readFileSync(adminDevicesFilePath, 'utf8'));
+      if (Array.isArray(parsed)) {
+        parsed.forEach((id) => id && set.add(String(id)));
+      }
+    }
+  } catch (_) {}
+  return set;
+}
+
 // Store of actively registered admin phone/browser subscription IDs
-const activeAdminSubscriptions = new Set<string>();
+const activeAdminSubscriptions = loadStoredAdminDevices();
+
+(async () => {
+  try {
+    const supaDevices = await getAdminDevicesFromSupabase();
+    if (Array.isArray(supaDevices)) {
+      supaDevices.forEach((id) => id && activeAdminSubscriptions.add(String(id)));
+      try {
+        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+        fs.writeFileSync(adminDevicesFilePath, JSON.stringify(Array.from(activeAdminSubscriptions), null, 2), 'utf8');
+      } catch (_) {}
+    }
+  } catch (_) {}
+})();
 
 /**
  * Dynamically register the active device where the Admin Console is currently open
  */
 export function registerAdminSubscription(subId: string): void {
   if (subId && typeof subId === 'string' && subId.trim().length > 10) {
-    activeAdminSubscriptions.add(subId.trim());
-    console.log(`[OneSignal] Admin phone/device registered: ${subId}. Total active admin devices: ${activeAdminSubscriptions.size}`);
+    const cleanId = subId.trim();
+    activeAdminSubscriptions.add(cleanId);
+    try {
+      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+      fs.writeFileSync(adminDevicesFilePath, JSON.stringify(Array.from(activeAdminSubscriptions), null, 2), 'utf8');
+      syncAdminDevicesToSupabase(Array.from(activeAdminSubscriptions)).catch(() => {});
+    } catch (_) {}
+    console.log(`[OneSignal] Admin phone/device registered: ${cleanId}. Total active admin devices: ${activeAdminSubscriptions.size}`);
   }
 }
 
@@ -420,47 +458,72 @@ export async function sendAdminOneSignalNotification(
   };
 
   const post = async (label: string, targeting: Record<string, any>) => {
-    try {
-      const response = await fetch('https://api.onesignal.com/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Authorization': `Key ${apiKey}`
-        },
-        body: JSON.stringify({ ...baseBody, ...targeting })
-      });
-      const json: any = await response.json().catch(() => ({}));
-      const ok = response.ok && Boolean(json?.id);
-      console.log(`[OneSignal] ${label}: ${ok ? 'sent' : 'not delivered'} (HTTP ${response.status})${ok ? '' : ' ' + JSON.stringify(json?.errors || json)}`);
-      return { ok, json };
-    } catch (err: any) {
-      console.warn(`[OneSignal] ${label} failed:`, err?.message || err);
-      return { ok: false, json: { errors: [err?.message || String(err)] } };
+    const primaryAuth = apiKey.startsWith('os_v2_') ? `Key ${apiKey}` : `Basic ${apiKey}`;
+    const secondaryAuth = apiKey.startsWith('os_v2_') ? `Basic ${apiKey}` : `Key ${apiKey}`;
+
+    const trySend = async (authHeader: string) => {
+      try {
+        const response = await fetch('https://api.onesignal.com/notifications', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Authorization': authHeader
+          },
+          body: JSON.stringify({ ...baseBody, ...targeting })
+        });
+        const json: any = await response.json().catch(() => ({}));
+        const ok = response.ok && Boolean(json?.id);
+        return { ok, status: response.status, json };
+      } catch (err: any) {
+        return { ok: false, status: 500, json: { errors: [err?.message || String(err)] } };
+      }
+    };
+
+    let result = await trySend(primaryAuth);
+    // If rejected with 401/403 or Access denied, try alternative scheme
+    if (!result.ok && (result.status === 401 || result.status === 403)) {
+      const retryResult = await trySend(secondaryAuth);
+      if (retryResult.ok) {
+        result = retryResult;
+      }
     }
+
+    const ok = result.ok;
+    const json = result.json;
+    console.log(`[OneSignal] ${label}: ${ok ? 'sent' : 'not delivered'} (HTTP ${result.status})${ok ? '' : ' ' + JSON.stringify(json?.errors || json)}`);
+    return { ok, json };
   };
 
   let finalResult: OneSignalNotificationResponse = { success: false };
   const adminEmails = getAdminEmails();
   const errors: string[] = [];
 
-  // Admin-only delivery. ONE push is sent: the first route that works wins (no duplicates).
-  //  1) Devices where an admin is signed in (external_id = admin email). Survives server restarts.
-  //  2) Admin devices registered by the open Admin panel / configured subscription ids.
-  //  3) Devices tagged role=admin.
-  // Clients (role=client) are never targeted.
+  // Robust Admin-only delivery: tries most specific routes down to tags and player IDs
   const routes: { label: string; targeting: Record<string, any>; skip?: boolean }[] = [
-    {
-      label: 'admin accounts (external_id)',
-      targeting: { include_aliases: { external_id: adminEmails }, target_channel: 'push' }
-    },
     {
       label: 'registered admin devices',
       targeting: { include_subscription_ids: combinedAdminSubs },
       skip: combinedAdminSubs.length === 0
     },
     {
+      label: 'admin player IDs',
+      targeting: { include_player_ids: Array.from(new Set([adminPlayerId, ...combinedAdminSubs])).filter(Boolean) }
+    },
+    {
+      label: 'admin accounts (external_id push)',
+      targeting: { include_aliases: { external_id: adminEmails }, target_channel: 'push' }
+    },
+    {
+      label: 'admin accounts (external_id)',
+      targeting: { include_aliases: { external_id: adminEmails } }
+    },
+    {
       label: 'tag role=admin',
       targeting: { filters: [{ field: 'tag', key: 'role', relation: '=', value: 'admin' }] }
+    },
+    {
+      label: 'tag is_active_admin',
+      targeting: { filters: [{ field: 'tag', key: 'is_active_admin', relation: '=', value: 'true' }] }
     }
   ];
 

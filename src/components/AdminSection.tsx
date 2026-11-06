@@ -1029,18 +1029,28 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-neutral-100">
-      {/* Toast Notification */}
+      {/* Toast Notification - Signature Tech Base Axis Crimson & Obsidian Glass Theme */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 max-w-md p-4 rounded-2xl bg-[#12131a]/95 border border-emerald-500/40 text-white shadow-2xl backdrop-blur-md flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
-            <CheckCircle2 className="w-5 h-5" />
+        <div className="fixed bottom-6 right-4 sm:right-6 z-50 max-w-md w-[calc(100vw-2rem)] sm:w-auto p-3.5 sm:p-4 rounded-2xl bg-[#0c0d12]/95 border border-neutral-800 hover:border-[#e61e2b]/50 text-white shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(230,30,43,0.18)] backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 overflow-hidden group">
+          {/* Top-edge Glowing Crimson Accent Line */}
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#e61e2b] to-transparent shadow-[0_0_12px_#e61e2b]" />
+
+          {/* Crimson Icon Pill */}
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#e61e2b]/15 text-[#e61e2b] border border-[#e61e2b]/30 flex items-center justify-center shrink-0 shadow-[0_0_12px_rgba(230,30,43,0.25)]">
+            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#e61e2b]" />
           </div>
-          <div className="text-xs font-mono flex-1">
+
+          {/* Notification Text */}
+          <div className="text-xs sm:text-sm font-mono text-neutral-100 flex-1 leading-snug tracking-tight">
             {toastMessage}
           </div>
+
+          {/* Close Button */}
           <button
+            type="button"
             onClick={() => setToastMessage(null)}
-            className="text-neutral-400 hover:text-white p-1"
+            className="text-neutral-400 hover:text-[#e61e2b] hover:bg-neutral-800/80 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+            aria-label="Dismiss notification"
           >
             <X className="w-4 h-4" />
           </button>

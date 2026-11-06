@@ -9,6 +9,7 @@ dotenv.config();
 import { 
   sendAdminOneSignalNotification, 
   sendOneSignalPushNotification, 
+  registerAdminSubscription,
   AdminNotificationEvent 
 } from './server/onesignalService';
 import {
@@ -534,6 +535,39 @@ function onesignalDevApiPlugin(): Plugin {
           }
         });
       });
+
+      // Admin device registration endpoint
+      server.middlewares.use('/api/register-admin-device', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end(JSON.stringify({ error: 'Method not allowed' }));
+          return;
+        }
+
+        let body = '';
+        req.on('data', (chunk) => { body += chunk; });
+        req.on('end', () => {
+          try {
+            const parsed = JSON.parse(body || '{}');
+            const subscriptionId = parsed.subscriptionId;
+            if (!subscriptionId) {
+              res.statusCode = 400;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: 'Missing subscriptionId' }));
+              return;
+            }
+            registerAdminSubscription(subscriptionId);
+            res.setHeader('Content-Type', 'application/json');
+            res.statusCode = 200;
+            res.end(JSON.stringify({ success: true, registered: subscriptionId }));
+          } catch (err: any) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: err?.message || 'Failed to register device' }));
+          }
+        });
+      });
+
 
       // STEP 1: Backend Create Order (Razorpay Standard Checkout)
       server.middlewares.use('/api/create-order', (req, res) => {

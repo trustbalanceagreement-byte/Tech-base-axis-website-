@@ -1,6 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { supabaseServerClient, SUPABASE_BUCKET_NAME } from './supabaseHelper.ts';
+import { 
+  supabaseServerClient, 
+  SUPABASE_BUCKET_NAME,
+  syncInquiriesToSupabase,
+  getInquiriesFromSupabase,
+  syncDeletedInquiriesToSupabase,
+  getDeletedInquiriesFromSupabase
+} from './supabaseHelper.ts';
 
 export interface ClientInquiry {
   id: string;
@@ -38,6 +45,29 @@ if (!fs.existsSync(dataDir)) {
 
 const inquiriesFilePath = path.join(dataDir, 'inquiries.json');
 const deletedInquiriesFilePath = path.join(dataDir, 'deleted_inquiries.json');
+
+// Background sync with Supabase cloud storage to ensure multi-instance / serverless consistency
+(async () => {
+  try {
+    const supaDeleted = await getDeletedInquiriesFromSupabase();
+    if (Array.isArray(supaDeleted) && supaDeleted.length > 0) {
+      const current = getDeletedInquiryIdsOnServer();
+      supaDeleted.forEach((d) => current.add(String(d)));
+      try {
+        fs.writeFileSync(deletedInquiriesFilePath, JSON.stringify(Array.from(current), null, 2), 'utf8');
+      } catch (_) {}
+    }
+
+    if (!fs.existsSync(inquiriesFilePath)) {
+      const supaInquiries = await getInquiriesFromSupabase();
+      if (Array.isArray(supaInquiries)) {
+        const deletedIds = getDeletedInquiryIdsOnServer();
+        const clean = supaInquiries.filter((i) => i && i.id && !deletedIds.has(i.id));
+        fs.writeFileSync(inquiriesFilePath, JSON.stringify(clean, null, 2), 'utf8');
+      }
+    }
+  } catch (_) {}
+})();
 
 export const INITIAL_INQUIRIES: ClientInquiry[] = [
   {
@@ -110,6 +140,7 @@ export function recordDeletedInquiryIdOnServer(id: string): void {
     const current = getDeletedInquiryIdsOnServer();
     current.add(safeId);
     fs.writeFileSync(deletedInquiriesFilePath, JSON.stringify(Array.from(current), null, 2), 'utf8');
+    syncDeletedInquiriesToSupabase(Array.from(current)).catch(() => {});
   } catch (err) {
     console.error('[Inquiries] Error recording deleted inquiry ID on server:', err);
   }
@@ -136,6 +167,7 @@ export function getInquiriesList(): ClientInquiry[] {
   if (!fs.existsSync(inquiriesFilePath) && deletedIds.size === 0) {
     try {
       fs.writeFileSync(inquiriesFilePath, JSON.stringify(INITIAL_INQUIRIES, null, 2), 'utf8');
+      syncInquiriesToSupabase(INITIAL_INQUIRIES).catch(() => {});
     } catch (_) {}
     return [...INITIAL_INQUIRIES];
   }
@@ -148,6 +180,7 @@ export function saveInquiriesList(list: ClientInquiry[]): boolean {
     const deletedIds = getDeletedInquiryIdsOnServer();
     const cleanList = list.filter((item) => item && item.id && !deletedIds.has(item.id));
     fs.writeFileSync(inquiriesFilePath, JSON.stringify(cleanList, null, 2), 'utf8');
+    syncInquiriesToSupabase(cleanList).catch(() => {});
     return true;
   } catch (err) {
     console.error('[Inquiries] Failed to write inquiries to disk:', err);

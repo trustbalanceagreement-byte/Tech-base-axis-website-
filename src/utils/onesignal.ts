@@ -8,6 +8,16 @@ export interface OneSignalUserInterface {
   addTags: (tags: Record<string, string>) => Promise<void>;
   removeTag: (key: string) => Promise<void>;
   removeTags: (keys: string[]) => Promise<void>;
+  PushSubscription?: {
+    id?: string;
+    token?: string;
+    optedIn?: boolean;
+    addEventListener?: (event: string, listener: (...args: any[]) => void) => void;
+    removeEventListener?: (event: string, listener: (...args: any[]) => void) => void;
+    [key: string]: any;
+  };
+  pushSubscription?: any;
+  [key: string]: any;
 }
 
 export interface OneSignalNotificationsInterface {
@@ -107,11 +117,71 @@ export const identifyOneSignalUser = (userId: string, tags?: Record<string, stri
       if (tags?.role === 'client' && OneSignal.User?.removeTag) {
         await OneSignal.User.removeTag('is_active_admin');
       }
+
+      // If logging in as admin, immediately capture and register device subscription with server
+      if (tags?.role === 'admin') {
+        const notifyServer = (subId?: string) => {
+          if (subId && subId.length > 10) {
+            fetch('/api/register-admin-device', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscriptionId: subId })
+            }).catch(() => {});
+          }
+        };
+
+        const currentSubId = OneSignal.User?.PushSubscription?.id;
+        if (currentSubId) {
+          notifyServer(currentSubId);
+        }
+
+        if (OneSignal.User?.PushSubscription?.addEventListener) {
+          OneSignal.User.PushSubscription.addEventListener('change', (event: any) => {
+            const newId = event?.current?.id || OneSignal.User?.PushSubscription?.id;
+            if (newId) notifyServer(newId);
+          });
+        }
+      }
     } catch (err: any) {
       console.warn('[OneSignal] User identification notice:', err?.message || err);
     }
   });
 };
+
+/**
+ * Registers the active browser/phone directly as an admin device
+ */
+export const syncAdminDeviceRegistration = (): void => {
+  runWithOneSignal(async (OneSignal) => {
+    try {
+      if (OneSignal.User?.addTag) {
+        OneSignal.User.addTag('role', 'admin');
+        OneSignal.User.addTag('is_active_admin', 'true');
+      }
+      const subId = OneSignal.User?.PushSubscription?.id;
+      if (subId && subId.length > 10) {
+        fetch('/api/register-admin-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: subId })
+        }).catch(() => {});
+      }
+      if (OneSignal.User?.PushSubscription?.addEventListener) {
+        OneSignal.User.PushSubscription.addEventListener('change', (event: any) => {
+          const newId = event?.current?.id || OneSignal.User?.PushSubscription?.id;
+          if (newId && newId.length > 10) {
+            fetch('/api/register-admin-device', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscriptionId: newId })
+            }).catch(() => {});
+          }
+        });
+      }
+    } catch (_) {}
+  });
+};
+
 
 /**
  * Logs out user from OneSignal session.

@@ -542,14 +542,19 @@ export const AdminProjectsManager: React.FC<AdminProjectsManagerProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200 text-neutral-100">
-      {/* Toast Alert */}
+      {/* Toast Alert - Tech Base Axis Theme */}
       {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-neutral-900 border border-emerald-500/50 text-emerald-400 text-xs font-mono shadow-2xl shadow-emerald-950/50 animate-in slide-in-from-top-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-6 right-4 sm:right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#0c0d12]/95 border border-neutral-800 hover:border-[#e61e2b]/50 text-white shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_20px_rgba(230,30,43,0.2)] backdrop-blur-xl animate-in slide-in-from-top-2 overflow-hidden group">
+          <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-[#e61e2b] to-transparent shadow-[0_0_12px_#e61e2b]" />
+          <div className="w-7 h-7 rounded-lg bg-[#e61e2b]/15 text-[#e61e2b] border border-[#e61e2b]/30 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-4 h-4 text-[#e61e2b]" />
+          </div>
+          <span className="text-xs sm:text-sm font-mono text-neutral-100">{toastMessage}</span>
           <button
+            type="button"
             onClick={() => setToastMessage(null)}
-            className="text-neutral-400 hover:text-white ml-2"
+            className="text-neutral-400 hover:text-[#e61e2b] hover:bg-neutral-800/80 p-1 rounded-lg transition-colors ml-2 cursor-pointer"
+            aria-label="Dismiss notification"
           >
             <X className="w-3.5 h-3.5" />
           </button>
