@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { NavSection, Project, ServicePackage, ClientInquiry } from './types';
 import { DEFAULT_INQUIRIES, PROJECTS_DATA, SERVICE_PACKAGES } from './data/mockData';
@@ -60,9 +60,23 @@ function AppShell() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsInitialLoading(false);
-    }, 400);
+    }, 700);
     return () => clearTimeout(timer);
   }, []);
+
+  // Short, page-aware skeleton whenever the visitor switches pages
+  const [isPageLoading, setIsPageLoading] = useState(false);
+  const firstSectionRef = useRef(true);
+  useEffect(() => {
+    if (firstSectionRef.current) {
+      firstSectionRef.current = false;
+      return;
+    }
+    if (activeSection === 'admin') return;
+    setIsPageLoading(true);
+    const t = setTimeout(() => setIsPageLoading(false), 450);
+    return () => clearTimeout(t);
+  }, [activeSection]);
 
   // Initialize inquiries from localStorage or fallback to initial realistic inquiries
   const [inquiries, setInquiries] = useState<ClientInquiry[]>(() => {
@@ -327,8 +341,8 @@ function AppShell() {
 
       {/* Main Content Area with Fluid Section Transition Animation */}
       <main className="flex-1 w-full overflow-x-clip">
-        {isInitialLoading ? (
-          <FullPageSkeleton />
+        {isInitialLoading || isPageLoading ? (
+          <FullPageSkeleton section={activeSection} />
         ) : (
           <AnimatePresence mode="wait">
             <motion.div

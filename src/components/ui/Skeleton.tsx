@@ -176,13 +176,87 @@ export const TableRowSkeleton: React.FC = () => {
 };
 
 /**
- * Full Page Skeleton layout representing Tech Base Axis structure during initial load
+ * Page-aware full page skeleton shown during first load and while switching pages.
  */
-export const FullPageSkeleton: React.FC = () => {
+export const FullPageSkeleton: React.FC<{ section?: string }> = ({ section = 'home' }) => {
+  const wrap = 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 animate-in fade-in duration-200';
+  const heading = (center = false) => (
+    <div className={`space-y-4 ${center ? 'flex flex-col items-center text-center' : ''}`}>
+      <Skeleton className="h-10 sm:h-14 w-4/5 max-w-2xl rounded-xl" />
+      <Skeleton className="h-10 sm:h-14 w-3/5 max-w-xl rounded-xl" />
+      <Skeleton className="h-4 w-11/12 max-w-xl rounded" />
+      <Skeleton className="h-4 w-3/4 max-w-lg rounded" />
+    </div>
+  );
+
+  if (section === 'projects') {
+    return (
+      <div className={`${wrap} space-y-10`} role="status" aria-label="Loading projects">
+        {heading(true)}
+        <div className="flex flex-wrap justify-center gap-2">
+          {[0, 1, 2, 3, 4].map((k) => <Skeleton key={k} className="h-9 w-24 rounded-full" />)}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ProjectCardSkeleton compact />
+          <ProjectCardSkeleton compact />
+          <div className="hidden lg:block"><ProjectCardSkeleton compact /></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'packages') {
+    return (
+      <div className={`${wrap} space-y-10`} role="status" aria-label="Loading packages">
+        {heading(true)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <PackageCardSkeleton />
+          <PackageCardSkeleton />
+          <div className="hidden lg:block"><PackageCardSkeleton /></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'contact') {
+    return (
+      <div className={`${wrap} space-y-10`} role="status" aria-label="Loading contact">
+        {heading(true)}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-3 obsidian-card rounded-2xl border border-neutral-800 p-6 space-y-4">
+            <div className="grid grid-cols-3 gap-2">
+              <Skeleton className="h-11 rounded-xl" /><Skeleton className="h-11 rounded-xl" /><Skeleton className="h-11 rounded-xl" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Skeleton className="h-12 rounded-xl" /><Skeleton className="h-12 rounded-xl" />
+              <Skeleton className="h-12 rounded-xl" /><Skeleton className="h-12 rounded-xl" />
+            </div>
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-12 w-44 rounded-xl" />
+          </div>
+          <div className="lg:col-span-2 obsidian-card rounded-2xl border border-neutral-800 p-6 space-y-4">
+            <Skeleton className="h-6 w-40 rounded" />
+            <Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" /><Skeleton className="h-16 rounded-xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === 'privacy' || section === 'terms') {
+    return (
+      <div className={`${wrap} max-w-3xl space-y-4`} role="status" aria-label="Loading">
+        <Skeleton className="h-10 w-2/3 rounded-xl" />
+        {Array.from({ length: 9 }).map((_, k) => (
+          <Skeleton key={k} className={`h-4 rounded ${k % 3 === 2 ? 'w-2/3' : 'w-full'}`} />
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12 animate-in fade-in duration-300">
-      {/* Top Banner / Hero Skeleton */}
-      <div className="obsidian-card rounded-2xl p-8 sm:p-12 border border-neutral-800 relative overflow-hidden">
+    <div className={`${wrap} space-y-12`} role="status" aria-label="Loading">
+      <div className="obsidian-card rounded-2xl p-8 sm:p-12 border border-neutral-800">
         <div className="max-w-3xl space-y-6">
           <div className="flex items-center gap-2">
             <Skeleton className="h-6 w-36 rounded-full" />
@@ -191,15 +265,12 @@ export const FullPageSkeleton: React.FC = () => {
           <Skeleton className="h-14 sm:h-20 w-11/12 rounded-xl" />
           <Skeleton className="h-5 w-3/4 rounded" />
           <Skeleton className="h-5 w-2/3 rounded" />
-          
           <div className="flex flex-wrap gap-4 pt-4">
             <Skeleton className="h-12 w-44 rounded-xl" />
             <Skeleton className="h-12 w-36 rounded-xl" />
           </div>
         </div>
       </div>
-
-      {/* Grid of Skeleton Cards */}
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <Skeleton className="h-8 w-48 rounded-lg" />
