@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Check, Clock, Layers, Wrench, X } from 'lucide-react';
-import { ClientInquiry } from '../types';
+import { ClientInquiry, ServicePackage } from '../types';
+import { getPackageCategory, getPackageTerm } from '../data/pricingData';
 import { confirmPlanPatch, rejectPlanPatch } from '../data/planData';
 
 type Cat = 'subscription' | 'maintenance';
@@ -8,18 +9,38 @@ type Dec = 'pending' | 'confirmed' | 'rejected';
 
 interface Props {
   inquiries: ClientInquiry[];
+  packages?: ServicePackage[];
   onDecide: (id: string, patch: Partial<ClientInquiry>) => void;
 }
 
 const fmt = (iso?: string) =>
   iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
 
-export const AdminPlanRequests: React.FC<Props> = ({ inquiries, onDecide }) => {
+const BOOKING_EVENTS = ['package_booking', 'payment_success'];
+
+export const AdminPlanRequests: React.FC<Props> = ({ inquiries, packages = [], onDecide }) => {
   const [cat, setCat] = useState<Cat>('subscription');
   const [dec, setDec] = useState<Dec>('pending');
   const [terms, setTerms] = useState<Record<string, 'monthly' | 'yearly'>>({});
 
-  const plans = useMemo(() => inquiries.filter((i) => i.planCategory), [inquiries]);
+  // Include every package booking, even older ones saved before plan tracking existed.
+  const plans = useMemo(() => {
+    const out: ClientInquiry[] = [];
+    for (const i of inquiries) {
+      if (i.planCategory) {
+        out.push(i);
+        continue;
+      }
+      const isBooking = BOOKING_EVENTS.includes(i.eventType || '') || i.company === 'Direct Package Booking';
+      if (!isBooking) continue;
+      const name = String(i.selectedPackage || i.projectType || '').replace(/\s*\(₹.*$/, '').trim().toLowerCase();
+      const pkg = packages.find((p) => p.name.trim().toLowerCase() === name);
+      const category = pkg ? getPackageCategory(pkg) : i.timeline === 'Monthly Retainer' ? 'subscription' : 'maintenance';
+      const term = pkg ? getPackageTerm(pkg.period) : 'monthly';
+      out.push({ ...i, planCategory: category, planTerm: term });
+    }
+    return out;
+  }, [inquiries, packages]);
   const decisionOf = (i: ClientInquiry): Dec => i.planDecision || 'pending';
   const count = (c: Cat, d?: Dec) => plans.filter((i) => i.planCategory === c && (!d || decisionOf(i) === d)).length;
 
@@ -131,14 +152,14 @@ export const AdminPlanRequests: React.FC<Props> = ({ inquiries, onDecide }) => {
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => onDecide(i.id, rejectPlanPatch())}
+                        onClick={() => onDecide(i.id, { ...rejectPlanPatch(), planCategory: i.planCategory })}
                         className="px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 bg-neutral-900 hover:bg-rose-950/60 text-rose-300 border border-rose-800/50 cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" /> Reject
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDecide(i.id, confirmPlanPatch(term))}
+                        onClick={() => onDecide(i.id, { ...confirmPlanPatch(term), planCategory: i.planCategory })}
                         className="px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
                       >
                         <Check className="w-3.5 h-3.5" /> Confirm

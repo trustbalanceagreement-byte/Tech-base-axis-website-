@@ -1654,7 +1654,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         const adminTabs: { id: 'addons' | 'packages' | 'plans' | 'projects' | 'inquiries' | 'activity'; label: string; icon: React.ElementType; badge?: string }[] = [
           { id: 'addons', label: 'ADD-ONS', icon: Puzzle },
           { id: 'packages', label: 'PRICE CONTROL', icon: IndianRupee, badge: String(packages.length) },
-          { id: 'plans', label: 'PLAN REQUESTS', icon: Layers, badge: `${inquiries.filter((i) => i.planCategory && (i.planDecision || 'pending') === 'pending').length} NEW` },
+          { id: 'plans', label: 'PLAN REQUESTS', icon: Layers, badge: `${inquiries.filter((i) => (i.planCategory || ['package_booking', 'payment_success'].includes(i.eventType || '') || i.company === 'Direct Package Booking') && (i.planDecision || 'pending') === 'pending').length} NEW` },
           { id: 'projects', label: 'PROJECTS', icon: FolderGit2, badge: String(projects.length) },
           { id: 'inquiries', label: 'CLIENT INQUIRIES', icon: Users, badge: `${newInquiries} NEW` },
           { id: 'activity', label: 'ACTIVITY', icon: Activity }
@@ -2220,6 +2220,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       {activeAdminTab === 'plans' && (
         <AdminPlanRequests
           inquiries={inquiries}
+          packages={packages}
           onDecide={(id, patch) => {
             if (onPatchInquiry) onPatchInquiry(id, patch);
             else updateInquiryInCloud(id, patch);
