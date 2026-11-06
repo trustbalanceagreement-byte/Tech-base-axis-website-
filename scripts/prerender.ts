@@ -58,7 +58,7 @@ for (const key of pages) {
     key === 'home'
       ? null
       : `<!--seo-fallback-start-->
-      <main style="max-width:48rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,sans-serif;color:#e5e5e5">
+      <main style="position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0">
         <h1>${esc(cfg.ogTitle)}</h1>
         <p>${esc(cfg.description)}</p>
         <nav aria-label="Main"><a href="/">Home</a> · <a href="/projects">Projects</a> · <a href="/packages">Packages</a> · <a href="/contact">Contact</a></nav>
