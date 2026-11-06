@@ -34,7 +34,7 @@ export const AdminPlanRequests: React.FC<Props> = ({ inquiries, packages = [], o
       const isBooking = BOOKING_EVENTS.includes(i.eventType || '') || i.company === 'Direct Package Booking';
       if (!isBooking) continue;
       const name = String(i.selectedPackage || i.projectType || '').replace(/\s*\(₹.*$/, '').trim().toLowerCase();
-      const pkg = packages.find((p) => p.name.trim().toLowerCase() === name);
+      const pkg = (packages as ServicePackage[]).find((p) => p.name.trim().toLowerCase() === name);
       const category = pkg ? getPackageCategory(pkg) : i.timeline === 'Monthly Retainer' ? 'subscription' : 'maintenance';
       const term = pkg ? getPackageTerm(pkg.period) : 'monthly';
       out.push({ ...i, planCategory: category, planTerm: term });
