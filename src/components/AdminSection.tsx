@@ -55,6 +55,7 @@ import {
   Send,
   Calendar
 } from 'lucide-react';
+import { AdminContactInbox } from './AdminContactInbox';
 import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
 import { updatePackagesFromCloud, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 
@@ -2212,290 +2213,27 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       {/* TAB 3: CLIENT INQUIRIES & LEADS */}
       {activeAdminTab === 'inquiries' && (
         <div className="space-y-8 animate-in fade-in duration-200">
-          {/* KPI Cards Grid - Responsive Side-by-Side Boxes */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="obsidian-card p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-neutral-800">
-              <div className="flex items-center justify-between text-neutral-400 mb-2">
-                <span className="text-[11px] sm:text-xs font-mono truncate">Total Client Briefs</span>
-                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#e61e2b] shrink-0 ml-1" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold font-mono text-white mb-1">
-                {totalInquiries}
-              </div>
-              <div className="text-[10px] sm:text-xs text-neutral-500 font-mono truncate">All-time received</div>
-            </div>
-
-            <div className="obsidian-card p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-neutral-800">
-              <div className="flex items-center justify-between text-neutral-400 mb-2">
-                <span className="text-[11px] sm:text-xs font-mono truncate">New Pending Review</span>
-                <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0 ml-1" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold font-mono text-amber-400 mb-1">
-                {newInquiries}
-              </div>
-              <div className="text-[10px] sm:text-xs text-neutral-500 font-mono truncate">Action required &lt; 24h</div>
-            </div>
-
-            <div className="obsidian-card p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-neutral-800">
-              <div className="flex items-center justify-between text-neutral-400 mb-2">
-                <span className="text-[11px] sm:text-xs font-mono truncate">Active Pipeline</span>
-                <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400 shrink-0 ml-1" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400 mb-1">
-                {activeProposals}
-              </div>
-              <div className="text-[10px] sm:text-xs text-neutral-500 font-mono truncate">Proposals & Sprints</div>
-            </div>
-
-            <div className="obsidian-card p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-neutral-800">
-              <div className="flex items-center justify-between text-neutral-400 mb-2">
-                <span className="text-[11px] sm:text-xs font-mono truncate">Estimated Pipeline</span>
-                <IndianRupee className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#e61e2b] shrink-0 ml-1" />
-              </div>
-              <div className="text-2xl sm:text-3xl font-extrabold font-mono text-[#e61e2b] mb-1 truncate">
-                ₹{pipelineValue.toLocaleString('en-IN')}
-              </div>
-              <div className="text-[10px] sm:text-xs text-neutral-500 font-mono truncate">Based on selected tiers</div>
-            </div>
-          </div>
-
-          {/* Main Leads Table */}
-          <div className="obsidian-card rounded-2xl border border-neutral-800 p-6 space-y-6">
-            {/* Table Controls */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold text-white">Client Inquiries &amp; Project Briefs</h2>
-                <p className="text-xs text-neutral-400 font-mono">
-                  Live database tracking prospective contracts and client communications.
-                </p>
-              </div>
-
-              {inquirySyncError && (
-                <div className="w-full text-xs font-mono px-3 py-2 rounded-lg border leading-relaxed bg-amber-950/40 text-amber-300 border-amber-700/40">
-                  Cloud inquiries could not be loaded ({inquirySyncError}). The /api/inquiries function is not deployed and Firestore is blocking access. Publish the latest firestore.rules in the Firebase Console and redeploy on Vercel. Until then only inquiries from this device are shown.
-                </div>
-              )}
-
-              {/* Filter Pills & Push Alerts */}
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleManualRefreshInquiries}
-                  disabled={isRefreshingInquiries}
-                  className="px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 disabled:opacity-50"
-                  title="Refresh latest inquiries from server"
-                >
-                  <RotateCcw className={`w-3.5 h-3.5 text-neutral-400 ${isRefreshingInquiries ? 'animate-spin text-red-400' : ''}`} />
-                  <span>{isRefreshingInquiries ? 'Refreshing...' : 'Refresh'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleEnablePush}
-                  disabled={pushLoading}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
-                    pushPermission
-                      ? 'bg-emerald-950/70 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-indigo-950/70 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-500/40'
-                  }`}
-                  title={pushPermission ? 'OneSignal Push alerts active for new client leads' : 'Enable browser push notifications for inquiries'}
-                >
-                  <Bell className={`w-3.5 h-3.5 ${pushPermission ? 'text-emerald-400' : 'text-indigo-400'}`} />
-                  <span>{pushPermission ? 'Push Alerts Active' : 'Enable Push Alerts'}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleTestAlert}
-                  disabled={testBusy}
-                  className="px-3 py-1 rounded-lg text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 disabled:opacity-50"
-                  title="Send a real test notification to this admin device"
-                >
-                  <Bell className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{testBusy ? 'Sending...' : 'Send Test Alert'}</span>
-                </button>
-
-                {testResult && (
-                  <div
-                    className={`w-full text-xs font-mono px-3 py-2 rounded-lg border leading-relaxed ${
-                      testResult.ok
-                        ? 'bg-emerald-950/40 text-emerald-300 border-emerald-700/40'
-                        : 'bg-rose-950/50 text-rose-300 border-rose-700/50'
-                    }`}
-                  >
-                    {testResult.text}
-                  </div>
-                )}
-
-                <Filter className="w-3.5 h-3.5 text-neutral-500 mr-1" />
-                {['All', 'New', 'Reviewing', 'Proposal Sent', 'In Development', 'Completed'].map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setFilterStatus(st)}
-                    className={`px-3 py-1 rounded-lg text-xs font-mono transition-colors cursor-pointer ${
-                      filterStatus === st
-                        ? 'bg-red-950/60 text-red-300 border border-red-600/40'
-                        : 'bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800'
-                    }`}
-                  >
-                    {st}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b border-neutral-800 text-neutral-400 font-mono">
-                    <th className="py-3 px-3">Client / Company</th>
-                    <th className="py-3 px-3">Project Type &amp; Package</th>
-                    <th className="py-3 px-3">Budget</th>
-                    <th className="py-3 px-3">Timeline</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-800 text-neutral-300">
-                  {filteredInquiries.map((inq) => (
-                    <tr key={inq.id} className="hover:bg-neutral-900/50 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <div className="font-bold text-white">{inq.clientName}</div>
-                        <div className="text-xs font-mono text-[#e61e2b]">{inq.email}</div>
-                        {inq.company && (
-                          <div className="text-[11px] text-neutral-500 font-mono">{inq.company}</div>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <div className="font-medium text-neutral-200 flex items-center gap-1.5 flex-wrap">
-                          {inq.eventType === 'appointment' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-purple-950/60 text-purple-300 border border-purple-800/60">
-                              📅 Appointment
-                            </span>
-                          ) : inq.eventType === 'package_booking' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-red-950/60 text-red-300 border border-red-800/60">
-                              🔥 Package
-                            </span>
-                          ) : inq.eventType === 'quote_request' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-950/60 text-amber-300 border border-amber-800/60">
-                              🧮 Quote
-                            </span>
-                          ) : inq.eventType === 'payment_success' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
-                              💰 Payment
-                            </span>
-                          ) : inq.eventType === 'proposal_accepted' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-950/60 text-indigo-300 border border-indigo-800/60">
-                              🎉 Proposal
-                            </span>
-                          ) : inq.eventType === 'revision_request' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
-                              🔄 Revision
-                            </span>
-                          ) : inq.eventType === 'support_request' ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-rose-950/60 text-rose-300 border border-rose-800/60">
-                              🛠️ Support
-                            </span>
-                          ) : (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-blue-950/60 text-blue-300 border border-blue-800/60">
-                              💬 Enquiry
-                            </span>
-                          )}
-                          <span>{inq.projectType}</span>
-                        </div>
-                        {inq.selectedPackage && (
-                          <div className="text-xs text-neutral-400 font-mono">{inq.selectedPackage}</div>
-                        )}
-                        {inq.addOns && inq.addOns.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1 mt-1">
-                            <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-950/70 border border-emerald-500/40 px-1.5 py-0.5 rounded">
-                              +{inq.addOns.length} Add-on{inq.addOns.length > 1 ? 's' : ''}
-                            </span>
-                            <span className="text-[10px] font-mono text-neutral-400 truncate max-w-[220px]" title={inq.addOns.join(', ')}>
-                              {inq.addOns.join(', ')}
-                            </span>
-                          </div>
-                        )}
-                        {inq.appointmentDate && (
-                          <div className="text-[11px] text-amber-300 font-mono flex items-center gap-1 mt-0.5">
-                            <Calendar className="w-3 h-3 text-amber-400" />
-                            <span>{inq.appointmentDate} • {inq.appointmentTime}</span>
-                          </div>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-3 font-mono text-white">
-                        {inq.budgetRange}
-                      </td>
-
-                      <td className="py-3.5 px-3 font-mono text-neutral-400">
-                        {inq.timeline}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        <select
-                          value={inq.status}
-                          onChange={(e) => onUpdateInquiryStatus(inq.id, e.target.value as ClientInquiry['status'])}
-                          className="bg-neutral-900 border border-neutral-800 rounded-lg px-2.5 py-1 text-xs font-mono text-red-300 focus:outline-none focus:border-[#e61e2b]"
-                        >
-                          <option value="New">● New</option>
-                          <option value="Reviewing">● Reviewing</option>
-                          <option value="Proposal Sent">● Proposal Sent</option>
-                          <option value="In Development">● In Development</option>
-                          <option value="Completed">● Completed</option>
-                        </select>
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => {
-                              setSelectedInquiry(inq);
-                              setEditingNotes(inq.notes || '');
-                            }}
-                            className="p-2 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 transition-colors cursor-pointer"
-                            title="View Full Brief"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-
-                          <a
-                            href={`mailto:${inq.email}?subject=Tech%20Base%20Axis%20-%20Regarding%20Your%20Project%20Brief`}
-                            className="p-2 rounded-lg bg-neutral-900 hover:bg-red-950/40 text-[#e61e2b] border border-neutral-800 transition-colors"
-                            title="Reply via Email"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                          </a>
-
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteInquiry(inq.id);
-                              triggerToast(`Deleted brief from ${inq.clientName}`);
-                            }}
-                            className="p-2 rounded-lg bg-neutral-900 hover:bg-rose-950/60 text-neutral-500 hover:text-rose-400 border border-neutral-800 hover:border-rose-700/60 transition-all cursor-pointer active:scale-95"
-                            title="Delete Lead Immediately"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-
-                  {filteredInquiries.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-neutral-500 font-mono text-xs">
-                        No client inquiries found matching filter "{filterStatus}".
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <AdminContactInbox
+            inquiries={inquiries}
+            syncError={inquirySyncError}
+            isRefreshing={isRefreshingInquiries}
+            pushActive={Boolean(pushPermission)}
+            pushLoading={pushLoading}
+            testBusy={testBusy}
+            testResult={testResult}
+            onRefresh={handleManualRefreshInquiries}
+            onEnablePush={handleEnablePush}
+            onTestAlert={handleTestAlert}
+            onUpdateStatus={onUpdateInquiryStatus}
+            onOpen={(inq) => {
+              setSelectedInquiry(inq);
+              setEditingNotes(inq.notes || '');
+            }}
+            onDelete={(inq) => {
+              onDeleteInquiry(inq.id);
+              triggerToast(`Deleted message from ${inq.clientName}`);
+            }}
+          />
         </div>
       )}
 
