@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import tabLogo from '../assets/images/tab_logo_hd_transparent.png';
 import { ClientInquiry, NavSection, ServicePackage, PackageFeature, Project } from '../types';
@@ -288,6 +288,307 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     window.addEventListener('hashchange', checkUrlForInquiry);
     return () => window.removeEventListener('hashchange', checkUrlForInquiry);
   }, [inquiries]);
+
+  // Unified Real-Time Incoming Submission Alert State
+  const [liveIncomingAlert, setLiveIncomingAlert] = useState<{
+    id: string;
+    eventType: string;
+    title: string;
+    clientName: string;
+    emailOrPhone?: string;
+    serviceOrDetails?: string;
+    timestamp: number;
+    inquiryId?: string;
+    category: 'inquiries' | 'activity';
+  } | null>(null);
+  const [liveAlertProgress, setLiveAlertProgress] = useState<number>(100);
+  const knownInquiryIdsRef = useRef<Set<string>>(new Set());
+  const initialInquiriesCheckRef = useRef<boolean>(false);
+  const knownNotificationIdsRef = useRef<Set<string>>(new Set());
+  const initialNotificationsCheckRef = useRef<boolean>(false);
+
+  // Web Audio Synthesizer Chime for Incoming Real-Time Alerts
+  const playAdminIncomingChime = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+      const now = ctx.currentTime;
+      
+      // Synth Chime: Note 1 (659.25Hz E5) -> Note 2 (987.77Hz B5) -> Note 3 (1318.5Hz E6)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(659.25, now);
+      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.3);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(987.77, now + 0.08);
+      gain2.gain.setValueAtTime(0.22, now + 0.08);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.08);
+      osc2.stop(now + 0.5);
+
+      const osc3 = ctx.createOscillator();
+      const gain3 = ctx.createGain();
+      osc3.type = 'sine';
+      osc3.frequency.setValueAtTime(1318.5, now + 0.16);
+      gain3.gain.setValueAtTime(0.2, now + 0.16);
+      gain3.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+      osc3.connect(gain3);
+      gain3.connect(ctx.destination);
+      osc3.start(now + 0.16);
+      osc3.stop(now + 0.7);
+    } catch (_) {}
+  };
+
+  const triggerLiveIncomingAlert = (alertData: {
+    id: string;
+    eventType: string;
+    title: string;
+    clientName: string;
+    emailOrPhone?: string;
+    serviceOrDetails?: string;
+    timestamp: number;
+    inquiryId?: string;
+    category: 'inquiries' | 'activity';
+  }) => {
+    playAdminIncomingChime();
+    setLiveIncomingAlert(alertData);
+    setLiveAlertProgress(100);
+  };
+
+  // Real-time animated shrinking countdown timer (10 seconds auto-dismiss)
+  useEffect(() => {
+    if (!liveIncomingAlert) {
+      setLiveAlertProgress(100);
+      return;
+    }
+
+    const duration = 10000; // 10s
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+      setLiveAlertProgress(remaining);
+      if (remaining <= 0) {
+        setLiveIncomingAlert(null);
+        clearInterval(interval);
+      }
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [liveIncomingAlert]);
+
+  // Channel 1: Prop Diffing on incoming inquiries (Appointments, Quotes, Enquiries, Bookings)
+  useEffect(() => {
+    if (!isConsoleUnlocked) return;
+    const currentIds = new Set(inquiries.map((i) => i.id));
+    if (!initialInquiriesCheckRef.current) {
+      initialInquiriesCheckRef.current = true;
+      knownInquiryIdsRef.current = currentIds;
+      return;
+    }
+
+    const newItems = inquiries.filter((i) => !knownInquiryIdsRef.current.has(i.id));
+    if (newItems.length > 0) {
+      newItems.forEach((i) => knownInquiryIdsRef.current.add(i.id));
+      const latest = newItems[0];
+      
+      let alertType = latest.inquiryType || 'contact_enquiry';
+      let title = 'New Client Enquiry';
+      if (alertType === 'appointment' || latest.projectType?.toLowerCase().includes('appointment')) {
+        alertType = 'appointment';
+        title = 'New Appointment Booked';
+      } else if (alertType === 'quote_request' || latest.projectType?.toLowerCase().includes('quote')) {
+        alertType = 'quote_request';
+        title = 'New Project Quote Requested';
+      } else if (alertType === 'package_booking' || latest.selectedPackage) {
+        alertType = 'package_booking';
+        title = 'New Package Booking Received';
+      }
+
+      triggerLiveIncomingAlert({
+        id: latest.id,
+        eventType: alertType,
+        title,
+        clientName: latest.clientName || 'Prospective Client',
+        emailOrPhone: latest.email || latest.phone || '',
+        serviceOrDetails: latest.projectType || latest.selectedPackage || latest.details || '',
+        timestamp: Date.now(),
+        inquiryId: latest.id,
+        category: 'inquiries'
+      });
+    }
+  }, [inquiries, isConsoleUnlocked]);
+
+  // Channel 2: Polling /api/notifications/recent every 2.5s (Server-side cross-device detection)
+  useEffect(() => {
+    if (!isConsoleUnlocked) return;
+    let isMounted = true;
+
+    const checkRecentNotifications = async () => {
+      try {
+        const res = await fetch('/api/notifications/recent', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!isMounted || !data?.success || !Array.isArray(data.notifications)) return;
+
+        const notifs = data.notifications;
+        if (!initialNotificationsCheckRef.current) {
+          initialNotificationsCheckRef.current = true;
+          notifs.forEach((n: any) => knownNotificationIdsRef.current.add(n.id));
+          return;
+        }
+
+        const unread = notifs.filter((n: any) => !knownNotificationIdsRef.current.has(n.id));
+        if (unread.length > 0) {
+          unread.forEach((n: any) => knownNotificationIdsRef.current.add(n.id));
+          const latest = unread[0];
+
+          // Auto refresh inquiry table if an inquiry/booking arrived
+          if (['appointment', 'quote_request', 'contact_enquiry', 'package_booking'].includes(latest.eventType)) {
+            onRefreshInquiries?.();
+          }
+
+          let alertTitle = 'New Incoming Submission';
+          let category: 'inquiries' | 'activity' = 'inquiries';
+
+          if (latest.eventType === 'appointment') {
+            alertTitle = 'New Appointment Booked';
+          } else if (latest.eventType === 'quote_request') {
+            alertTitle = 'New Project Quote Requested';
+          } else if (latest.eventType === 'contact_enquiry') {
+            alertTitle = 'New Client Enquiry';
+          } else if (latest.eventType === 'package_booking') {
+            alertTitle = 'New Package Booking Received';
+          } else if (latest.eventType === 'review_submitted') {
+            alertTitle = 'New Client Review Submitted';
+            category = 'activity';
+          } else if (latest.eventType === 'account_created' || latest.eventType === 'user_signup') {
+            alertTitle = 'New Client Account Created';
+            category = 'activity';
+          }
+
+          triggerLiveIncomingAlert({
+            id: latest.id || `notif-${Date.now()}`,
+            eventType: latest.eventType,
+            title: alertTitle,
+            clientName: latest.clientName || 'Client',
+            emailOrPhone: latest.email || latest.clientEmail || latest.phone || '',
+            serviceOrDetails: latest.service || latest.subject || latest.message || latest.reviewText || '',
+            timestamp: Date.now(),
+            inquiryId: latest.inquiryId || latest.bookingId || latest.quoteId || latest.appointmentId,
+            category
+          });
+        }
+      } catch (_) {}
+    };
+
+    const timer = setInterval(checkRecentNotifications, 2500);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, [isConsoleUnlocked, onRefreshInquiries]);
+
+  // Channel 3: Local Event & Cross-Tab BroadcastChannel Listeners
+  useEffect(() => {
+    if (!isConsoleUnlocked) return;
+
+    const handleLocalSavedInquiry = (e: any) => {
+      const detail = e.detail;
+      if (!detail || !detail.id) return;
+      if (knownInquiryIdsRef.current.has(detail.id)) return;
+      knownInquiryIdsRef.current.add(detail.id);
+
+      onRefreshInquiries?.();
+
+      let alertType = detail.inquiryType || 'contact_enquiry';
+      let title = 'New Client Enquiry';
+      if (alertType === 'appointment' || detail.projectType?.toLowerCase().includes('appointment')) {
+        alertType = 'appointment';
+        title = 'New Appointment Booked';
+      } else if (alertType === 'quote_request' || detail.projectType?.toLowerCase().includes('quote')) {
+        alertType = 'quote_request';
+        title = 'New Project Quote Requested';
+      } else if (alertType === 'package_booking' || detail.selectedPackage) {
+        alertType = 'package_booking';
+        title = 'New Package Booking Received';
+      }
+
+      triggerLiveIncomingAlert({
+        id: detail.id,
+        eventType: alertType,
+        title,
+        clientName: detail.clientName || 'Client',
+        emailOrPhone: detail.email || detail.phone || '',
+        serviceOrDetails: detail.projectType || detail.selectedPackage || detail.details || '',
+        timestamp: Date.now(),
+        inquiryId: detail.id,
+        category: 'inquiries'
+      });
+    };
+
+    window.addEventListener('tba_new_inquiry_saved', handleLocalSavedInquiry);
+
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('tba_events_broadcast');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'NEW_INQUIRY' && event.data?.data) {
+          handleLocalSavedInquiry({ detail: event.data.data });
+        }
+      };
+    } catch (_) {}
+
+    return () => {
+      window.removeEventListener('tba_new_inquiry_saved', handleLocalSavedInquiry);
+      if (bc) bc.close();
+    };
+  }, [isConsoleUnlocked, onRefreshInquiries]);
+
+  // Channel 4: OneSignal Foreground Real-Time Push Listener
+  useEffect(() => {
+    if (!isConsoleUnlocked) return;
+    runWithOneSignal((OneSignal) => {
+      try {
+        if (OneSignal.Notifications?.addEventListener) {
+          const onForeground = (event: any) => {
+            const notif = event?.notification;
+            const data = notif?.additionalData || {};
+            const heading = notif?.title || 'New Real-Time Submission';
+            const bodyText = notif?.body || '';
+
+            triggerLiveIncomingAlert({
+              id: notif?.notificationId || `os-${Date.now()}`,
+              eventType: data?.inquiryType || data?.eventType || 'contact_enquiry',
+              title: heading,
+              clientName: data?.clientName || 'Client',
+              emailOrPhone: data?.clientEmail || data?.clientPhone || '',
+              serviceOrDetails: bodyText,
+              timestamp: Date.now(),
+              inquiryId: data?.inquiryId || data?.bookingId || data?.quoteId || data?.appointmentId,
+              category: data?.eventType === 'review_submitted' || data?.eventType === 'account_created' ? 'activity' : 'inquiries'
+            });
+          };
+          OneSignal.Notifications.addEventListener('foregroundWillDisplay', onForeground);
+        }
+      } catch (_) {}
+    });
+  }, [isConsoleUnlocked]);
 
   // Packages filters & editing state
   const [packageFilter, setPackageFilter] = useState<'all' | 'monthly' | 'milestone'>('all');
@@ -1027,8 +1328,203 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     );
   }
 
+  const getIncomingBadgeClass = (type: string) => {
+    switch (type) {
+      case 'appointment':
+        return 'bg-red-500/15 text-red-400 border-red-500/30';
+      case 'quote_request':
+        return 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+      case 'package_booking':
+        return 'bg-purple-500/15 text-purple-400 border-purple-500/30';
+      case 'review_submitted':
+        return 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30';
+      case 'account_created':
+      case 'user_signup':
+        return 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+      default:
+        return 'bg-blue-500/15 text-blue-400 border-blue-500/30';
+    }
+  };
+
+  const getIncomingBadgeLabel = (type: string) => {
+    switch (type) {
+      case 'appointment':
+        return 'APPOINTMENT';
+      case 'quote_request':
+        return 'GET QUOTE';
+      case 'package_booking':
+        return 'BOOKING';
+      case 'review_submitted':
+        return 'CLIENT REVIEW';
+      case 'account_created':
+      case 'user_signup':
+        return 'NEW ACCOUNT';
+      default:
+        return 'CLIENT ENQUIRY';
+    }
+  };
+
+  const getIncomingBadgeIcon = (type: string) => {
+    switch (type) {
+      case 'appointment':
+        return <Calendar className="w-3 h-3 text-red-400 shrink-0" />;
+      case 'quote_request':
+        return <IndianRupee className="w-3 h-3 text-amber-400 shrink-0" />;
+      case 'package_booking':
+        return <Package className="w-3 h-3 text-purple-400 shrink-0" />;
+      case 'review_submitted':
+        return <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 shrink-0" />;
+      case 'account_created':
+      case 'user_signup':
+        return <Users className="w-3 h-3 text-emerald-400 shrink-0" />;
+      default:
+        return <Mail className="w-3 h-3 text-blue-400 shrink-0" />;
+    }
+  };
+
+  const handleViewIncomingInConsole = (alertItem: {
+    id: string;
+    eventType: string;
+    title: string;
+    clientName: string;
+    emailOrPhone?: string;
+    serviceOrDetails?: string;
+    timestamp: number;
+    inquiryId?: string;
+    category: 'inquiries' | 'activity';
+  }) => {
+    if (alertItem.category === 'activity') {
+      setActiveAdminTab('activity');
+    } else {
+      setActiveAdminTab('inquiries');
+      if (alertItem.inquiryId) {
+        const found = inquiries.find((i) => i.id === alertItem.inquiryId || i.id.includes(alertItem.inquiryId!));
+        if (found) {
+          setSelectedInquiry(found);
+          setEditingNotes(found.notes || '');
+        } else {
+          // Construct synthetic inquiry object for immediate inspection
+          setSelectedInquiry({
+            id: alertItem.inquiryId,
+            clientName: alertItem.clientName,
+            email: alertItem.emailOrPhone?.includes('@') ? alertItem.emailOrPhone : '',
+            phone: !alertItem.emailOrPhone?.includes('@') ? alertItem.emailOrPhone || '' : '',
+            projectType: alertItem.eventType === 'appointment' ? 'Appointment Booking' : alertItem.eventType === 'quote_request' ? 'Project Quote Request' : 'Direct Inquiry',
+            budgetRange: 'Review Required',
+            timeline: 'Immediate',
+            details: alertItem.serviceOrDetails || 'Incoming submission received in real time.',
+            status: 'New',
+            createdAt: new Date().toISOString()
+          });
+          setEditingNotes('');
+        }
+      }
+    }
+    setLiveIncomingAlert(null);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8 text-neutral-100">
+      {/* Real-Time Incoming Submission Live UI Alert (Appointments, Quotes, Enquiries, Bookings, Reviews, Signups) */}
+      <AnimatePresence>
+        {liveIncomingAlert && (
+          <motion.div
+            initial={{ opacity: 0, y: -30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className="fixed top-20 right-4 sm:right-8 z-[9999] max-w-md w-[calc(100vw-2rem)] sm:w-[440px] rounded-2xl bg-[#0c0d12]/98 border border-[#e61e2b]/50 text-white shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_35px_rgba(230,30,43,0.35)] backdrop-blur-2xl overflow-hidden group"
+          >
+            {/* Top Glowing Crimson Accent Line */}
+            <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-[#e61e2b] via-red-500 to-[#e61e2b] shadow-[0_0_15px_#e61e2b]" />
+
+            <div className="p-4 sm:p-5 space-y-3.5">
+              {/* Header: Live Beacon + Type Badge + Dismiss */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-3 w-3 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#e61e2b] opacity-75" />
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-[#e61e2b]" />
+                  </span>
+                  <span className="text-[10px] font-mono tracking-widest text-[#ff4d5a] uppercase font-bold truncate">
+                    LIVE INCOMING SUBMISSION
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className={`text-[10px] sm:text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full border flex items-center gap-1.5 ${getIncomingBadgeClass(liveIncomingAlert.eventType)}`}>
+                    {getIncomingBadgeIcon(liveIncomingAlert.eventType)}
+                    {getIncomingBadgeLabel(liveIncomingAlert.eventType)}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setLiveIncomingAlert(null)}
+                    className="text-neutral-400 hover:text-white p-1 rounded-lg hover:bg-neutral-800 transition-colors"
+                    aria-label="Dismiss alert"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Client & Submission Info */}
+              <div className="space-y-1.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h4 className="text-base sm:text-lg font-bold text-white tracking-tight truncate">
+                    {liveIncomingAlert.clientName}
+                  </h4>
+                  <span className="text-[10px] font-mono text-neutral-400 shrink-0">
+                    Just now
+                  </span>
+                </div>
+
+                {liveIncomingAlert.emailOrPhone && (
+                  <div className="text-xs font-mono text-neutral-400 truncate flex items-center gap-1.5">
+                    <Mail className="w-3 h-3 text-[#e61e2b] shrink-0" />
+                    <span className="truncate">{liveIncomingAlert.emailOrPhone}</span>
+                  </div>
+                )}
+
+                {liveIncomingAlert.serviceOrDetails && (
+                  <div className="text-xs text-neutral-300 bg-neutral-900/90 border border-neutral-800/80 rounded-xl p-2.5 line-clamp-2 italic leading-relaxed">
+                    "{liveIncomingAlert.serviceOrDetails}"
+                  </div>
+                )}
+              </div>
+
+              {/* Action Controls */}
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleViewIncomingInConsole(liveIncomingAlert)}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#e61e2b] hover:bg-[#ff2b38] text-white text-xs font-mono font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(230,30,43,0.4)] hover:shadow-[0_0_25px_rgba(230,30,43,0.6)] cursor-pointer"
+                >
+                  <span>VIEW IN CONSOLE</span>
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setLiveIncomingAlert(null)}
+                  className="py-2 px-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white text-xs font-mono transition-colors cursor-pointer shrink-0"
+                >
+                  DISMISS
+                </button>
+              </div>
+            </div>
+
+            {/* Auto-Dismiss Shrinking Countdown Bar */}
+            <div className="h-1 w-full bg-neutral-900/80 overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-[#e61e2b] via-red-500 to-[#e61e2b] transition-all duration-75 ease-linear shadow-[0_0_8px_#e61e2b]"
+                style={{ width: `${liveAlertProgress}%` }}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Toast Notification - Signature Tech Base Axis Crimson & Obsidian Glass Theme */}
       {toastMessage && (
         <div className="fixed bottom-6 right-4 sm:right-6 z-50 max-w-md w-[calc(100vw-2rem)] sm:w-auto p-3.5 sm:p-4 rounded-2xl bg-[#0c0d12]/95 border border-neutral-800 hover:border-[#e61e2b]/50 text-white shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_25px_rgba(230,30,43,0.18)] backdrop-blur-xl flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 overflow-hidden group">

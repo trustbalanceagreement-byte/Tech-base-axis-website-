@@ -1,0 +1,11 @@
+[
+  {
+    "eventType": "appointment",
+    "clientName": "Bikram Test Client",
+    "clientEmail": "test@techbaseaxis.com",
+    "date": "2026-11-10",
+    "time": "14:00",
+    "message": "Looking for a high-performance web app",
+    "timestamp": "2026-11-06T10:30:42.347Z"
+  }
+]

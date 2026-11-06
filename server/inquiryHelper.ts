@@ -303,6 +303,14 @@ export function recordInquiryFromNotification(eventData: any): ClientInquiry | n
     if (!scopeDetails.includes(d)) {
       scopeDetails = `${scopeDetails ? scopeDetails + ' ' : ''}[Consultation requested for ${d} at ${t}]`;
     }
+  } else if (eventType === 'review_submitted') {
+    projectType = 'Client Review / Feedback';
+    const stars = eventData.rating ? `${eventData.rating}/5 ⭐` : '5/5 ⭐';
+    const text = eventData.reviewText || eventData.message || 'Client feedback submitted.';
+    scopeDetails = `[${stars}] "${text}" (Role: ${eventData.reviewerRole || 'Client'})`;
+  } else if (eventType === 'account_created' || eventType === 'user_signup') {
+    projectType = 'New Account Created';
+    scopeDetails = `New user profile registered on Tech Base Axis. Email: ${email}.`;
   }
 
   const { inquiry } = saveInquiry({

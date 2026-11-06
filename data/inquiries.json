@@ -1,1 +1,38 @@
-[]
+[
+  {
+    "id": "inq-1793961042347-vw6a",
+    "clientName": "Bikram Test Client",
+    "email": "test@techbaseaxis.com",
+    "company": "Direct Founder",
+    "projectType": "Web Architecture",
+    "budgetRange": "Standard",
+    "timeline": "Standard",
+    "details": "Looking for a high-performance web app [Consultation requested for 2026-11-10 at 14:00]",
+    "createdAt": "2026-11-06T10:30:42.347Z",
+    "status": "New",
+    "priority": "High",
+    "notes": "Triggered via appointment. Phone: N/A.",
+    "eventType": "appointment",
+    "appointmentDate": "2026-11-10",
+    "appointmentTime": "14:00",
+    "cloudSavedAt": "2026-11-06T10:30:42.347Z"
+  },
+  {
+    "id": "inq-1793961042344-vgyz",
+    "clientName": "Bikram Test Client",
+    "email": "test@techbaseaxis.com",
+    "company": "Direct Founder",
+    "projectType": "Web Architecture",
+    "budgetRange": "Standard",
+    "timeline": "Standard",
+    "details": "Looking for a high-performance web app [Consultation requested for 2026-11-10 at 14:00]",
+    "createdAt": "2026-11-06T10:30:42.344Z",
+    "status": "New",
+    "priority": "High",
+    "notes": "Triggered via appointment. Phone: N/A.",
+    "eventType": "appointment",
+    "appointmentDate": "2026-11-10",
+    "appointmentTime": "14:00",
+    "cloudSavedAt": "2026-11-06T10:30:42.345Z"
+  }
+]

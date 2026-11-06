@@ -10,6 +10,7 @@ import {
   sendAdminOneSignalNotification, 
   sendOneSignalPushNotification, 
   registerAdminSubscription,
+  getRecentNotifications,
   AdminNotificationEvent 
 } from './server/onesignalService';
 import {
@@ -479,6 +480,22 @@ function onesignalDevApiPlugin(): Plugin {
           timestamp: new Date().toISOString()
         }));
       });
+
+      // Recent notifications endpoint for admin real-time alerts
+      server.middlewares.use('/api/notifications/recent', (_req, res) => {
+        try {
+          const list = getRecentNotifications();
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Cache-Control', 'no-store');
+          res.statusCode = 200;
+          res.end(JSON.stringify({ success: true, notifications: list }));
+        } catch (err: any) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({ error: err?.message || 'Failed to get notifications', notifications: [] }));
+        }
+      });
+
 
       // Legacy booking endpoint
       server.middlewares.use('/api/notify-booking', async (req, res) => {

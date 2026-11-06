@@ -2,6 +2,7 @@ import "dotenv/config";
 import fs from 'fs';
 import path from 'path';
 import { syncAdminDevicesToSupabase, getAdminDevicesFromSupabase } from './supabaseHelper.ts';
+import { recordInquiryFromNotification } from './inquiryHelper.ts';
 
 /**
  * OneSignal Admin Notification Automation Service (Server-Side Only)
@@ -170,6 +171,41 @@ export function registerAdminSubscription(subId: string): void {
 export function getActiveAdminSubscriptions(): string[] {
   return Array.from(activeAdminSubscriptions);
 }
+
+const recentNotificationsFilePath = path.join(dataDir, 'recent_notifications.json');
+
+export function getRecentNotifications(): AdminNotificationEvent[] {
+  try {
+    if (fs.existsSync(recentNotificationsFilePath)) {
+      const parsed = JSON.parse(fs.readFileSync(recentNotificationsFilePath, 'utf8'));
+      if (Array.isArray(parsed)) {
+        return parsed.slice(0, 50);
+      }
+    }
+  } catch (_) {}
+  return [];
+}
+
+export function recordRecentNotification(event: AdminNotificationEvent): void {
+  try {
+    const list = getRecentNotifications();
+    const cleanEvent = {
+      ...event,
+      timestamp: event.timestamp || new Date().toISOString()
+    };
+    const idKey = event.idempotencyKey || event.appointmentId || event.quoteId || event.enquiryId || event.bookingId || event.clientId;
+    const updated = [
+      cleanEvent,
+      ...list.filter((x: any) => {
+        const xId = x.idempotencyKey || x.appointmentId || x.quoteId || x.enquiryId || x.bookingId || x.clientId;
+        return xId !== idKey;
+      })
+    ].slice(0, 50);
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(recentNotificationsFilePath, JSON.stringify(updated, null, 2), 'utf8');
+  } catch (_) {}
+}
+
 
 // In-memory idempotency cache (TTL: 5 minutes) to prevent duplicate notifications
 interface CachedResponse {
@@ -379,6 +415,14 @@ export async function sendAdminOneSignalNotification(
 ): Promise<OneSignalNotificationResponse> {
   cleanExpiredCache();
 
+  // Unified Notification Handler: Always record event locally and into inquiries table
+  try {
+    recordRecentNotification(eventData);
+  } catch (_) {}
+  try {
+    recordInquiryFromNotification(eventData);
+  } catch (_) {}
+
   // 1. Resolve configuration from environment
   const appId = config?.appId || process.env.ONESIGNAL_APP_ID || DEFAULT_APP_ID;
   const apiKey = config?.apiKey || process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY;
@@ -424,7 +468,12 @@ export async function sendAdminOneSignalNotification(
   // STRICT ADMIN ROUTING: Target ONLY the phone/device where the Admin Panel is open,
   // or devices tagged with role='admin'. Clients/subscribers are NEVER targeted!
   const commonNotificationData = {
+    event: 'new_inquiry', // Unified real-time event identifier
+    action: 'new_inquiry',
+    type: 'new_inquiry',
+    inquiryType: eventData.eventType,
     eventType: eventData.eventType,
+    isIncomingSubmission: true,
     clientId: eventData.clientId || '',
     clientName: eventData.clientName,
     clientEmail: eventData.clientEmail || eventData.email || '',
@@ -440,6 +489,9 @@ export async function sendAdminOneSignalNotification(
     projectId: eventData.projectId || '',
     revisionId: eventData.revisionId || '',
     ticketId: eventData.ticketId || '',
+    rating: eventData.rating || '',
+    reviewText: eventData.reviewText || '',
+    details: eventData.details || eventData.message || '',
     referenceId: referenceId || '',
     timestamp: eventData.timestamp || new Date().toISOString(),
     adminPlayerId: adminPlayerId,
@@ -593,3 +645,5 @@ export async function sendOneSignalPushNotification(
   return sendAdminOneSignalNotification(eventData, config);
 }
 export type BookingAlertPayload = AdminNotificationEvent;
+export const unifiedNotificationHandler = sendAdminOneSignalNotification;
+

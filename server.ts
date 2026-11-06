@@ -6,6 +6,7 @@ import {
   sendAdminOneSignalNotification, 
   sendOneSignalPushNotification, 
   registerAdminSubscription,
+  getRecentNotifications,
   type AdminNotificationEvent 
 } from "./server/onesignalService.ts";
 import { processVerifyPayment } from "./server/verifyPayment.ts";
@@ -437,6 +438,18 @@ app.get("/api/notification-status", (_req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+// GET /api/notifications/recent - List recent live notifications for Admin Dashboard
+app.get("/api/notifications/recent", (_req, res) => {
+  try {
+    const list = getRecentNotifications();
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).json({ success: true, notifications: list });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to load recent notifications", notifications: [] });
+  }
+});
+
 
 // POST /api/notify-booking (Kept for backwards compatibility)
 app.post("/api/notify-booking", async (req, res) => {
