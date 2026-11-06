@@ -35,14 +35,20 @@ import { PrivacyPolicySection } from './components/PrivacyPolicySection';
 import { TermsSection } from './components/TermsSection';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Footer } from './components/Footer';
-import { useSectionSEO } from './hooks/useSectionSEO';
+import { useSectionSEO, SECTION_PATHS, sectionFromPath } from './hooks/useSectionSEO';
 import { FullPageSkeleton } from './components/ui/Skeleton';
 
 const STORAGE_KEY = 'tech_base_axis_inquiries_v1';
 
 function AppShell() {
   const { isAdmin } = useAuth();
-  const [activeSection, setActiveSection] = useState<NavSection>('home');
+  const [activeSection, setActiveSection] = useState<NavSection>(() => {
+    if (typeof window === 'undefined') return 'home';
+    const fromPath = sectionFromPath(window.location.pathname);
+    if (fromPath) return fromPath;
+    const legacy = new URLSearchParams(window.location.search).get('section') as NavSection | null;
+    return legacy && legacy in SECTION_PATHS ? legacy : 'home';
+  });
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
 
   // Dynamically update page title, meta description, keywords, and OpenGraph data per section
@@ -182,7 +188,12 @@ function AppShell() {
 
     stripAnchorLinks();
     window.addEventListener('hashchange', stripAnchorLinks);
-    return () => window.removeEventListener('hashchange', stripAnchorLinks);
+    const onPop = () => setActiveSection(sectionFromPath(window.location.pathname) ?? 'home');
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('hashchange', stripAnchorLinks);
+      window.removeEventListener('popstate', onPop);
+    };
   }, []);
 
   // Always keep URL clean when switching sections
@@ -194,9 +205,12 @@ function AppShell() {
 
   const handleNavigate = (section: NavSection) => {
     setActiveSection(section);
-    // Ensure clean URL without any anchor links (#home, #projects, #packages, #contact, #admin)
+    // Real, crawlable URL per page (/projects, /packages, /contact ...)
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      const target = SECTION_PATHS[section] || '/';
+      if (window.location.pathname !== target || window.location.search) {
+        window.history.pushState(null, '', target);
+      }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

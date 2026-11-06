@@ -32,6 +32,22 @@ export interface SectionSEOConfig {
   ogUrl: string;
 }
 
+export const SECTION_PATHS: Record<NavSection, string> = {
+  home: '/',
+  projects: '/projects',
+  packages: '/packages',
+  contact: '/contact',
+  admin: '/admin',
+  privacy: '/privacy',
+  terms: '/terms',
+};
+
+export function sectionFromPath(pathname: string): NavSection | null {
+  const clean = pathname.replace(/\/+$/, '') || '/';
+  const hit = (Object.keys(SECTION_PATHS) as NavSection[]).find((k) => SECTION_PATHS[k] === clean);
+  return hit ?? null;
+}
+
 export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
   /**
    * HOMEPAGE (#home)
@@ -78,7 +94,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Explore production software, web apps, and digital solutions delivered by Kolkata web development company Tech Base Axis and lead web developer Bikram Ghosh.',
     ogTitle: 'Featured Projects | Tech Base Axis - Web Development Company Kolkata',
     ogDescription: 'Explore production software, web apps, and digital solutions delivered by Kolkata web development company Tech Base Axis and lead web developer Bikram Ghosh.',
-    ogUrl: 'https://www.tbaonline.online',
+    ogUrl: 'https://www.tbaonline.online/projects',
   },
 
   /**
@@ -102,7 +118,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Transparent web development packages from Kolkata\'s leading tech firm Tech Base Axis. Hire Bikram Ghosh, senior web developer, for bespoke digital solutions.',
     ogTitle: 'Engineering Packages & Pricing | Tech Base Axis Kolkata',
     ogDescription: 'Transparent web development packages from Kolkata\'s leading tech firm Tech Base Axis. Hire Bikram Ghosh, senior web developer, for bespoke digital solutions.',
-    ogUrl: 'https://www.tbaonline.online',
+    ogUrl: 'https://www.tbaonline.online/packages',
   },
 
   /**
@@ -126,7 +142,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Get in touch with Tech Base Axis, a leading web development company in Kolkata. Consult with Bikram Ghosh to architect and build your next web application.',
     ogTitle: 'Contact Tech Base Axis | Web Development Company Kolkata',
     ogDescription: 'Get in touch with Tech Base Axis, a leading web development company in Kolkata. Consult with Bikram Ghosh to architect and build your next web application.',
-    ogUrl: 'https://www.tbaonline.online',
+    ogUrl: 'https://www.tbaonline.online/contact',
   },
 
   /**
@@ -142,7 +158,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
     ogTitle: 'Admin Console | Tech Base Axis',
     ogDescription: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
-    ogUrl: 'https://www.tbaonline.online',
+    ogUrl: 'https://www.tbaonline.online/admin',
   },
 
   /**
@@ -157,7 +173,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Learn how Tech Base Axis protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
     ogTitle: 'Privacy Policy | Tech Base Axis & Bikram Ghosh',
     ogDescription: 'Learn how Tech Base Axis protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
-    ogUrl: 'https://www.tbaonline.online',
+    ogUrl: 'https://www.tbaonline.online/privacy',
   },
 
   /**
@@ -172,7 +188,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
     ogTitle: 'Terms & Conditions & Strict No-Refund Policy | Tech Base Axis',
     ogDescription: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
-    ogUrl: 'https://www.tbaonline.online',
+    ogUrl: 'https://www.tbaonline.online/terms',
   },
 };
 
@@ -216,6 +232,7 @@ export function useSectionSEO(activeSection: NavSection) {
       document.head.appendChild(canonical);
     }
     canonical.setAttribute('href', config.ogUrl);
+    setOrUpdateMeta('name', 'twitter:url', config.ogUrl);
 
     // For admin section, instruct search engines not to index
     let robots = document.querySelector('meta[name="robots"]');

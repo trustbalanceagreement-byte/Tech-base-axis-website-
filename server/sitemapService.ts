@@ -12,31 +12,14 @@ export interface SitemapUrlEntry {
 export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): string {
   const currentDate = new Date().toISOString().split('T')[0];
 
-  const corePages: SitemapUrlEntry[] = [
-    { loc: `${baseUrl}/`, priority: 1.0, changefreq: 'daily', lastmod: currentDate },
+  const allEntries: SitemapUrlEntry[] = [
+    { loc: `${baseUrl}/`, priority: 1.0, changefreq: 'weekly', lastmod: currentDate },
     { loc: `${baseUrl}/projects`, priority: 0.9, changefreq: 'weekly', lastmod: currentDate },
     { loc: `${baseUrl}/packages`, priority: 0.9, changefreq: 'weekly', lastmod: currentDate },
     { loc: `${baseUrl}/contact`, priority: 0.8, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/admin`, priority: 0.3, changefreq: 'monthly', lastmod: currentDate },
+    { loc: `${baseUrl}/privacy`, priority: 0.3, changefreq: 'yearly', lastmod: currentDate },
+    { loc: `${baseUrl}/terms`, priority: 0.3, changefreq: 'yearly', lastmod: currentDate },
   ];
-
-  const sectionLinks: SitemapUrlEntry[] = [
-    { loc: `${baseUrl}/?section=projects`, priority: 0.8, changefreq: 'weekly', lastmod: currentDate },
-    { loc: `${baseUrl}/?section=packages`, priority: 0.8, changefreq: 'weekly', lastmod: currentDate },
-    { loc: `${baseUrl}/?section=contact`, priority: 0.8, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/?section=admin`, priority: 0.3, changefreq: 'monthly', lastmod: currentDate },
-  ];
-
-  const projectCases: SitemapUrlEntry[] = [
-    { loc: `${baseUrl}/?project=omniflow-os`, priority: 0.7, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/?project=aether-neural-copilot`, priority: 0.7, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/?project=nexus-pay-global`, priority: 0.7, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/?project=hyper-scale-telemetry`, priority: 0.7, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/?project=quantum-cipher-vault`, priority: 0.7, changefreq: 'monthly', lastmod: currentDate },
-    { loc: `${baseUrl}/?project=synapse-flow-bi`, priority: 0.7, changefreq: 'monthly', lastmod: currentDate },
-  ];
-
-  const allEntries = [...corePages, ...sectionLinks, ...projectCases];
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"

@@ -1,24 +1,72 @@
-# ==========================================
-# Tech Base Axis - Search Engine Robots Policy
+# Tech Base Axis - crawler policy
 # Website: https://www.tbaonline.online
-# ==========================================
 
-# Allow all major search engines (Googlebot, Bingbot, Applebot, DuckDuckBot, Yandex, etc.)
 User-agent: *
 Allow: /
+Disallow: /admin
 Disallow: /api/
 
-# Explicitly permit major search engine crawlers
+# AI / answer-engine crawlers are welcome on public pages
+User-agent: GPTBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin
+Disallow: /api/
+
 User-agent: Googlebot
 Allow: /
+Disallow: /admin
 Disallow: /api/
 
 User-agent: Googlebot-Image
 Allow: /
 
-User-agent: Bingbot
-Allow: /
-Disallow: /api/
-
-# Official XML Sitemap Location
 Sitemap: https://www.tbaonline.online/sitemap.xml
