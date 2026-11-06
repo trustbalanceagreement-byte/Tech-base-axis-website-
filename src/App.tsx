@@ -256,6 +256,11 @@ function AppShell() {
     );
   };
 
+  const handlePatchInquiry = (id: string, patch: Partial<ClientInquiry>) => {
+    updateInquiryInCloud(id, patch);
+    setInquiries((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+  };
+
   const handleDeleteInquiry = (id: string) => {
     recordDeletedInquiryId(id);
     deleteInquiryFromCloud(id);
@@ -397,6 +402,7 @@ function AppShell() {
                   inquiries={inquiries}
                   inquirySyncError={inquirySyncError}
                   onUpdateInquiryStatus={handleUpdateInquiryStatus}
+                  onPatchInquiry={handlePatchInquiry}
                   onDeleteInquiry={handleDeleteInquiry}
                   onNavigate={handleNavigate}
                   onRefreshInquiries={handleRefreshInquiries}

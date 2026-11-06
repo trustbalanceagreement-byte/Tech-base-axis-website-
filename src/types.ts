@@ -95,6 +95,13 @@ export interface ClientInquiry {
   verifiedAt?: string;
   revisionId?: string;
   ticketId?: string;
+  /** Subscription / Maintenance plan tracking (set when the booked package is a recurring plan) */
+  planCategory?: 'subscription' | 'maintenance';
+  planTerm?: 'monthly' | 'yearly';
+  planDecision?: 'pending' | 'confirmed' | 'rejected';
+  planStartAt?: string;
+  planEndAt?: string;
+  planDecidedAt?: string;
 }
 
 export interface ArchitectureSkill {

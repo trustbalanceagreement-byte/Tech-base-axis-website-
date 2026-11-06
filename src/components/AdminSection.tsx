@@ -56,6 +56,8 @@ import {
   Calendar
 } from 'lucide-react';
 import { AdminContactInbox } from './AdminContactInbox';
+import { AdminPlanRequests } from './AdminPlanRequests';
+import { updateInquiryInCloud } from '../data/inquiryData';
 import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
 import { updatePackagesFromCloud, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 
@@ -63,6 +65,7 @@ interface AdminSectionProps {
   inquiries: ClientInquiry[];
   inquirySyncError?: string | null;
   onUpdateInquiryStatus: (id: string, status: ClientInquiry['status'], notes?: string) => void;
+  onPatchInquiry?: (id: string, patch: Partial<ClientInquiry>) => void;
   onDeleteInquiry: (id: string) => void;
   onNavigate: (section: NavSection) => void;
   onRefreshInquiries?: () => void;
@@ -165,6 +168,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   inquiries,
   inquirySyncError,
   onUpdateInquiryStatus,
+  onPatchInquiry,
   onDeleteInquiry,
   onNavigate,
   onRefreshInquiries,
@@ -234,9 +238,10 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
   // Tab: 'packages' | 'projects' | 'inquiries' | 'activity'
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
-  const [activeAdminTab, setActiveAdminTab] = useState<'addons' | 'packages' | 'projects' | 'inquiries' | 'activity'>(() => {
+  const [activeAdminTab, setActiveAdminTab] = useState<'addons' | 'packages' | 'plans' | 'projects' | 'inquiries' | 'activity'>(() => {
     if (typeof window !== 'undefined') {
       const hash = window.location.hash.toLowerCase();
+      if (hash.includes('plans')) return 'plans';
       if (hash.includes('activity')) return 'activity';
       if (hash.includes('inquiries')) return 'inquiries';
       if (hash.includes('projects')) return 'projects';
@@ -1646,9 +1651,10 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
 
       {/* Admin Module Navigation (dropdown menu) */}
       {(() => {
-        const adminTabs: { id: 'addons' | 'packages' | 'projects' | 'inquiries' | 'activity'; label: string; icon: React.ElementType; badge?: string }[] = [
+        const adminTabs: { id: 'addons' | 'packages' | 'plans' | 'projects' | 'inquiries' | 'activity'; label: string; icon: React.ElementType; badge?: string }[] = [
           { id: 'addons', label: 'ADD-ONS', icon: Puzzle },
           { id: 'packages', label: 'PRICE CONTROL', icon: IndianRupee, badge: String(packages.length) },
+          { id: 'plans', label: 'PLAN REQUESTS', icon: Layers, badge: `${inquiries.filter((i) => i.planCategory && (i.planDecision || 'pending') === 'pending').length} NEW` },
           { id: 'projects', label: 'PROJECTS', icon: FolderGit2, badge: String(projects.length) },
           { id: 'inquiries', label: 'CLIENT INQUIRIES', icon: Users, badge: `${newInquiries} NEW` },
           { id: 'activity', label: 'ACTIVITY', icon: Activity }
@@ -2211,6 +2217,17 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       )}
 
       {/* TAB 3: CLIENT INQUIRIES & LEADS */}
+      {activeAdminTab === 'plans' && (
+        <AdminPlanRequests
+          inquiries={inquiries}
+          onDecide={(id, patch) => {
+            if (onPatchInquiry) onPatchInquiry(id, patch);
+            else updateInquiryInCloud(id, patch);
+            triggerToast(patch.planDecision === 'confirmed' ? 'Plan confirmed. Client countdown started.' : 'Plan rejected.');
+          }}
+        />
+      )}
+
       {activeAdminTab === 'inquiries' && (
         <div className="space-y-8 animate-in fade-in duration-200">
           <AdminContactInbox

@@ -29,6 +29,8 @@ export interface BookingPlan {
   name: string;
   price: number;
   period: string;
+  category?: 'subscription' | 'maintenance';
+  term?: 'monthly' | 'yearly';
   theme?: 'green' | 'blue' | 'amber' | 'red';
   description?: string;
   features?: Array<{ text: string; included: boolean }>;
@@ -244,6 +246,7 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
             priority: 'High',
             notes: notes.trim() || undefined,
             eventType: 'payment_success',
+            ...(plan.category ? { planCategory: plan.category, planTerm: plan.term || 'monthly', planDecision: 'pending' as const } : {}),
             paymentId: paymentData.paymentId,
             orderId: paymentData.orderId,
             paymentStatus: 'paid',
@@ -341,7 +344,8 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
       priority: 'High',
       notes: notes.trim() || undefined,
       eventType: 'package_booking',
-      orderId: orderData.bookingId
+      orderId: orderData.bookingId,
+      ...(plan.category ? { planCategory: plan.category, planTerm: plan.term || 'monthly', planDecision: 'pending' as const } : {})
     };
 
     onConfirmBooking(newBookingInquiry);

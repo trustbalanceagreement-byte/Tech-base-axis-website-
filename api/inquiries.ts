@@ -72,7 +72,27 @@ export default async function handler(req: any, res: any) {
       if (error) return res.status(500).json({ error: error.message });
       const names = (files || []).filter((f: any) => f.name.endsWith('.json')).slice(0, 300);
       const items = await Promise.all(names.map((f: any) => readOne(f.name.replace(/\.json$/, ''))));
-      return res.status(200).json({ success: true, inquiries: items.filter(Boolean) });
+      const all = items.filter(Boolean);
+      const planEmail = String(req.query?.plans || new URL(req.url || '', 'http://x').searchParams.get('plans') || '')
+        .trim()
+        .toLowerCase();
+      if (planEmail) {
+        // Public, per-user view: only that user's own plan fields (never other clients' data)
+        const mine = all
+          .filter((i: any) => i.planCategory && String(i.email || '').trim().toLowerCase() === planEmail)
+          .map((i: any) => ({
+            id: i.id,
+            selectedPackage: i.selectedPackage,
+            projectType: i.projectType,
+            planCategory: i.planCategory,
+            planTerm: i.planTerm,
+            planDecision: i.planDecision,
+            planStartAt: i.planStartAt,
+            planEndAt: i.planEndAt
+          }));
+        return res.status(200).json({ success: true, plans: mine });
+      }
+      return res.status(200).json({ success: true, inquiries: all });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });

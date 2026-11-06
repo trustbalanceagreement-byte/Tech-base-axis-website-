@@ -593,3 +593,9 @@ export function updatePackagesFromCloud(
   packageWriteQueue = result.catch(() => {});
   return result;
 }
+
+/** Billing term of a recurring package, read from its period label ("/year", "yearly", "annual" => yearly). */
+export function getPackageTerm(period?: string): 'monthly' | 'yearly' {
+  const p = (period || '').toLowerCase();
+  return p.includes('year') || p.includes('annual') ? 'yearly' : 'monthly';
+}

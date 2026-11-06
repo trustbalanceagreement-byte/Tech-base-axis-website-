@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ServicePackage, NavSection, ClientInquiry } from '../types';
-import { isSubscriptionPackage, isMaintenancePackage, getDeletedPackageIds } from '../data/pricingData';
+import { isSubscriptionPackage, isMaintenancePackage, getDeletedPackageIds, getPackageCategory, getPackageTerm } from '../data/pricingData';
 import { PackageCardSkeleton } from './ui/Skeleton';
 import { 
   Check, 
@@ -76,6 +76,8 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
       price: pkg.price,
       period: pkg.period || (isSubscriptionPackage(pkg) ? '/month' : '/project'),
       popular: Boolean(pkg.popular),
+      category: getPackageCategory(pkg),
+      term: getPackageTerm(pkg.period || (isSubscriptionPackage(pkg) ? '/month' : '/project')),
       description: pkg.description,
       features: normalizedFeatures,
       packageRef: pkg
