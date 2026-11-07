@@ -75,3 +75,14 @@ for (const key of pages) {
   fs.writeFileSync(out, html, 'utf-8');
   console.log(`[prerender] ${route} -> ${path.relative(process.cwd(), out)}`);
 }
+
+// Real 404 for unknown URLs (noindex), so crawlers don't index soft-404 duplicates of the home page.
+{
+  let html = tpl;
+  html = html.replace(/<title>[^<]*<\/title>/, '<title>Page not found | Tech Base Axis</title>');
+  html = html.replace(/<meta name="robots" content="[^"]*" \/>/, '<meta name="robots" content="noindex, follow" />');
+  html = html.replace(/<link rel="canonical" href="[^"]*"\s*\/?>/, '');
+  html = html.replace(/<!--seo-fallback-start-->[\s\S]*<!--seo-fallback-end-->/, '<main style="padding:3rem 1rem;font-family:system-ui,sans-serif;color:#e5e5e5;text-align:center"><h1>Page not found</h1><p><a href="/" style="color:#ff3b30">Go to the Tech Base Axis home page</a></p></main>');
+  fs.writeFileSync(path.join(dist, '404.html'), html, 'utf-8');
+  console.log('[prerender] 404.html');
+}

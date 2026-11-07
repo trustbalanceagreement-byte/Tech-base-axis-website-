@@ -130,13 +130,10 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                 <div className="flex items-center justify-between gap-3 sm:gap-5 md:block">
                   <div className="space-y-0.5 sm:space-y-1 flex-1 min-w-0">
                     <h1 className="font-display text-[clamp(1.75rem,10vw,2.75rem)] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
-                      HELLO, I'M
-                    </h1>
-                    <h1 className="font-display text-[clamp(1.75rem,10vw,2.75rem)] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
-                      BIKRAM
-                    </h1>
-                    <h1 className="font-display text-[clamp(1.75rem,10vw,2.75rem)] sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl text-white font-black tracking-tight leading-[0.9] uppercase">
-                      GHOSH
+                      <span className="block">HELLO, I'M</span>
+                      <span className="block">BIKRAM</span>
+                      <span className="block">GHOSH</span>
+                      <span className="sr-only"> - Web Development Company in Kolkata, Tech Base Axis</span>
                     </h1>
                   </div>
 

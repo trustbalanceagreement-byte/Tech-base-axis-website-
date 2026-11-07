@@ -1,0 +1,16 @@
+{
+  "name": "Tech Base Axis",
+  "short_name": "TBA",
+  "description": "Web development, e-commerce, automation and AI solutions from Kolkata, India.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0c",
+  "theme_color": "#0a0a0c",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "any",
+      "type": "image/png"
+    }
+  ]
+}
