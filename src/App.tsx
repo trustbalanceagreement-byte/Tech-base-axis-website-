@@ -257,7 +257,9 @@ function AppShell() {
   };
 
   const handlePatchInquiry = (id: string, patch: Partial<ClientInquiry>) => {
-    updateInquiryInCloud(id, patch);
+    // Save the FULL record (identity + plan fields) so the client's account can always find it by email.
+    const existing = inquiries.find((item) => item.id === id);
+    updateInquiryInCloud(id, existing ? { ...existing, ...patch } : patch);
     setInquiries((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 

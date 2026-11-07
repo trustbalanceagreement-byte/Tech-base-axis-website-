@@ -82,6 +82,11 @@ export default async function handler(req: any, res: any) {
           .filter((i: any) => i.planCategory && String(i.email || '').trim().toLowerCase() === planEmail)
           .map((i: any) => ({
             id: i.id,
+            clientName: i.clientName,
+            email: i.email,
+            phone: i.phone,
+            totalPrice: i.totalPrice,
+            status: i.status,
             selectedPackage: i.selectedPackage,
             projectType: i.projectType,
             planCategory: i.planCategory,
