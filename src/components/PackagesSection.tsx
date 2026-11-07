@@ -15,6 +15,7 @@ import { PackageBookingModal, BookingPlan } from './PackageBookingModal';
 
 interface PackagesSectionProps {
   packages?: ServicePackage[];
+  inquiries?: ClientInquiry[];
   onNavigate: (section: NavSection) => void;
   onSelectPackage: (pkg: ServicePackage) => void;
   onInquirySubmitted?: (inquiry: ClientInquiry) => void;
@@ -22,6 +23,7 @@ interface PackagesSectionProps {
 
 export const PackagesSection: React.FC<PackagesSectionProps> = ({
   packages,
+  inquiries,
   onNavigate,
   onSelectPackage,
   onInquirySubmitted
@@ -178,7 +180,10 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
       </div>
 
       {/* Logged-in client's confirmed plan: progress bar + countdown */}
-      <MaintenanceProgress category={billingCycle === 'milestone' ? 'maintenance' : 'subscription'} />
+      <MaintenanceProgress 
+        category={billingCycle === 'milestone' ? 'maintenance' : 'subscription'} 
+        inquiries={inquiries}
+      />
 
       {/* Dynamic Glowing Glassmorphism Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch max-w-7xl mx-auto pt-4">

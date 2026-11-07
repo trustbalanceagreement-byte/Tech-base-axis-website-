@@ -132,11 +132,36 @@ function onesignalDevApiPlugin(): Plugin {
         if (req.method === 'GET') {
           try {
             const list = getInquiriesList();
+            const urlObj = new URL(req.url || '', 'http://localhost');
+            const planEmail = urlObj.searchParams.get('plans')?.trim().toLowerCase();
+            const mappedPlans = list
+              .filter((i: any) => i.planCategory || i.planDecision)
+              .filter((i: any) => !planEmail || String(i.email || '').trim().toLowerCase() === planEmail)
+              .map((i: any) => ({
+                id: i.id,
+                clientName: i.clientName,
+                email: i.email,
+                phone: i.phone,
+                selectedPackage: i.selectedPackage,
+                projectType: i.projectType,
+                planCategory: i.planCategory,
+                planTerm: i.planTerm,
+                planDecision: i.planDecision,
+                planStartAt: i.planStartAt,
+                planEndAt: i.planEndAt,
+                totalPrice: i.totalPrice,
+                status: i.status
+              }));
+
             res.statusCode = 200;
-            res.end(JSON.stringify({ success: true, inquiries: list }));
+            if (planEmail) {
+              res.end(JSON.stringify({ success: true, plans: mappedPlans, inquiries: list }));
+              return;
+            }
+            res.end(JSON.stringify({ success: true, inquiries: list, plans: mappedPlans }));
           } catch (err: any) {
             res.statusCode = 500;
-            res.end(JSON.stringify({ error: err?.message || 'Failed to get inquiries', inquiries: [] }));
+            res.end(JSON.stringify({ error: err?.message || 'Failed to get inquiries', inquiries: [], plans: [] }));
           }
           return;
         }

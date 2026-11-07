@@ -61,15 +61,38 @@ const activityFilePath = path.join(dataDir, "user_activity.json");
 // Static route for uploaded media
 app.use("/uploads", express.static(uploadsDir));
 
-// GET /api/inquiries - List client inquiries for Admin Console
-app.get("/api/inquiries", (_req, res) => {
+// GET /api/inquiries - List client inquiries and active plans
+app.get("/api/inquiries", (req, res) => {
   try {
     const inquiries = getInquiriesList();
     res.setHeader("Cache-Control", "no-store");
-    res.status(200).json({ success: true, inquiries });
+    const planEmail = String(req.query?.plans || '').trim().toLowerCase();
+    const mappedPlans = inquiries
+      .filter((i: any) => i.planCategory || i.planDecision)
+      .filter((i: any) => !planEmail || String(i.email || '').trim().toLowerCase() === planEmail)
+      .map((i: any) => ({
+        id: i.id,
+        clientName: i.clientName,
+        email: i.email,
+        phone: i.phone,
+        selectedPackage: i.selectedPackage,
+        projectType: i.projectType,
+        planCategory: i.planCategory,
+        planTerm: i.planTerm,
+        planDecision: i.planDecision,
+        planStartAt: i.planStartAt,
+        planEndAt: i.planEndAt,
+        totalPrice: i.totalPrice,
+        status: i.status
+      }));
+
+    if (planEmail) {
+      return res.status(200).json({ success: true, plans: mappedPlans, inquiries });
+    }
+    res.status(200).json({ success: true, inquiries, plans: mappedPlans });
   } catch (err: any) {
     console.error("Error fetching inquiries:", err);
-    res.status(500).json({ error: "Failed to load inquiries", inquiries: [] });
+    res.status(500).json({ error: "Failed to load inquiries", inquiries: [], plans: [] });
   }
 });
 

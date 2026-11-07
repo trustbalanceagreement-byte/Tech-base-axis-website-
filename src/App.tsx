@@ -376,12 +376,14 @@ function AppShell() {
                   selectedProjectModal={selectedProjectModal}
                   onOpenProjectModal={setSelectedProjectModal}
                   projects={projects}
+                  inquiries={inquiries}
                 />
               )}
 
               {activeSection === 'packages' && (
                 <PackagesSection
                   packages={packages}
+                  inquiries={inquiries}
                   onNavigate={handleNavigate}
                   onSelectPackage={handleSelectPackage}
                   onInquirySubmitted={handleInquirySubmitted}

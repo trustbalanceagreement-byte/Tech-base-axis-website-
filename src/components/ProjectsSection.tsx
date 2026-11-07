@@ -19,19 +19,23 @@ import {
   Film,
   Image as ImageIcon
 } from 'lucide-react';
+import { MaintenanceProgress } from './MaintenanceProgress';
+import { ClientInquiry } from '../types';
 
 interface ProjectsSectionProps {
   onNavigate: (section: NavSection) => void;
   selectedProjectModal: Project | null;
   onOpenProjectModal: (project: Project | null) => void;
   projects?: Project[];
+  inquiries?: ClientInquiry[];
 }
 
 export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   onNavigate,
   selectedProjectModal,
   onOpenProjectModal,
-  projects
+  projects,
+  inquiries
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -66,6 +70,9 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 text-neutral-100">
       <ProjectsHero projects={sourceProjects} onNavigate={onNavigate} />
+
+      {/* Active Maintenance Contract Progress & Live Countdown */}
+      <MaintenanceProgress category="maintenance" inquiries={inquiries} />
 
       {/* When no projects are published yet by Admin */}
       {sourceProjects.length === 0 ? (

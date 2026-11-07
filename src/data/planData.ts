@@ -2,6 +2,9 @@ import { ClientInquiry } from '../types';
 
 export interface MyPlan {
   id: string;
+  clientName?: string;
+  email?: string;
+  phone?: string;
   selectedPackage?: string;
   projectType?: string;
   planCategory: 'subscription' | 'maintenance';
@@ -9,6 +12,8 @@ export interface MyPlan {
   planDecision?: 'pending' | 'confirmed' | 'rejected';
   planStartAt?: string;
   planEndAt?: string;
+  totalPrice?: number | string;
+  status?: string;
 }
 
 /** End of a plan: exactly one calendar month (monthly) or one year (yearly) after the start. */
@@ -39,11 +44,75 @@ export function rejectPlanPatch(): Partial<ClientInquiry> {
 /** A visitor's own plans (server returns only that email's plan fields). */
 export async function fetchMyPlans(email: string): Promise<MyPlan[]> {
   try {
-    const r = await fetch(`/api/inquiries?plans=${encodeURIComponent(email.trim().toLowerCase())}`, { cache: 'no-store' });
+    const q = email ? `?plans=${encodeURIComponent(email.trim().toLowerCase())}` : '';
+    const r = await fetch(`/api/inquiries${q}`, { cache: 'no-store' });
     if (!r.ok) return [];
     const j = await r.json();
-    return Array.isArray(j?.plans) ? (j.plans as MyPlan[]) : [];
+    if (Array.isArray(j?.plans)) return j.plans as MyPlan[];
+    if (Array.isArray(j?.inquiries)) {
+      return (j.inquiries as ClientInquiry[])
+        .filter((i) => i.planCategory || i.planDecision)
+        .map((i) => ({
+          id: i.id,
+          clientName: i.clientName,
+          email: i.email,
+          phone: i.phone,
+          selectedPackage: i.selectedPackage,
+          projectType: i.projectType,
+          planCategory: (i.planCategory || 'maintenance') as 'subscription' | 'maintenance',
+          planTerm: i.planTerm,
+          planDecision: i.planDecision,
+          planStartAt: i.planStartAt,
+          planEndAt: i.planEndAt,
+          totalPrice: i.totalPrice,
+          status: i.status
+        }));
+    }
+    return [];
   } catch (_) {
     return [];
   }
+}
+
+/** Fetch all plans across the system (used by admin or fallback). */
+export async function fetchAllSystemPlans(): Promise<MyPlan[]> {
+  try {
+    const r = await fetch('/api/inquiries', { cache: 'no-store' });
+    if (!r.ok) return [];
+    const j = await r.json();
+    if (Array.isArray(j?.plans)) return j.plans as MyPlan[];
+    if (Array.isArray(j?.inquiries)) {
+      return (j.inquiries as ClientInquiry[])
+        .filter((i) => i.planCategory || i.planDecision)
+        .map((i) => ({
+          id: i.id,
+          clientName: i.clientName,
+          email: i.email,
+          phone: i.phone,
+          selectedPackage: i.selectedPackage,
+          projectType: i.projectType,
+          planCategory: (i.planCategory || 'maintenance') as 'subscription' | 'maintenance',
+          planTerm: i.planTerm,
+          planDecision: i.planDecision,
+          planStartAt: i.planStartAt,
+          planEndAt: i.planEndAt,
+          totalPrice: i.totalPrice,
+          status: i.status
+        }));
+    }
+    return [];
+  } catch (_) {
+    return [];
+  }
+}
+
+export function getLocalConfirmedPlans(): MyPlan[] {
+  try {
+    const raw = localStorage.getItem('tba_latest_confirmed_plan');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.id) return [parsed];
+    }
+  } catch (_) {}
+  return [];
 }

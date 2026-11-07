@@ -159,8 +159,46 @@ export const AdminPlanRequests: React.FC<Props> = ({ inquiries, packages = [], o
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDecide(i.id, { ...confirmPlanPatch(term), planCategory: i.planCategory })}
-                        className="px-3 py-1.5 rounded-lg text-xs font-mono flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+                        onClick={() => {
+                          const patch = { ...confirmPlanPatch(term), planCategory: i.planCategory || 'maintenance' };
+                          onDecide(i.id, patch);
+
+                          try {
+                            const confirmedObj = {
+                              id: i.id,
+                              clientName: i.clientName,
+                              email: i.email,
+                              phone: i.phone,
+                              selectedPackage: i.selectedPackage,
+                              projectType: i.projectType,
+                              planCategory: i.planCategory || 'maintenance',
+                              planTerm: term,
+                              planDecision: 'confirmed',
+                              planStartAt: patch.planStartAt,
+                              planEndAt: patch.planEndAt,
+                              totalPrice: i.totalPrice,
+                              status: patch.status
+                            };
+                            localStorage.setItem('tba_latest_confirmed_plan', JSON.stringify(confirmedObj));
+                            
+                            // Also update list of all confirmed plans in localStorage
+                            const existingListRaw = localStorage.getItem('tba_active_confirmed_plans');
+                            const existingList = existingListRaw ? JSON.parse(existingListRaw) : [];
+                            const updatedList = [confirmedObj, ...existingList.filter((x: any) => x.id !== i.id)];
+                            localStorage.setItem('tba_active_confirmed_plans', JSON.stringify(updatedList));
+
+                            // Broadcast locally for instant 0ms update in same/other tabs
+                            if (typeof window !== 'undefined') {
+                              window.dispatchEvent(new CustomEvent('tba_plan_confirmed', { detail: confirmedObj }));
+                              try {
+                                const bc = new BroadcastChannel('tba_plans_channel');
+                                bc.postMessage({ type: 'PLAN_CONFIRMED', data: confirmedObj });
+                                bc.close();
+                              } catch (_) {}
+                            }
+                          } catch (_) {}
+                        }}
+                        className="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer transition-all"
                       >
                         <Check className="w-3.5 h-3.5" /> Confirm
                       </button>
