@@ -45,9 +45,14 @@ function AppShell() {
   const [activeSection, setActiveSection] = useState<NavSection>(() => {
     if (typeof window === 'undefined') return 'home';
     const fromPath = sectionFromPath(window.location.pathname);
-    if (fromPath) return fromPath;
+    if (fromPath && window.location.pathname.replace(/\/+$/, '') !== '') return fromPath;
     const legacy = new URLSearchParams(window.location.search).get('section') as NavSection | null;
-    return legacy && legacy in SECTION_PATHS ? legacy : 'home';
+    if (legacy && legacy in SECTION_PATHS) return legacy;
+    try {
+      const saved = sessionStorage.getItem('tba_section') as NavSection | null;
+      if (saved && saved in SECTION_PATHS && saved !== 'admin') return saved;
+    } catch (_) {}
+    return 'home';
   });
   const [isInitialLoading, setIsInitialLoading] = useState<boolean>(true);
 
@@ -201,22 +206,13 @@ function AppShell() {
     };
 
     stripAnchorLinks();
-    // Old-style paths (/home, /index.html) and ?section= links collapse to the clean canonical URL
-    if (typeof window !== 'undefined') {
-      const clean = SECTION_PATHS[sectionFromPath(window.location.pathname) ?? 'home'] || '/';
-      const legacy = new URLSearchParams(window.location.search).get('section');
-      const legacyTarget = legacy && (legacy in SECTION_PATHS) ? SECTION_PATHS[legacy as NavSection] : null;
-      const target = legacyTarget || clean;
-      if (window.location.pathname !== target && !window.location.search.includes('tab=')) {
-        window.history.replaceState(null, '', target);
-      }
+    // The address bar always shows just the domain (the crawlable /projects, /packages ... pages still exist for search engines)
+    if (typeof window !== 'undefined' && (window.location.pathname !== '/' || window.location.search) && !window.location.search.includes('tab=')) {
+      window.history.replaceState(null, '', '/');
     }
     window.addEventListener('hashchange', stripAnchorLinks);
-    const onPop = () => setActiveSection(sectionFromPath(window.location.pathname) ?? 'home');
-    window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('hashchange', stripAnchorLinks);
-      window.removeEventListener('popstate', onPop);
     };
   }, []);
 
@@ -229,12 +225,12 @@ function AppShell() {
 
   const handleNavigate = (section: NavSection) => {
     setActiveSection(section);
-    // Real, crawlable URL per page (/projects, /packages, /contact ...)
+    // Keep the address bar clean (domain only) and remember the page for refreshes
     if (typeof window !== 'undefined') {
-      const target = SECTION_PATHS[section] || '/';
-      if (window.location.pathname !== target || window.location.search) {
-        window.history.pushState(null, '', target);
+      if (window.location.pathname !== '/' || window.location.search || window.location.hash) {
+        window.history.replaceState(null, '', '/');
       }
+      try { sessionStorage.setItem('tba_section', section); } catch (_) {}
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
