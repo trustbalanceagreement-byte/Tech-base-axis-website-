@@ -291,6 +291,13 @@ export const MaintenanceProgress: React.FC<MaintenanceProgressProps> = ({
     };
   }, []);
 
+  // Poll every 15s so a confirm from the admin appears without a manual refresh
+  useEffect(() => {
+    const t = setInterval(() => refreshPlans(), 15000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveEmail, category, inquiries]);
+
   // 1-second live ticker
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);

@@ -1,4 +1,6 @@
 import { ClientInquiry } from '../types';
+import { db, collection, getDocs, query } from '../lib/firebase';
+import { where } from 'firebase/firestore';
 
 export interface MyPlan {
   id: string;
@@ -43,6 +45,45 @@ export function rejectPlanPatch(): Partial<ClientInquiry> {
 
 /** A visitor's own plans (server returns only that email's plan fields). */
 export async function fetchMyPlans(email: string): Promise<MyPlan[]> {
+  const [fromServer, fromFirestore] = await Promise.all([fetchMyPlansFromServer(email), fetchMyPlansFromFirestore(email)]);
+  const byId = new Map<string, MyPlan>();
+  [...fromServer, ...fromFirestore].forEach((p) => byId.set(p.id, { ...byId.get(p.id), ...p }));
+  return [...byId.values()];
+}
+
+/** Second source: the client's own plan records straight from Firestore (used if the server store is empty/unreachable). */
+async function fetchMyPlansFromFirestore(email: string): Promise<MyPlan[]> {
+  try {
+    const e = (email || '').trim().toLowerCase();
+    if (!e) return [];
+    const snap = await getDocs(query(collection(db, 'inquiries'), where('email', '==', e)));
+    const out: MyPlan[] = [];
+    snap.forEach((d) => {
+      const i = { id: d.id, ...(d.data() as any) } as ClientInquiry;
+      if (!i.planCategory && !i.planDecision) return;
+      out.push({
+        id: i.id,
+        clientName: i.clientName,
+        email: i.email,
+        phone: i.phone,
+        selectedPackage: i.selectedPackage,
+        projectType: i.projectType,
+        planCategory: (i.planCategory || 'maintenance') as 'subscription' | 'maintenance',
+        planTerm: i.planTerm,
+        planDecision: i.planDecision,
+        planStartAt: i.planStartAt,
+        planEndAt: i.planEndAt,
+        totalPrice: i.totalPrice,
+        status: i.status
+      });
+    });
+    return out;
+  } catch (_) {
+    return [];
+  }
+}
+
+async function fetchMyPlansFromServer(email: string): Promise<MyPlan[]> {
   try {
     const q = email ? `?plans=${encodeURIComponent(email.trim().toLowerCase())}` : '';
     const r = await fetch(`/api/inquiries${q}`, { cache: 'no-store' });
