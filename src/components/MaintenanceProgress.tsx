@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Calendar, Info, ShieldCheck, CheckCircle2, UserCheck, Clock, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { MyPlan, fetchMyPlans, fetchAllSystemPlans, getLocalConfirmedPlans } from '../data/planData';
+import { MyPlan, fetchMyPlans, getLocalConfirmedPlans } from '../data/planData';
 import { ClientInquiry, ServicePackage } from '../types';
 
 interface MaintenanceProgressProps {
@@ -172,7 +172,7 @@ const ExpirationGaugeCard: React.FC<{
 
 /**
  * Shows the confirmed Maintenance expiration card ONLY to the user who booked Maintenance
- * (matched by their account email or device booking), or to the admin.
+ * (matched by their account email or device booking). Admins do not see other clients' plans here.
  */
 export const MaintenanceProgress: React.FC<MaintenanceProgressProps> = ({
   category = 'maintenance',
@@ -243,15 +243,8 @@ export const MaintenanceProgress: React.FC<MaintenanceProgressProps> = ({
     }
 
     // 3. Remote server fetch
-    if (isAdmin) {
-      fetchAllSystemPlans().then((sysPlans) => {
-        const target = category ? sysPlans.filter((p) => p.planCategory === category) : sysPlans;
-        if (target.length > 0) {
-          target.forEach((p) => mergedMap.set(p.id, p));
-          setPlans(Array.from(mergedMap.values()));
-        }
-      });
-    } else if (effectiveEmail) {
+    // Everyone (admin included) only ever loads plans booked with their own email.
+    if (effectiveEmail) {
       fetchMyPlans(effectiveEmail).then((userPlans) => {
         const target = category ? userPlans.filter((p) => p.planCategory === category) : userPlans;
         if (target.length > 0) {
@@ -312,10 +305,7 @@ export const MaintenanceProgress: React.FC<MaintenanceProgressProps> = ({
       const isCategory = !category || p.planCategory === category;
       if (!isConfirmed || !isCurrent || !isCategory) return false;
 
-      // 1. If user is admin (Bikram), allow previewing all confirmed plans
-      if (isAdmin) return true;
-
-      // 2. Strict User Account Filter: Only show to the user who booked this plan!
+      // Strict account filter: only the user who booked this plan sees it (admins do not see clients' plans).
       const planEmail = String(p.email || '').trim().toLowerCase();
       if (loggedInEmail && planEmail === loggedInEmail) return true;
       if (clientStoredEmail && planEmail === clientStoredEmail) return true;
@@ -350,7 +340,7 @@ export const MaintenanceProgress: React.FC<MaintenanceProgressProps> = ({
           key={p.id}
           plan={p}
           now={now}
-          isAdminView={isAdmin}
+          isAdminView={false}
           onRenew={() => handleRenewForPlan(p)}
         />
       ))}
