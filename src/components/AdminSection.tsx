@@ -240,7 +240,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   const [tabMenuOpen, setTabMenuOpen] = useState(false);
   const [activeAdminTab, setActiveAdminTab] = useState<'addons' | 'packages' | 'plans' | 'projects' | 'inquiries' | 'activity'>(() => {
     if (typeof window !== 'undefined') {
-      const hash = window.location.hash.toLowerCase();
+      const hash = (window.location.hash + ' ' + (new URLSearchParams(window.location.search).get('tab') || '')).toLowerCase();
       if (hash.includes('plans')) return 'plans';
       if (hash.includes('activity')) return 'activity';
       if (hash.includes('inquiries')) return 'inquiries';
@@ -259,8 +259,8 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       } else if (hash.includes('projects')) {
         setActiveAdminTab('projects');
       }
-      if (hash) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      if (hash || new URLSearchParams(window.location.search).has('tab')) {
+        window.history.replaceState(null, '', window.location.pathname);
       }
     };
     handleHash();

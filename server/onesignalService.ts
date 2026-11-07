@@ -288,7 +288,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
 
   let title = '💬 Tech Base Axis Alert';
   let body = `${clientName} performed an action.`;
-  let deepLink = `${baseUrl}#admin/inquiries`;
+  let deepLink = `${baseUrl}/admin?tab=inquiries`;
 
   switch (event.eventType) {
     case 'account_created':
@@ -296,7 +296,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       title = '👤 New Client Account Created';
       body = `${clientName} (${event.email || event.clientEmail || 'Client'}) registered a new account on Tech Base Axis.`;
       const id = event.clientId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -308,7 +308,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
         ? `${clientName} booked ${pkgName} for ₹${amountVal}.` 
         : `${clientName} booked ${pkgName}.`;
       const id = event.bookingId || event.inquiryId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -320,7 +320,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
         ? `${clientName} booked an appointment for ${dateStr} at ${timeStr}.`
         : `${clientName} booked an appointment for ${dateStr}.`;
       const id = event.appointmentId || event.inquiryId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -329,7 +329,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       title = '🧮 New Quote Request';
       body = `${clientName} requested a quote for ${websiteType}.`;
       const id = event.quoteId || event.inquiryId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -338,7 +338,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       title = '💬 New Client Enquiry';
       body = `${clientName} sent a new enquiry.`;
       const id = event.enquiryId || event.inquiryId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -349,7 +349,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
         ? `₹${amountVal} received from ${clientName}.`
         : `Payment received from ${clientName}.`;
       const id = event.paymentId || event.orderId || event.projectId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -358,7 +358,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       title = '🎉 Proposal Accepted';
       body = `${clientName} accepted the proposal for ${projName}.`;
       const id = event.projectId || event.inquiryId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -368,7 +368,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       title = '🔄 New Revision Request';
       body = `${clientName} requested a revision for ${projName}${revInfo}.`;
       const id = event.projectId || event.revisionId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 
@@ -380,7 +380,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       body = short
         ? `${clientName} reviewed: "${short}"`
         : `${clientName} submitted a new review.`;
-      deepLink = `${baseUrl}#admin`;
+      deepLink = `${baseUrl}/admin`;
       break;
     }
 
@@ -388,7 +388,7 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       title = '🛠️ New Support Request';
       body = `${clientName} submitted a support request.`;
       const id = event.ticketId || event.projectId || '';
-      deepLink = id ? `${baseUrl}#admin/inquiries?id=${id}` : `${baseUrl}#admin/inquiries`;
+      deepLink = id ? `${baseUrl}/admin?tab=inquiries` : `${baseUrl}/admin?tab=inquiries`;
       break;
     }
 

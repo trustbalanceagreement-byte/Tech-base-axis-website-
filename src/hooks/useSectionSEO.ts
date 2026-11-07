@@ -43,7 +43,8 @@ export const SECTION_PATHS: Record<NavSection, string> = {
 };
 
 export function sectionFromPath(pathname: string): NavSection | null {
-  const clean = pathname.replace(/\/+$/, '') || '/';
+  let clean = pathname.replace(/\/+$/, '') || '/';
+  if (clean === '/home' || clean === '/index.html') clean = '/';
   const hit = (Object.keys(SECTION_PATHS) as NavSection[]).find((k) => SECTION_PATHS[k] === clean);
   return hit ?? null;
 }

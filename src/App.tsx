@@ -201,6 +201,16 @@ function AppShell() {
     };
 
     stripAnchorLinks();
+    // Old-style paths (/home, /index.html) and ?section= links collapse to the clean canonical URL
+    if (typeof window !== 'undefined') {
+      const clean = SECTION_PATHS[sectionFromPath(window.location.pathname) ?? 'home'] || '/';
+      const legacy = new URLSearchParams(window.location.search).get('section');
+      const legacyTarget = legacy && (legacy in SECTION_PATHS) ? SECTION_PATHS[legacy as NavSection] : null;
+      const target = legacyTarget || clean;
+      if (window.location.pathname !== target && !window.location.search.includes('tab=')) {
+        window.history.replaceState(null, '', target);
+      }
+    }
     window.addEventListener('hashchange', stripAnchorLinks);
     const onPop = () => setActiveSection(sectionFromPath(window.location.pathname) ?? 'home');
     window.addEventListener('popstate', onPop);
