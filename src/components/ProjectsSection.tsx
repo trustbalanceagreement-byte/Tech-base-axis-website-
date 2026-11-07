@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ProjectsHero } from './ProjectsHero';
-import { MaintenanceProgress } from './MaintenanceProgress';
 import { Project, NavSection } from '../types';
 import { PROJECTS_DATA } from '../data/mockData';
 import { ProjectMediaPlayer } from './ProjectMediaPlayer';
@@ -67,8 +66,6 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12 text-neutral-100">
       <ProjectsHero projects={sourceProjects} onNavigate={onNavigate} />
-
-      <MaintenanceProgress />
 
       {/* When no projects are published yet by Admin */}
       {sourceProjects.length === 0 ? (

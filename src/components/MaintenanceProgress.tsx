@@ -70,7 +70,7 @@ const PlanCard: React.FC<{ plan: MyPlan; now: number }> = ({ plan, now }) => {
 };
 
 /** Shows the logged-in user's confirmed Subscription/Maintenance plans with a live countdown. Hidden when none are active. */
-export const MaintenanceProgress: React.FC = () => {
+export const MaintenanceProgress: React.FC<{ category?: 'subscription' | 'maintenance' }> = ({ category }) => {
   const { user } = useAuth();
   const email = user?.email || '';
   const [plans, setPlans] = useState<MyPlan[]>([]);
@@ -91,10 +91,11 @@ export const MaintenanceProgress: React.FC = () => {
     };
   }, [email]);
 
-  const active = plans.filter(
+  const mine = category ? plans.filter((p) => p.planCategory === category) : plans;
+  const active = mine.filter(
     (p) => p.planDecision === 'confirmed' && p.planEndAt && new Date(p.planEndAt).getTime() > now
   );
-  const pending = plans.filter((p) => (p.planDecision || 'pending') === 'pending');
+  const pending = mine.filter((p) => (p.planDecision || 'pending') === 'pending');
 
   useEffect(() => {
     if (active.length === 0) return;
@@ -105,8 +106,8 @@ export const MaintenanceProgress: React.FC = () => {
   if (active.length === 0 && pending.length === 0) return null;
 
   return (
-    <section aria-labelledby="maint-heading" className="space-y-4">
-      <h2 id="maint-heading" className="text-xl sm:text-2xl font-bold text-white">Maintenance</h2>
+    <section aria-labelledby="maint-heading" className="space-y-4 max-w-2xl mx-auto w-full">
+      <h2 id="maint-heading" className="text-lg sm:text-xl font-bold text-white text-center">{category === 'subscription' ? 'Your Subscription' : 'Your Maintenance Plan'}</h2>
       {active.map((p) => <PlanCard key={p.id} plan={p} now={now} />)}
       {pending.map((p) => (
         <div key={p.id} className="rounded-2xl border border-amber-700/30 bg-amber-950/20 px-4 py-3 flex items-center gap-3 text-sm text-amber-200">

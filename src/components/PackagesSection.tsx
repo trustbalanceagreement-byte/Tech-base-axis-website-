@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ServicePackage, NavSection, ClientInquiry } from '../types';
 import { isSubscriptionPackage, isMaintenancePackage, getDeletedPackageIds, getPackageCategory, getPackageTerm } from '../data/pricingData';
 import { PackageCardSkeleton } from './ui/Skeleton';
+import { MaintenanceProgress } from './MaintenanceProgress';
 import { 
   Check, 
   ChevronDown, 
@@ -175,6 +176,9 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Logged-in client's confirmed plan: progress bar + countdown */}
+      <MaintenanceProgress category={billingCycle === 'milestone' ? 'maintenance' : 'subscription'} />
 
       {/* Dynamic Glowing Glassmorphism Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 items-stretch max-w-7xl mx-auto pt-4">
