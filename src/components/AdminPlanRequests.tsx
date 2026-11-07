@@ -206,8 +206,26 @@ export const AdminPlanRequests: React.FC<Props> = ({ inquiries, packages = [], o
                   </div>
                 )}
                 {dec === 'confirmed' && (
-                  <div className="mt-4 pt-3 border-t border-neutral-800 text-[11px] font-mono text-emerald-300">
-                    Active {fmt(i.planStartAt)} → {fmt(i.planEndAt)} ({i.planTerm === 'yearly' ? '1 year' : '1 month'})
+                  <div className="mt-4 pt-3 border-t border-neutral-800 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[11px] font-mono text-emerald-300">
+                      Active {fmt(i.planStartAt)} → {fmt(i.planEndAt)} ({i.planTerm === 'yearly' ? '1 year' : '1 month'})
+                    </span>
+                    <button
+                      type="button"
+                      title="Save this plan again so it appears in the client's account"
+                      onClick={() =>
+                        onDecide(i.id, {
+                          planCategory: i.planCategory,
+                          planTerm: i.planTerm,
+                          planDecision: 'confirmed',
+                          planStartAt: i.planStartAt,
+                          planEndAt: i.planEndAt
+                        })
+                      }
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-mono bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-700 cursor-pointer"
+                    >
+                      Re-sync to client
+                    </button>
                   </div>
                 )}
                 {dec === 'rejected' && (
