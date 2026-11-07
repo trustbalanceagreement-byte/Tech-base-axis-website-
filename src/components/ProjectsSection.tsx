@@ -19,7 +19,6 @@ import {
   Film,
   Image as ImageIcon
 } from 'lucide-react';
-import { MaintenanceProgress } from './MaintenanceProgress';
 import { ClientInquiry } from '../types';
 
 interface ProjectsSectionProps {
@@ -72,7 +71,6 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
       <ProjectsHero projects={sourceProjects} onNavigate={onNavigate} />
 
       {/* Active Maintenance Contract Progress & Live Countdown */}
-      <MaintenanceProgress category="maintenance" inquiries={inquiries} />
 
       {/* When no projects are published yet by Admin */}
       {sourceProjects.length === 0 ? (

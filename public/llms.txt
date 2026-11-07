@@ -3,7 +3,7 @@
 > Tech Base Axis is a web development and digital solutions company based in Kolkata, West Bengal, India, founded by Bikram Ghosh. It builds custom web applications, e-commerce platforms, automation and AI systems, and cloud-based software for clients in India and worldwide.
 
 ## Pages
-- [Home](https://www.tbaonline.online/): Company overview, services, client reviews and FAQ
+- [Home](https://www.tbaonline.online/): Company overview, services, and client reviews
 - [Projects](https://www.tbaonline.online/projects): Portfolio of delivered software, web apps and digital solutions
 - [Packages](https://www.tbaonline.online/packages): Web development packages, add-ons and pricing, with online booking
 - [Contact](https://www.tbaonline.online/contact): Book an appointment, request a quote or send an enquiry

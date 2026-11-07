@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import { SECTION_SEO_MAP, SECTION_PATHS } from '../src/hooks/useSectionSEO';
-import { FAQ_ITEMS } from '../src/data/faqData';
 
 const dist = path.join(process.cwd(), 'dist');
 const base = 'https://www.tbaonline.online';
@@ -10,12 +9,6 @@ const tpl = fs.readFileSync(path.join(dist, 'index.html'), 'utf-8');
 const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const setMeta = (html: string, attr: 'name' | 'property', key: string, value: string) =>
   html.replace(new RegExp(`(<meta ${attr}="${key}" content=")[^"]*(")`), `$1${esc(value)}$2`);
-
-const faqLd = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQ_ITEMS.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
-};
 
 const ld = (o: unknown) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`;
 
@@ -39,8 +32,7 @@ for (const key of pages) {
   html = html.replace(/(<link rel="canonical" href=")[^"]*(")/, `$1${url}$2`);
 
   const extra: string[] = [];
-  if (key === 'home') extra.push(ld(faqLd));
-  else {
+  if (key !== 'home') {
     extra.push(
       ld({
         '@context': 'https://schema.org',
@@ -65,10 +57,6 @@ for (const key of pages) {
       </main>
     <!--seo-fallback-end-->`;
   if (body) html = html.replace(/<!--seo-fallback-start-->[\s\S]*<!--seo-fallback-end-->/, body);
-  else {
-    const faqHtml = FAQ_ITEMS.map((f) => `<h3>${esc(f.q)}</h3><p>${esc(f.a)}</p>`).join('');
-    html = html.replace('</main>\n    <!--seo-fallback-end-->', `<h2>Frequently Asked Questions</h2>${faqHtml}</main>\n    <!--seo-fallback-end-->`);
-  }
 
   const out = key === 'home' ? path.join(dist, 'index.html') : path.join(dist, route.slice(1), 'index.html');
   fs.mkdirSync(path.dirname(out), { recursive: true });

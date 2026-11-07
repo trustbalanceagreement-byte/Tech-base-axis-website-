@@ -36,7 +36,6 @@ import {
   Star
 } from 'lucide-react';
 
-import { FAQ_ITEMS } from '../data/faqData';
 
 interface HomeSectionProps {
   onNavigate: (section: NavSection) => void;
@@ -445,24 +444,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
 
         <StaggerTestimonials testimonials={testimonialsList} />
       </motion.section>
-
-      {/* FAQ (mirrors the FAQPage structured data) */}
-      <section aria-labelledby="faq-heading" className="mx-auto max-w-3xl px-4 py-12">
-        <h2 id="faq-heading" className="text-2xl sm:text-3xl font-bold text-white text-center mb-6">
-          Frequently Asked Questions
-        </h2>
-        <div className="space-y-3">
-          {FAQ_ITEMS.map((item) => (
-            <details key={item.q} className="group rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-              <summary className="cursor-pointer list-none font-semibold text-neutral-100 flex items-center justify-between gap-3">
-                <span>{item.q}</span>
-                <span aria-hidden="true" className="text-red-500 transition-transform group-open:rotate-45">+</span>
-              </summary>
-              <p className="mt-2 text-sm text-neutral-300 leading-relaxed">{item.a}</p>
-            </details>
-          ))}
-        </div>
-      </section>
 
       {/* Interactive Review Modal */}
       <ReviewModal 
