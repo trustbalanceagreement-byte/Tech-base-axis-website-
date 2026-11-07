@@ -253,6 +253,12 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
             paymentMethod: 'Razorpay Standard Checkout'
           };
 
+          try {
+            if (trimmedEmail) {
+              localStorage.setItem('tba_client_email', trimmedEmail.toLowerCase());
+            }
+          } catch (_) {}
+
           onConfirmBooking(paidInquiry);
           setConfirmedInquiry(paidInquiry);
         },
@@ -349,6 +355,12 @@ export const PackageBookingModal: React.FC<PackageBookingModalProps> = ({
     };
 
     onConfirmBooking(newBookingInquiry);
+
+    try {
+      if (trimmedEmail) {
+        localStorage.setItem('tba_client_email', trimmedEmail.toLowerCase());
+      }
+    } catch (_) {}
 
     // Call backend REST API to push notification directly to OneSignal devices
     fetch('/api/notify-admin', {

@@ -179,10 +179,12 @@ export const PackagesSection: React.FC<PackagesSectionProps> = ({
         </div>
       </div>
 
-      {/* Logged-in client's confirmed plan: progress bar + countdown */}
+      {/* Confirmed plan for the booked user: exact radial progress ring + expiration date + renew design */}
       <MaintenanceProgress 
         category={billingCycle === 'milestone' ? 'maintenance' : 'subscription'} 
         inquiries={inquiries}
+        packages={packages}
+        onSelectPackage={onSelectPackage}
       />
 
       {/* Dynamic Glowing Glassmorphism Cards Grid */}
