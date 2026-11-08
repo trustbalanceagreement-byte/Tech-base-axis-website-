@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://tbaonline.online/</loc>
     <lastmod>2026-11-08</lastmod>
@@ -10,8 +8,6 @@
     <priority>1.0</priority>
     <image:image>
       <image:loc>https://tbaonline.online/bikram-ghosh.jpg</image:loc>
-      <image:title>Bikram Ghosh - Founder of TECH BASE AXIS (TBA), Web Developer in Kalyani &amp; Kolkata</image:title>
-      <image:caption>Bikram Ghosh (Bikram Ghosh TBA), Founder and Full Stack Architect at TECH BASE AXIS Kalyani West Bengal</image:caption>
     </image:image>
   </url>
   <url>
