@@ -3,7 +3,7 @@ import path from 'path';
 import { SECTION_SEO_MAP, SECTION_PATHS } from '../src/hooks/useSectionSEO';
 
 const dist = path.join(process.cwd(), 'dist');
-const base = 'https://tbaonline.online';
+const base = 'https://www.tbaonline.online';
 const tpl = fs.readFileSync(path.join(dist, 'index.html'), 'utf-8');
 
 const esc = (v: string) => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');

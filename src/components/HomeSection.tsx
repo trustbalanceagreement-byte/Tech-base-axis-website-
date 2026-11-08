@@ -132,7 +132,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                       <span className="block">HELLO, I'M</span>
                       <span className="block">BIKRAM</span>
                       <span className="block">GHOSH</span>
-                      <span className="sr-only"> - TECH BASE AXIS (TBA) Founder, Web Development Company in Kalyani, Kolkata &amp; West Bengal</span>
+                      <span className="sr-only"> - Web Development Company in Kolkata, Tech Base Axis</span>
                     </h1>
                   </div>
 
@@ -149,8 +149,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = founderImage;
                         }}
-                        alt="Bikram Ghosh (Bikram Ghosh TBA) - Founder &amp; Web Developer at TECH BASE AXIS, Kalyani &amp; Kolkata"
-                        title="Bikram Ghosh TBA - TECH BASE AXIS Founder &amp; Web Developer in Kalyani, West Bengal"
+                        alt="Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata"
+                        title="Bikram Ghosh - Web Developer in Kolkata"
                         itemProp="image"
                         fetchPriority="high"
                         loading="eager"
@@ -159,7 +159,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                     </div>
 
                     <div className="absolute -bottom-1 -left-1 z-20 px-2.5 py-0.5 rounded-md bg-black/95 border border-neutral-800 text-[10px] xs:text-[11px] font-mono text-neutral-200 shadow-md">
-                      <span className="text-[#e61e2b] font-bold">TECH BASE AXIS</span>
+                      <span className="text-[#e61e2b] font-bold">FOUNDER</span>
                     </div>
                   </div>
                 </div>
@@ -169,14 +169,14 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                   <div className="flex items-center gap-2.5">
                     <span aria-hidden="true" className="font-display text-2xl sm:text-3xl md:text-4xl text-[#e61e2b] font-black leading-tight tracking-tighter shrink-0 drop-shadow-[0_0_8px_rgba(230,30,43,0.55)]">//</span>
                     <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-black tracking-wide uppercase leading-tight">
-                      TECH BASE AXIS // BIKRAM GHOSH TBA
+                      WELCOME TO MY PORTFOLIO
                     </h2>
                   </div>
                 </div>
 
                 {/* Bio Paragraph */}
                 <p className="text-neutral-300 text-sm sm:text-base leading-relaxed max-w-lg">
-                  Senior full-stack systems engineer, founder of <strong className="text-white font-semibold">TECH BASE AXIS (TBA)</strong> based in Kalyani &amp; Kolkata, West Bengal. Over 6 years of expertise building resilient enterprise software, responsive websites, mobile apps, and business AI automation workflows.
+                  Senior technical systems engineer, founder, and principal architect with over 6 years of expertise building resilient distributed cloud backends, enterprise full-stack web platforms, and generative AI reasoning pipelines that deliver verified zero-latency user experiences.
                 </p>
 
                 {/* Verified Metrics Grid */}
@@ -225,8 +225,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = founderImage;
                       }}
-                      alt="Bikram Ghosh (Bikram Ghosh TBA) - Founder &amp; Full Stack Web Developer at TECH BASE AXIS, Kalyani &amp; Kolkata"
-                      title="Bikram Ghosh TBA - TECH BASE AXIS Founder &amp; Web Developer in Kalyani, West Bengal"
+                      alt="Bikram Ghosh - Founder and Lead Full Stack Web Developer at Tech Base Axis Kolkata"
+                      title="Bikram Ghosh - Web Developer in Kolkata"
                       itemProp="image"
                       fetchPriority="high"
                       loading="eager"

@@ -69,6 +69,4 @@ Disallow: /api/
 User-agent: Googlebot-Image
 Allow: /
 
-Sitemap: https://tbaonline.online/sitemap.xml
 Sitemap: https://www.tbaonline.online/sitemap.xml
-

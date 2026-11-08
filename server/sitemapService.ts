@@ -3,54 +3,53 @@ export interface SitemapUrlEntry {
   lastmod?: string;
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
   priority?: number;
-  images?: { loc: string }[];
+  images?: { loc: string; title?: string; caption?: string }[];
 }
 
 /**
- * Dynamically generates a 100% standards-compliant XML sitemap strictly following
- * the official sitemaps.org 0.9 schema and Google Search Central Image Sitemap protocol.
- * Rejection-free XML formatting with clean namespace declarations and proper element ordering.
+ * Dynamically generates a valid sitemaps.org XML string for search engine crawlers (Google, Bing, etc.)
+ * Includes all essential pages: Home, Projects, Packages, Contact, Admin, and deep links.
  */
-export function generateSitemapXml(baseUrl = 'https://tbaonline.online'): string {
+export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): string {
   const currentDate = new Date().toISOString().split('T')[0];
 
   const allEntries: SitemapUrlEntry[] = [
     {
       loc: `${baseUrl}/`,
-      lastmod: currentDate,
-      changefreq: 'weekly',
       priority: 1.0,
+      changefreq: 'weekly',
+      lastmod: currentDate,
       images: [
-        { loc: `${baseUrl}/bikram-ghosh.jpg` }
+        {
+          loc: `${baseUrl}/bikram-ghosh.jpg`,
+          title: 'Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata',
+          caption: 'Bikram Ghosh Web Developer in Kolkata, Founder of Tech Base Axis'
+        }
       ],
     },
-    { loc: `${baseUrl}/projects`, lastmod: currentDate, changefreq: 'weekly', priority: 0.9 },
-    { loc: `${baseUrl}/packages`, lastmod: currentDate, changefreq: 'weekly', priority: 0.9 },
-    { loc: `${baseUrl}/contact`, lastmod: currentDate, changefreq: 'monthly', priority: 0.8 },
-    { loc: `${baseUrl}/privacy`, lastmod: currentDate, changefreq: 'yearly', priority: 0.3 },
-    { loc: `${baseUrl}/terms`, lastmod: currentDate, changefreq: 'yearly', priority: 0.3 },
+    { loc: `${baseUrl}/projects`, priority: 0.9, changefreq: 'weekly', lastmod: currentDate },
+    { loc: `${baseUrl}/packages`, priority: 0.9, changefreq: 'weekly', lastmod: currentDate },
+    { loc: `${baseUrl}/contact`, priority: 0.8, changefreq: 'monthly', lastmod: currentDate },
+    { loc: `${baseUrl}/privacy`, priority: 0.3, changefreq: 'yearly', lastmod: currentDate },
+    { loc: `${baseUrl}/terms`, priority: 0.3, changefreq: 'yearly', lastmod: currentDate },
   ];
 
-  const urlNodes = allEntries.map((e) => {
-    const lines = [
-      '  <url>',
-      `    <loc>${e.loc}</loc>`,
-      `    <lastmod>${e.lastmod || currentDate}</lastmod>`,
-      `    <changefreq>${e.changefreq || 'weekly'}</changefreq>`,
-      `    <priority>${e.priority !== undefined ? e.priority.toFixed(1) : '0.5'}</priority>`
-    ];
-
-    if (e.images && e.images.length > 0) {
-      for (const img of e.images) {
-        lines.push('    <image:image>');
-        lines.push(`      <image:loc>${img.loc}</image:loc>`);
-        lines.push('    </image:image>');
-      }
-    }
-
-    lines.push('  </url>');
-    return lines.join('\n');
-  }).join('\n');
-
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urlNodes}\n</urlset>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+${allEntries
+  .map(
+    (e) => `  <url>
+    <loc>${e.loc}</loc>
+    <lastmod>${e.lastmod || currentDate}</lastmod>
+    <changefreq>${e.changefreq || 'weekly'}</changefreq>
+    <priority>${e.priority !== undefined ? e.priority.toFixed(1) : '0.5'}</priority>${(e.images || [])
+      .map((im) => `\n    <image:image>\n      <image:loc>${im.loc}</image:loc>${im.title ? `\n      <image:title>${im.title}</image:title>` : ''}${im.caption ? `\n      <image:caption>${im.caption}</image:caption>` : ''}\n    </image:image>`)
+      .join('')}
+  </url>`
+  )
+  .join('\n')}
+</urlset>`;
 }
