@@ -10,7 +10,7 @@ export interface SitemapUrlEntry {
  * Dynamically generates a valid sitemaps.org XML string for search engine crawlers (Google, Bing, etc.)
  * Includes all essential pages: Home, Projects, Packages, Contact, Admin, and deep links.
  */
-export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): string {
+export function generateSitemapXml(baseUrl = 'https://tbaonline.online'): string {
   const currentDate = new Date().toISOString().split('T')[0];
 
   const allEntries: SitemapUrlEntry[] = [
@@ -22,8 +22,8 @@ export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): st
       images: [
         {
           loc: `${baseUrl}/bikram-ghosh.jpg`,
-          title: 'Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata',
-          caption: 'Bikram Ghosh Web Developer in Kolkata, Founder of Tech Base Axis'
+          title: 'Bikram Ghosh - Founder of TECH BASE AXIS (TBA), Web Developer in Kalyani & Kolkata',
+          caption: 'Bikram Ghosh (Bikram Ghosh TBA), Founder and Full Stack Architect at TECH BASE AXIS Kalyani West Bengal'
         }
       ],
     },
