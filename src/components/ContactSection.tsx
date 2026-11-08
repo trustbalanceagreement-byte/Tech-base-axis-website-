@@ -200,10 +200,10 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           </div>
           <h1 className="font-sans text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight leading-[1.08] mb-5">
             Connect Directly with
-            <span className="block text-[#ff1f2e] drop-shadow-[0_0_26px_rgba(255,31,46,0.5)]">Bikram Ghosh</span>
+            <span className="block text-[#ff1f2e] drop-shadow-[0_0_26px_rgba(255,31,46,0.5)]">Bikram Ghosh (Bikram Ghosh TBA)</span>
           </h1>
           <p className="max-w-xl text-sm sm:text-base lg:text-lg text-neutral-200 leading-relaxed [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
-            Book an architecture package, schedule a 1-on-1 technical consultation, or transmit your project brief. Notifications are instantly routed to Bikram Ghosh in real time.
+            Book an architecture package, schedule a 1-on-1 technical consultation, or transmit your project brief to <strong className="text-white">TECH BASE AXIS</strong> in Kalyani, West Bengal. Direct real-time routing to founder Bikram Ghosh.
           </p>
         </div>
       </div>
@@ -268,7 +268,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     <span>@bik.ram737</span>
                     <ExternalLink className="w-3 h-3 text-neutral-400 shrink-0" />
                   </a>
-                  <div className="text-[11px] text-neutral-400 font-mono mt-0.5">Bikram Ghosh • Founder &amp; Web Developer Kolkata</div>
+                  <div className="text-[11px] text-neutral-400 font-mono mt-0.5">Bikram Ghosh (Bikram Ghosh TBA) • Founder &amp; Web Developer Kalyani, West Bengal</div>
                 </div>
               </div>
 
@@ -287,7 +287,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     <span>@tba7.01</span>
                     <ExternalLink className="w-3 h-3 text-neutral-400 shrink-0" />
                   </a>
-                  <div className="text-[11px] text-neutral-500 font-mono mt-0.5">Tech Base Axis Official Portfolio &amp; Launch Demos</div>
+                  <div className="text-[11px] text-neutral-500 font-mono mt-0.5">TECH BASE AXIS (TBA) Official Portfolio &amp; Launch Demos</div>
                 </div>
               </div>
 
@@ -296,7 +296,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 <div>
                   <div className="text-xs text-neutral-400 font-mono">Operating Headquarters</div>
                   <div className="text-white font-medium">{FOUNDER_INFO.location}</div>
-                  <div className="text-xs text-neutral-400">Serving global clients across US, EU & APAC</div>
+                  <div className="text-xs text-neutral-400">Serving Kalyani, Nadia, Kolkata, North &amp; South 24 Parganas, West Bengal &amp; Global Clients</div>
                 </div>
               </div>
             </div>

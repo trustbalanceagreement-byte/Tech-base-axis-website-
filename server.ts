@@ -559,6 +559,20 @@ app.all("/api/*", (_req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
 
+// Explicit route for sitemap.xml with live image metadata
+app.get("/sitemap.xml", (req, res) => {
+  res.setHeader("Content-Type", "application/xml");
+  const host = req.get("host") || "tbaonline.online";
+  const baseUrl = host.includes("localhost") || host.includes("127.0.0.1") 
+    ? `${req.protocol}://${host}` 
+    : `https://${host}`;
+  res.send(generateSitemapXml(baseUrl));
+});
+
+// Serve public directory assets (e.g. bikram-ghosh.jpg, robots.txt, sitemap.xml, tab_logo.png)
+const publicPath = path.join(process.cwd(), "public");
+app.use(express.static(publicPath));
+
 // Serve compiled static assets from dist
 const distPath = path.join(process.cwd(), "dist");
 app.use(express.static(distPath));

@@ -162,21 +162,27 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
                     
                     {/* Founder Photo */}
                     <img
-                      src={founderImage}
-                      alt="Bikram Ghosh, founder and web developer at Tech Base Axis, architecting modern digital systems in Kolkata"
+                      src="/bikram-ghosh.jpg"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = founderImage;
+                      }}
+                      alt="Bikram Ghosh (Bikram Ghosh TBA) - Founder &amp; Web Developer at TECH BASE AXIS, Kalyani"
+                      title="Bikram Ghosh TBA - TECH BASE AXIS Founder in Kalyani, West Bengal"
+                      itemProp="image"
                       className="w-full h-full object-cover object-top filter grayscale contrast-125 brightness-95 group-hover:contrast-110 group-hover:brightness-100 transition-all duration-500"
                     />
 
                     {/* Bottom Info Overlay */}
                     <div className="absolute bottom-0 inset-x-0 p-4 sm:p-5 z-20 space-y-1">
                       <div className="flex items-center text-xs font-mono text-neutral-400">
-                        <span>Founder</span>
+                        <span>Founder • TECH BASE AXIS (TBA)</span>
                       </div>
                       <h3 className="text-lg sm:text-xl font-bold text-white font-display">
                         Bikram Ghosh
                       </h3>
                       <p className="text-xs text-neutral-300 font-mono">
-                        Web Developer & Digital Systems Architect
+                        Lead Web Developer &amp; Systems Architect • Kalyani, West Bengal
                       </p>
                     </div>
 
@@ -316,7 +322,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
 
                     {/* Professional Paragraph */}
                     <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-normal">
-                      Hi, I’m Bikram Ghosh, a Professional And Experience web developer passionate about creating modern, responsive and high-performance websites. I focus on combining clean design, smooth user experiences and powerful web technologies to build digital experiences that are both visually impressive and functional.
+                      Hi, I’m Bikram Ghosh (known as <strong className="text-white font-semibold">Bikram Ghosh TBA</strong>), founder of <strong className="text-white font-semibold">TECH BASE AXIS</strong> based in Kalyani, West Bengal. As an experienced full-stack web developer and systems architect, I build high-performance web applications, custom enterprise software, mobile apps, and business AI automation solutions that drive measurable business growth across Kalyani, Kolkata, and worldwide.
                     </p>
 
                     {/* Quick Core Strengths Grid */}
@@ -385,12 +391,12 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
 
                     {/* Company Description 1 */}
                     <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-normal">
-                      Tech Base Axis is a modern web development company dedicated to building professional, responsive and high-performance websites. We combine modern UI/UX design, clean development practices, responsive layouts and smooth interactive experiences to help businesses establish a strong digital presence.
+                      <strong className="text-white font-semibold">TECH BASE AXIS (TBA)</strong> is a premier technology solutions company in Kalyani, West Bengal. We specialize in custom website development, enterprise software, mobile applications, and intelligent business process automation for businesses across Kalyani, Nadia, Kolkata, and global clients.
                     </p>
 
                     {/* Company Description 2 */}
                     <p className="text-sm sm:text-base text-neutral-300 leading-relaxed font-normal">
-                      At Tech Base Axis, we transform ideas into functional digital products through thoughtful design, modern technologies and user-focused development. Every project is built with attention to performance, usability, responsiveness and visual quality.
+                      Founded by <strong className="text-white font-semibold">Bikram Ghosh</strong>, TECH BASE AXIS combines modern architecture, responsive web design, robust security, and cloud scalability. Every digital platform is built with meticulous engineering to maximize performance, search engine visibility, and client conversions.
                     </p>
 
                     {/* Key Company Value Drivers */}

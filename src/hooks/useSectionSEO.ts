@@ -53,97 +53,105 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
   /**
    * HOMEPAGE (#home)
    * Role: Master Topical Authority & Brand Entity Root
-   * Focus: Broad organizational credibility, core full-stack service offering in Kolkata.
+   * Focus: Brand variations (TECH BASE AXIS, TBA, Bikram Ghosh TBA), full technology spectrum in Kalyani & Kolkata, West Bengal.
    */
   home: {
-    primaryKeyword: 'Web Development Company Kolkata',
+    primaryKeyword: 'TECH BASE AXIS',
     secondaryKeywords: [
-      'Bikram Ghosh Web Developer',
       'Tech Base Axis',
-      'Kolkata Web Developers',
-      'Custom Software Development Kolkata',
-      'Full Stack Developer Kolkata',
-      'Cloud Architecture Kolkata',
+      'TBA',
+      'Bikram Ghosh',
+      'Bikram Ghosh TBA',
+      '@bik.ram737',
+      'bik.ram737',
+      'Kalyani web development company',
+      'best web development company in Kolkata',
+      'software development company Kalyani',
+      'software company in West Bengal',
+      'business automation company Kolkata',
+      'AI solutions company Kolkata',
+      'best IT company in Kalyani',
+      'IT company in Nadia West Bengal',
     ],
     searchIntent: 'Commercial Investigation',
-    semanticRole: 'Topical Hub: Establishes Tech Base Axis as the top-tier web development firm founded by Bikram Ghosh in Kolkata.',
-    title: 'Tech Base Axis | Web Development Company Kolkata | Bikram Ghosh Web Developer',
-    description: 'Tech Base Axis is a premier web development company in Kolkata, founded by Bikram Ghosh. We engineer high-performance web applications, scalable cloud platforms, and bespoke digital solutions.',
-    ogTitle: 'Tech Base Axis | Web Development Company Kolkata | Bikram Ghosh Web Developer',
-    ogDescription: 'Tech Base Axis is a premier web development company in Kolkata, founded by Bikram Ghosh. We engineer high-performance web applications, scalable cloud platforms, and bespoke digital solutions.',
-    ogUrl: 'https://www.tbaonline.online',
+    semanticRole: 'Topical Hub: Establishes TECH BASE AXIS (TBA) as the premier technology solutions company founded by Bikram Ghosh in Kalyani, West Bengal.',
+    title: 'TECH BASE AXIS | Web Development, Software, Apps & AI Automation in Kalyani',
+    description: 'TECH BASE AXIS (TBA) is a technology solutions company in Kalyani, West Bengal, offering professional website development, software, mobile apps, AI solutions and business automation services.',
+    ogTitle: 'TECH BASE AXIS | Web Development, Software, Apps & AI Automation in Kalyani',
+    ogDescription: 'TECH BASE AXIS (TBA) is a technology solutions company in Kalyani, West Bengal, offering professional website development, software, mobile apps, AI solutions and business automation services.',
+    ogUrl: 'https://tbaonline.online/',
   },
 
   /**
    * PROJECTS
    * Role: Proof of Work & Empirical Evidence Node
-   * Focus: Case studies, verified production builds, and technology stack demonstrations.
-   * Anti-Cannibalization Rule: Quarantines "Portfolio", "Case Studies", and "Demos" away from the homepage.
+   * Focus: Case studies, verified production builds, enterprise software demos.
    */
   projects: {
-    primaryKeyword: 'Full Stack Web Developer Portfolio Kolkata',
+    primaryKeyword: 'TECH BASE AXIS Projects',
     secondaryKeywords: [
-      'Bikram Ghosh Web Developer',
-      'Web Application Case Studies Kolkata',
-      'Tech Base Axis Projects',
+      'Bikram Ghosh TBA',
+      'Full Stack Web Developer Portfolio Kolkata',
+      'Software Development Company Kalyani Demos',
       'Production React TypeScript Portfolio',
-      'Custom Software Development Demos Kolkata',
+      'Custom Software Development Demos West Bengal',
+      'Enterprise Software Solutions India',
     ],
     searchIntent: 'Commercial Investigation',
-    semanticRole: 'Evidence Node: Validates engineering capabilities with production case studies, preventing query overlap with general agency inquiries.',
-    title: 'Projects & Case Studies | Bikram Ghosh Web Developer | Kolkata',
-    description: 'Explore production software, web apps, and digital solutions delivered by Kolkata web development company Tech Base Axis and lead web developer Bikram Ghosh.',
-    ogTitle: 'Featured Projects | Tech Base Axis - Web Development Company Kolkata',
-    ogDescription: 'Explore production software, web apps, and digital solutions delivered by Kolkata web development company Tech Base Axis and lead web developer Bikram Ghosh.',
-    ogUrl: 'https://www.tbaonline.online/projects',
+    semanticRole: 'Evidence Node: Validates engineering capabilities with production case studies and live platforms.',
+    title: 'Featured Projects & Case Studies | TECH BASE AXIS | Bikram Ghosh TBA',
+    description: 'Explore enterprise web applications, cloud platforms, and production software engineered by TECH BASE AXIS and founder Bikram Ghosh in Kalyani & Kolkata.',
+    ogTitle: 'Featured Projects & Production Systems | TECH BASE AXIS',
+    ogDescription: 'Explore enterprise web applications, cloud platforms, and production software engineered by TECH BASE AXIS and founder Bikram Ghosh in Kalyani & Kolkata.',
+    ogUrl: 'https://tbaonline.online/projects',
   },
 
   /**
    * PACKAGES
    * Role: Commercial Offer & Transactional Pricing Node
-   * Focus: Service tier pricing, package inclusions, hourly/milestone rates, and contract models.
-   * Anti-Cannibalization Rule: Exclusively owns terms with commercial modifier "Packages", "Cost", and "Pricing".
+   * Focus: Service tier pricing, package inclusions, subscription & maintenance packages.
    */
   packages: {
-    primaryKeyword: 'Web Development Packages Kolkata',
+    primaryKeyword: 'TECH BASE AXIS Pricing',
     secondaryKeywords: [
-      'Website Development Cost Kolkata',
+      'Web Development Packages Kolkata',
+      'Kalyani Web Development Rates',
+      'Affordable Website Development Services West Bengal',
       'Hire Bikram Ghosh Web Developer',
-      'Tech Base Axis Pricing',
-      'Custom Web Development Rates India',
-      'Full Stack Development Retainer Kolkata',
+      'Website Development Cost Kolkata',
+      'Maintenance Packages TECH BASE AXIS',
     ],
     searchIntent: 'Transactional',
     semanticRole: 'Commercial Offer Node: Targets high-intent clients actively seeking budget, package scope, and hiring options.',
-    title: 'Web Development Packages & Pricing | Tech Base Axis Kolkata',
-    description: 'Transparent web development packages from Kolkata\'s leading tech firm Tech Base Axis. Hire Bikram Ghosh, senior web developer, for bespoke digital solutions.',
-    ogTitle: 'Engineering Packages & Pricing | Tech Base Axis Kolkata',
-    ogDescription: 'Transparent web development packages from Kolkata\'s leading tech firm Tech Base Axis. Hire Bikram Ghosh, senior web developer, for bespoke digital solutions.',
-    ogUrl: 'https://www.tbaonline.online/packages',
+    title: 'Web Development & Maintenance Packages | TECH BASE AXIS Pricing',
+    description: 'Transparent website development, custom software solutions, and maintenance packages in Kalyani & Kolkata by TECH BASE AXIS and Bikram Ghosh.',
+    ogTitle: 'Engineering Packages & Pricing | TECH BASE AXIS Kalyani',
+    ogDescription: 'Transparent website development, custom software solutions, and maintenance packages in Kalyani & Kolkata by TECH BASE AXIS and Bikram Ghosh.',
+    ogUrl: 'https://tbaonline.online/packages',
   },
 
   /**
    * CONTACT
    * Role: Conversion & Local Geographic Outreach Node
-   * Focus: Direct lead generation, office booking, phone/email contact, and client consultation.
-   * Anti-Cannibalization Rule: Exclusively targets direct action verbs ("Contact", "Consultation", "Book").
+   * Focus: Direct lead generation, office booking, phone/email contact, consultation with Bikram Ghosh.
    */
   contact: {
-    primaryKeyword: 'Contact Web Development Company Kolkata',
+    primaryKeyword: 'Contact TECH BASE AXIS',
     secondaryKeywords: [
-      'Hire Bikram Ghosh Web Developer',
-      'Web Developer Kolkata Contact',
+      'Hire Bikram Ghosh TBA',
+      'Web Developer Near Kalyani',
+      'IT Services in West Bengal Contact',
+      'Software Company Near Kalyani',
       'Tech Base Axis Consultation',
-      'Software Engineering Inquiries Kolkata',
-      'Tech Base Axis Office Kolkata',
+      'Tech Base Axis Office Kalyani',
     ],
     searchIntent: 'Transactional',
-    semanticRole: 'Local Action Node: Anchors geographical NAP (Name, Address, Phone) citation relevance for local search queries.',
-    title: 'Contact Tech Base Axis | Hire Bikram Ghosh Web Developer Kolkata',
-    description: 'Get in touch with Tech Base Axis, a leading web development company in Kolkata. Consult with Bikram Ghosh to architect and build your next web application.',
-    ogTitle: 'Contact Tech Base Axis | Web Development Company Kolkata',
-    ogDescription: 'Get in touch with Tech Base Axis, a leading web development company in Kolkata. Consult with Bikram Ghosh to architect and build your next web application.',
-    ogUrl: 'https://www.tbaonline.online/contact',
+    semanticRole: 'Local Action Node: Anchors geographical NAP (Name, Address, Phone) citation relevance for local search queries in Kalyani, Nadia & Kolkata.',
+    title: 'Contact TECH BASE AXIS | Hire Web Developer in Kalyani & Kolkata',
+    description: 'Connect with TECH BASE AXIS and founder Bikram Ghosh (Bikram Ghosh TBA) in Kalyani, West Bengal for custom web applications, software, apps & AI automation.',
+    ogTitle: 'Contact TECH BASE AXIS | Bikram Ghosh TBA',
+    ogDescription: 'Connect with TECH BASE AXIS and founder Bikram Ghosh (Bikram Ghosh TBA) in Kalyani, West Bengal for custom web applications, software, apps & AI automation.',
+    ogUrl: 'https://tbaonline.online/contact',
   },
 
   /**
@@ -152,44 +160,44 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
    */
   admin: {
     primaryKeyword: 'Admin Console',
-    secondaryKeywords: ['Tech Base Axis Portal', 'Administrative Control'],
+    secondaryKeywords: ['TECH BASE AXIS Portal', 'Administrative Control'],
     searchIntent: 'Administrative',
     semanticRole: 'Private System Node: Must be ignored by public search engines.',
-    title: 'Admin Console | Tech Base Axis',
-    description: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
-    ogTitle: 'Admin Console | Tech Base Axis',
-    ogDescription: 'Restricted administrative control center for Tech Base Axis web engineering platform.',
-    ogUrl: 'https://www.tbaonline.online/admin',
+    title: 'Admin Console | TECH BASE AXIS',
+    description: 'Restricted administrative control center for TECH BASE AXIS web engineering platform.',
+    ogTitle: 'Admin Console | TECH BASE AXIS',
+    ogDescription: 'Restricted administrative control center for TECH BASE AXIS web engineering platform.',
+    ogUrl: 'https://tbaonline.online/admin',
   },
 
   /**
    * PRIVACY POLICY
    */
   privacy: {
-    primaryKeyword: 'Tech Base Axis Privacy Policy',
-    secondaryKeywords: ['Data Protection', 'Confidentiality Agreement Kolkata', 'Client Data Security'],
+    primaryKeyword: 'TECH BASE AXIS Privacy Policy',
+    secondaryKeywords: ['Data Protection', 'Client Data Security', 'Bikram Ghosh TBA Privacy'],
     searchIntent: 'Informational',
     semanticRole: 'Legal Transparency Node: Details data processing, encryption, and client rights.',
-    title: 'Privacy Policy | Tech Base Axis & Bikram Ghosh',
-    description: 'Learn how Tech Base Axis protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
-    ogTitle: 'Privacy Policy | Tech Base Axis & Bikram Ghosh',
-    ogDescription: 'Learn how Tech Base Axis protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
-    ogUrl: 'https://www.tbaonline.online/privacy',
+    title: 'Privacy Policy | TECH BASE AXIS & Bikram Ghosh',
+    description: 'Learn how TECH BASE AXIS protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
+    ogTitle: 'Privacy Policy | TECH BASE AXIS & Bikram Ghosh',
+    ogDescription: 'Learn how TECH BASE AXIS protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
+    ogUrl: 'https://tbaonline.online/privacy',
   },
 
   /**
    * TERMS & CONDITIONS (INCLUDES REFUND POLICY)
    */
   terms: {
-    primaryKeyword: 'Tech Base Axis Terms & Conditions',
-    secondaryKeywords: ['Strict No-Refund Policy', 'Software Development Agreement Kolkata', 'Payment Terms'],
+    primaryKeyword: 'TECH BASE AXIS Terms & Conditions',
+    secondaryKeywords: ['Strict No-Refund Policy', 'Software Development Agreement', 'Payment Terms'],
     searchIntent: 'Informational',
     semanticRole: 'Legal & Policy Node: Details service terms, milestone billing, and our strict no-refund policy.',
-    title: 'Terms & Conditions | Strict No-Refund Policy | Tech Base Axis',
+    title: 'Terms & Conditions | Strict No-Refund Policy | TECH BASE AXIS',
     description: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
-    ogTitle: 'Terms & Conditions & Strict No-Refund Policy | Tech Base Axis',
+    ogTitle: 'Terms & Conditions & Strict No-Refund Policy | TECH BASE AXIS',
     ogDescription: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
-    ogUrl: 'https://www.tbaonline.online/terms',
+    ogUrl: 'https://tbaonline.online/terms',
   },
 };
 
