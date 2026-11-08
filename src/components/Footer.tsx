@@ -74,14 +74,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <OfficialFacebookIcon className="w-[26px] h-[26px] drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]" />
               </a>
 
-              {/* Instagram */}
+              {/* Founder Instagram */}
               <a
                 id="footer-social-instagram"
-                href={FOUNDER_INFO.instagramUrl || "https://www.instagram.com/tba7.01?igsh=MWNmYjFjcHBtdThzOQ=="}
+                href={FOUNDER_INFO.instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                title="Instagram"
-                aria-label="Instagram"
+                title="Founder Instagram (@bik.ram737)"
+                aria-label="Founder Instagram"
                 className="transition-transform duration-200 hover:scale-115 active:scale-95 cursor-pointer inline-flex items-center justify-center"
               >
                 <OfficialInstagramIcon className="w-[26px] h-[26px] drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]" />

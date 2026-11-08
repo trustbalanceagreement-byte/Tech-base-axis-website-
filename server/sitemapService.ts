@@ -3,7 +3,7 @@ export interface SitemapUrlEntry {
   lastmod?: string;
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
   priority?: number;
-  images?: { loc: string; title?: string }[];
+  images?: { loc: string; title?: string; caption?: string }[];
 }
 
 /**
@@ -19,7 +19,13 @@ export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): st
       priority: 1.0,
       changefreq: 'weekly',
       lastmod: currentDate,
-      images: [{ loc: `${baseUrl}/bikram-ghosh.jpg`, title: 'Bikram Ghosh, founder of Tech Base Axis' }],
+      images: [
+        {
+          loc: `${baseUrl}/bikram-ghosh.jpg`,
+          title: 'Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata',
+          caption: 'Bikram Ghosh Web Developer in Kolkata, Founder of Tech Base Axis'
+        }
+      ],
     },
     { loc: `${baseUrl}/projects`, priority: 0.9, changefreq: 'weekly', lastmod: currentDate },
     { loc: `${baseUrl}/packages`, priority: 0.9, changefreq: 'weekly', lastmod: currentDate },
@@ -40,7 +46,7 @@ ${allEntries
     <lastmod>${e.lastmod || currentDate}</lastmod>
     <changefreq>${e.changefreq || 'weekly'}</changefreq>
     <priority>${e.priority !== undefined ? e.priority.toFixed(1) : '0.5'}</priority>${(e.images || [])
-      .map((im) => `\n    <image:image>\n      <image:loc>${im.loc}</image:loc>${im.title ? `\n      <image:title>${im.title}</image:title>` : ''}\n    </image:image>`)
+      .map((im) => `\n    <image:image>\n      <image:loc>${im.loc}</image:loc>${im.title ? `\n      <image:title>${im.title}</image:title>` : ''}${im.caption ? `\n      <image:caption>${im.caption}</image:caption>` : ''}\n    </image:image>`)
       .join('')}
   </url>`
   )

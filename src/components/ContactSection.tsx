@@ -250,21 +250,44 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-black/40 border border-white/10 hover:border-neutral-700 transition-colors">
-                <OfficialInstagramIcon className="w-5 h-5 mt-0.5 shrink-0" />
+              {/* Founder Instagram Profile */}
+              <div className="flex items-start gap-3.5 p-3.5 rounded-xl bg-black/40 border border-white/10 hover:border-pink-500/40 transition-colors">
+                <OfficialInstagramIcon className="w-5 h-5 mt-1 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-neutral-400 font-mono">Founder Instagram Profile</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-neutral-400 font-mono">Founder Instagram Profile</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-pink-950/60 text-pink-300 border border-pink-800/40">Active DM</span>
+                  </div>
                   <a
                     id="contact-founder-instagram"
                     href={FOUNDER_INFO.instagramUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-white font-mono font-semibold hover:text-pink-400 transition-colors inline-flex items-center gap-1.5 truncate max-w-full"
+                    className="text-white font-mono font-bold hover:text-pink-400 transition-colors inline-flex items-center gap-1.5 mt-0.5 truncate max-w-full"
                   >
                     <span>@bik.ram737</span>
                     <ExternalLink className="w-3 h-3 text-neutral-400 shrink-0" />
                   </a>
-                  <div className="text-[11px] text-neutral-500 font-mono mt-0.5">Bikram Ghosh • Direct DM & Project Updates</div>
+                  <div className="text-[11px] text-neutral-400 font-mono mt-0.5">Bikram Ghosh • Founder &amp; Web Developer Kolkata</div>
+                </div>
+              </div>
+
+              {/* Agency Instagram Profile */}
+              <div className="flex items-start gap-3.5 p-3 rounded-xl bg-black/40 border border-white/10 hover:border-pink-500/30 transition-colors">
+                <OfficialInstagramIcon className="w-5 h-5 mt-0.5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs text-neutral-400 font-mono">Company Instagram</div>
+                  <a
+                    id="contact-agency-instagram"
+                    href={FOUNDER_INFO.agencyInstagramUrl || "https://www.instagram.com/tba7.01"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-neutral-200 font-mono font-semibold hover:text-pink-400 transition-colors inline-flex items-center gap-1.5 truncate max-w-full"
+                  >
+                    <span>@tba7.01</span>
+                    <ExternalLink className="w-3 h-3 text-neutral-400 shrink-0" />
+                  </a>
+                  <div className="text-[11px] text-neutral-500 font-mono mt-0.5">Tech Base Axis Official Portfolio &amp; Launch Demos</div>
                 </div>
               </div>
 

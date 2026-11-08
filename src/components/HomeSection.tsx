@@ -142,10 +142,18 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                     <div className="absolute right-0 top-1/2 -translate-y-1/2 w-32 xs:w-40 sm:w-48 h-32 xs:h-40 sm:h-48 rounded-full bg-[#e61e2b] shadow-[0_0_30px_rgba(230,30,43,0.6)] z-0" />
                     
                     {/* Male Cutout / Portrait */}
-                    <div className="relative z-10 w-full h-full flex items-end justify-center">
+                    <div className="relative z-10 w-full h-full flex items-end justify-center" itemScope itemType="https://schema.org/Person">
                       <img
-                        src={founderImage}
-                        alt="Bikram Ghosh, founder and web developer at Tech Base Axis, architecting modern digital platforms in Kolkata"
+                        src="/bikram-ghosh.jpg"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = founderImage;
+                        }}
+                        alt="Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata"
+                        title="Bikram Ghosh - Web Developer in Kolkata"
+                        itemProp="image"
+                        fetchPriority="high"
+                        loading="eager"
                         className="w-34 xs:w-42 sm:w-50 h-46 xs:h-54 sm:h-62 object-cover object-top rounded-b-xl filter grayscale contrast-125 brightness-95 drop-shadow-[0_16px_25px_rgba(0,0,0,0.9)]"
                       />
                     </div>
@@ -210,10 +218,18 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                   <div className="absolute right-2 lg:right-4 top-1/2 -translate-y-1/2 w-56 md:w-64 lg:w-72 h-56 md:h-64 lg:h-72 rounded-full bg-[#e61e2b] shadow-[0_0_45px_rgba(230,30,43,0.5)] z-0" />
                   
                   {/* Person Cutout / Portrait in front of the red disk */}
-                  <div className="relative z-10 w-full h-full flex items-end justify-center">
+                  <div className="relative z-10 w-full h-full flex items-end justify-center" itemScope itemType="https://schema.org/Person">
                     <img
-                      src={founderImage}
-                      alt="Bikram Ghosh, founder and web developer at Tech Base Axis - Web Development Company Kolkata"
+                      src="/bikram-ghosh.jpg"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = founderImage;
+                      }}
+                      alt="Bikram Ghosh - Founder and Lead Full Stack Web Developer at Tech Base Axis Kolkata"
+                      title="Bikram Ghosh - Web Developer in Kolkata"
+                      itemProp="image"
+                      fetchPriority="high"
+                      loading="eager"
                       className="w-56 md:w-64 lg:w-76 h-[300px] md:h-[360px] lg:h-[420px] object-cover object-top rounded-b-2xl filter grayscale contrast-125 brightness-95 drop-shadow-[0_20px_35px_rgba(0,0,0,0.9)]"
                     />
                   </div>

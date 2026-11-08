@@ -7,11 +7,13 @@ export const FOUNDER_INFO = {
   email: "techbaseaxis@gmail.com",
   whatsapp: "+91 94772 01106",
   whatsappRaw: "919477201106",
-  instagramUrl: "https://www.instagram.com/bik.ram737?stkn=NjJ5NmhneXhlc3Vx",
+  instagramUrl: "https://www.instagram.com/bik.ram737/",
+  agencyInstagramUrl: "https://www.instagram.com/tba7.01",
   facebookUrl: "https://www.facebook.com/share/14k5nbF6FpS/",
   linkedinUrl: "https://www.linkedin.com/in/tech-base-axis-b19b30411",
-  location: "Global & Hybrid Remote",
-  availability: "Available for Q3/Q4 2026 Architecture Engagements",
+  photoUrl: "https://www.tbaonline.online/bikram-ghosh.jpg",
+  location: "Kolkata, West Bengal, India",
+  availability: "Available for Architecture & Web Development Engagements",
   tagline: "Engineering Obsidian-Grade Web Applications & Scalable Cloud Ecosystems",
   bio: "Senior technical engineer and system architect with over 6 years of expertise building resilient distributed systems, enterprise SaaS solutions, AI-integrated workflows, and responsive high-performance web applications under the Tech Base Axis banner."
 };
