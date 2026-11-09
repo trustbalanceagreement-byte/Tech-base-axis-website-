@@ -391,16 +391,16 @@ app.get(["/healthz", "/health"], (_req, res) => {
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-// Dynamic automated sitemap.xml for Google, Bing, and search engine crawlers
-app.get("/sitemap.xml", (req, res) => {
-  const host = req.get("host");
-  const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
-  const baseUrl = host ? `${protocol}://${host}` : "https://www.tbaonline.online";
-
-  const xml = generateSitemapXml(baseUrl);
+// Standard automated sitemap.xml for Google, Bing, and search engine crawlers
+app.get("/sitemap.xml", (_req, res) => {
+  const filePath = path.join(process.cwd(), "public", "sitemap.xml");
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
-  res.status(200).send(xml);
+  if (fs.existsSync(filePath)) {
+    return res.sendFile(filePath);
+  }
+  const xml = generateSitemapXml("https://www.tbaonline.online");
+  return res.status(200).send(xml);
 });
 
 // Automated robots.txt route
@@ -559,15 +559,6 @@ app.all("/api/*", (_req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
 
-// Explicit route for sitemap.xml with live image metadata
-app.get("/sitemap.xml", (req, res) => {
-  res.setHeader("Content-Type", "application/xml");
-  const host = req.get("host") || "tbaonline.online";
-  const baseUrl = host.includes("localhost") || host.includes("127.0.0.1") 
-    ? `${req.protocol}://${host}` 
-    : `https://${host}`;
-  res.send(generateSitemapXml(baseUrl));
-});
 
 // Serve public directory assets (e.g. bikram-ghosh.jpg, robots.txt, sitemap.xml, tab_logo.png)
 const publicPath = path.join(process.cwd(), "public");

@@ -5,7 +5,7 @@ import { generateSitemapXml } from '../server/sitemapService';
 const publicDir = path.join(process.cwd(), 'public');
 const distDir = path.join(process.cwd(), 'dist');
 
-const sitemapContent = generateSitemapXml('https://tbaonline.online');
+const sitemapContent = generateSitemapXml('https://www.tbaonline.online');
 
 // Write to public/
 if (!fs.existsSync(publicDir)) {

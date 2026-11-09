@@ -79,7 +79,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'TECH BASE AXIS (TBA) is a technology solutions company in Kalyani, West Bengal, offering professional website development, software, mobile apps, AI solutions and business automation services.',
     ogTitle: 'TECH BASE AXIS | Web Development, Software, Apps & AI Automation in Kalyani',
     ogDescription: 'TECH BASE AXIS (TBA) is a technology solutions company in Kalyani, West Bengal, offering professional website development, software, mobile apps, AI solutions and business automation services.',
-    ogUrl: 'https://tbaonline.online/',
+    ogUrl: 'https://www.tbaonline.online/',
   },
 
   /**
@@ -103,7 +103,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Explore enterprise web applications, cloud platforms, and production software engineered by TECH BASE AXIS and founder Bikram Ghosh in Kalyani & Kolkata.',
     ogTitle: 'Featured Projects & Production Systems | TECH BASE AXIS',
     ogDescription: 'Explore enterprise web applications, cloud platforms, and production software engineered by TECH BASE AXIS and founder Bikram Ghosh in Kalyani & Kolkata.',
-    ogUrl: 'https://tbaonline.online/projects',
+    ogUrl: 'https://www.tbaonline.online/projects',
   },
 
   /**
@@ -127,7 +127,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Transparent website development, custom software solutions, and maintenance packages in Kalyani & Kolkata by TECH BASE AXIS and Bikram Ghosh.',
     ogTitle: 'Engineering Packages & Pricing | TECH BASE AXIS Kalyani',
     ogDescription: 'Transparent website development, custom software solutions, and maintenance packages in Kalyani & Kolkata by TECH BASE AXIS and Bikram Ghosh.',
-    ogUrl: 'https://tbaonline.online/packages',
+    ogUrl: 'https://www.tbaonline.online/packages',
   },
 
   /**
@@ -151,7 +151,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Connect with TECH BASE AXIS and founder Bikram Ghosh (Bikram Ghosh TBA) in Kalyani, West Bengal for custom web applications, software, apps & AI automation.',
     ogTitle: 'Contact TECH BASE AXIS | Bikram Ghosh TBA',
     ogDescription: 'Connect with TECH BASE AXIS and founder Bikram Ghosh (Bikram Ghosh TBA) in Kalyani, West Bengal for custom web applications, software, apps & AI automation.',
-    ogUrl: 'https://tbaonline.online/contact',
+    ogUrl: 'https://www.tbaonline.online/contact',
   },
 
   /**
@@ -167,7 +167,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Restricted administrative control center for TECH BASE AXIS web engineering platform.',
     ogTitle: 'Admin Console | TECH BASE AXIS',
     ogDescription: 'Restricted administrative control center for TECH BASE AXIS web engineering platform.',
-    ogUrl: 'https://tbaonline.online/admin',
+    ogUrl: 'https://www.tbaonline.online/admin',
   },
 
   /**
@@ -182,7 +182,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Learn how TECH BASE AXIS protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
     ogTitle: 'Privacy Policy | TECH BASE AXIS & Bikram Ghosh',
     ogDescription: 'Learn how TECH BASE AXIS protects your technical data, project specs, and personal information with enterprise-grade encryption and zero data resale.',
-    ogUrl: 'https://tbaonline.online/privacy',
+    ogUrl: 'https://www.tbaonline.online/privacy',
   },
 
   /**
@@ -197,7 +197,7 @@ export const SECTION_SEO_MAP: Record<NavSection, SectionSEOConfig> = {
     description: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
     ogTitle: 'Terms & Conditions & Strict No-Refund Policy | TECH BASE AXIS',
     ogDescription: 'Review our terms of service, payment milestones, code ownership guarantees, and strict no-refund policy across all digital solutions and services.',
-    ogUrl: 'https://tbaonline.online/terms',
+    ogUrl: 'https://www.tbaonline.online/terms',
   },
 };
 
