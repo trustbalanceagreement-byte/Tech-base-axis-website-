@@ -391,16 +391,16 @@ app.get(["/healthz", "/health"], (_req, res) => {
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
-// Standard automated sitemap.xml for Google, Bing, and search engine crawlers
-app.get("/sitemap.xml", (_req, res) => {
-  const filePath = path.join(process.cwd(), "public", "sitemap.xml");
+// Dynamic automated sitemap.xml for Google, Bing, and search engine crawlers
+app.get("/sitemap.xml", (req, res) => {
+  const host = req.get("host");
+  const protocol = req.protocol === "https" || req.get("x-forwarded-proto") === "https" ? "https" : "http";
+  const baseUrl = host ? `${protocol}://${host}` : "https://www.tbaonline.online";
+
+  const xml = generateSitemapXml(baseUrl);
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
   res.setHeader("Cache-Control", "public, max-age=3600, s-maxage=86400");
-  if (fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
-  }
-  const xml = generateSitemapXml("https://www.tbaonline.online");
-  return res.status(200).send(xml);
+  res.status(200).send(xml);
 });
 
 // Automated robots.txt route
@@ -558,11 +558,6 @@ app.post("/api/verify-payment", async (req, res) => {
 app.all("/api/*", (_req, res) => {
   res.status(404).json({ error: "API endpoint not found" });
 });
-
-
-// Serve public directory assets (e.g. bikram-ghosh.jpg, robots.txt, sitemap.xml, tab_logo.png)
-const publicPath = path.join(process.cwd(), "public");
-app.use(express.static(publicPath));
 
 // Serve compiled static assets from dist
 const distPath = path.join(process.cwd(), "dist");
