@@ -1,9 +1,11 @@
 [
   {
-    "eventType": "contact_enquiry",
-    "clientName": "Rahul Sharma",
-    "email": "rahul@example.com",
-    "message": "Need e-commerce website development",
-    "timestamp": "2026-11-10T11:23:43.996Z"
+    "eventType": "appointment",
+    "clientName": "Bikram Test Client",
+    "clientEmail": "test@techbaseaxis.com",
+    "date": "2026-11-10",
+    "time": "14:00",
+    "message": "Looking for a high-performance web app",
+    "timestamp": "2026-11-06T10:30:42.347Z"
   }
 ]

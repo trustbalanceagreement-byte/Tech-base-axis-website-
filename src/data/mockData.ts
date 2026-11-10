@@ -2,10 +2,8 @@ import { Project, ServicePackage, ClientInquiry, ArchitectureSkill } from '../ty
 
 export const FOUNDER_INFO = {
   name: "Bikram Ghosh",
-  founderBrand: "Bikram Ghosh TBA",
   role: "Principal Full-Stack Architect & Founder",
-  agency: "TECH BASE AXIS",
-  shortName: "TBA",
+  agency: "Tech Base Axis",
   email: "techbaseaxis@gmail.com",
   whatsapp: "+91 94772 01106",
   whatsappRaw: "919477201106",
@@ -13,13 +11,11 @@ export const FOUNDER_INFO = {
   agencyInstagramUrl: "https://www.instagram.com/tba7.01",
   facebookUrl: "https://www.facebook.com/share/14k5nbF6FpS/",
   linkedinUrl: "https://www.linkedin.com/in/tech-base-axis-b19b30411",
-  photoUrl: "https://tbaonline.online/bikram-ghosh.jpg",
-  websiteUrl: "https://tbaonline.online/",
-  location: "Kalyani, Nadia, West Bengal, India",
-  serviceAreas: "Kalyani, Nadia, Kolkata, North & South 24 Parganas, West Bengal, India",
-  availability: "Available for Architecture, Web & Mobile App Engagements",
-  tagline: "Engineering Obsidian-Grade Web Applications, Scalable Cloud Systems & AI Automation",
-  bio: "Senior technical engineer and system architect based in Kalyani, West Bengal. Founder of TECH BASE AXIS (TBA), with over 6 years of expertise building resilient distributed systems, enterprise SaaS solutions, custom software, and responsive high-performance web applications under the Tech Base Axis banner."
+  photoUrl: "https://www.tbaonline.online/bikram-ghosh.jpg",
+  location: "Kolkata, West Bengal, India",
+  availability: "Available for Architecture & Web Development Engagements",
+  tagline: "Engineering Obsidian-Grade Web Applications & Scalable Cloud Ecosystems",
+  bio: "Senior technical engineer and system architect with over 6 years of expertise building resilient distributed systems, enterprise SaaS solutions, AI-integrated workflows, and responsive high-performance web applications under the Tech Base Axis banner."
 };
 
 export const PROJECTS_DATA: Project[] = [

@@ -496,10 +496,10 @@ app.post("/api/notify-booking", async (req, res) => {
 // POST /api/register-admin-device
 // Registers the exact active phone/device where the admin console is open
 app.post("/api/register-admin-device", (req, res) => {
-  const { subscriptionId, email } = req.body || {};
+  const { subscriptionId } = req.body;
   if (subscriptionId) {
-    registerAdminSubscription(subscriptionId, email);
-    return res.status(200).json({ success: true, registered: subscriptionId, email });
+    registerAdminSubscription(subscriptionId);
+    return res.status(200).json({ success: true, registered: subscriptionId });
   }
   res.status(400).json({ error: "Missing subscriptionId" });
 });

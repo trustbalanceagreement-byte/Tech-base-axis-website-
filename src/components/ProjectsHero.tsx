@@ -137,7 +137,8 @@ export const ProjectsHero: React.FC<ProjectsHeroProps> = () => {
           className="tba-rise mt-5 mx-auto max-w-2xl text-sm sm:text-base lg:text-lg text-neutral-300 leading-relaxed"
           style={delay(240)}
         >
-          Engineered by <strong className="text-white font-semibold">TECH BASE AXIS (TBA)</strong> and founder <strong className="text-white font-semibold">Bikram Ghosh</strong>. From custom software and AI automation to robust e-commerce and web platforms, we deliver high-performance digital solutions across Kalyani, Kolkata, and global markets.
+          From custom software and seamless automation to robust e-commerce platforms, we deliver high-performance digital
+          solutions engineered for reliability, security, and exceptional user experiences. Discover our body of work.
         </p>
       </div>
 

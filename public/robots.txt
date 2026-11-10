@@ -70,4 +70,3 @@ User-agent: Googlebot-Image
 Allow: /
 
 Sitemap: https://www.tbaonline.online/sitemap.xml
-
