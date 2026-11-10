@@ -58,7 +58,7 @@ import {
 import { AdminContactInbox } from './AdminContactInbox';
 import { AdminPlanRequests } from './AdminPlanRequests';
 import { updateInquiryInCloud } from '../data/inquiryData';
-import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
+import { requestPushPermission, runWithOneSignal, syncAdminDeviceRegistration, getPushPermissionStatus } from '../utils/onesignal';
 import { updatePackagesFromCloud, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 
 interface AdminSectionProps {
@@ -578,6 +578,11 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
             const heading = notif?.title || 'New Real-Time Submission';
             const bodyText = notif?.body || '';
 
+            // Allow operating system notification banner to also pop up while viewing app
+            if (notif?.display && typeof notif.display === 'function') {
+              try { notif.display(); } catch (_) {}
+            }
+
             triggerLiveIncomingAlert({
               id: notif?.notificationId || `os-${Date.now()}`,
               eventType: data?.inquiryType || data?.eventType || 'contact_enquiry',
@@ -628,48 +633,39 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   };
 
   // Automatically register this exact device/phone where Admin Console is open as the active admin device
-  const registerCurrentDeviceAsAdmin = (OneSignal: any) => {
-    try {
-      if (OneSignal.User?.addTag) {
-        OneSignal.User.addTag('role', 'admin');
-        OneSignal.User.addTag('is_active_admin', 'true');
-      }
-      const subId = OneSignal.User?.PushSubscription?.id;
-      if (subId) {
-        fetch('/api/register-admin-device', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subscriptionId: subId })
-        }).catch(() => {});
-      }
-    } catch {
-      // Non-blocking
-    }
+  const registerCurrentDeviceAsAdmin = () => {
+    const adminEmail = user?.email || 'techbaseaxis@gmail.com';
+    syncAdminDeviceRegistration(adminEmail);
   };
 
   useEffect(() => {
     // Only a signed-in admin may turn this device into an admin alert device.
-    // Merely opening the admin page (or being a client) must never register it.
     if (!isAdmin) return;
+    const adminEmail = user?.email || 'techbaseaxis@gmail.com';
+
+    getPushPermissionStatus().then((status) => {
+      setPushPermission(status.granted);
+    });
+
     runWithOneSignal((OneSignal) => {
       if (OneSignal.Notifications) {
         const isGranted = Boolean(OneSignal.Notifications.permission);
         setPushPermission(isGranted);
         if (isGranted) {
-          registerCurrentDeviceAsAdmin(OneSignal);
+          syncAdminDeviceRegistration(adminEmail);
         }
         if (OneSignal.Notifications.addEventListener) {
           OneSignal.Notifications.addEventListener('permissionChange', (granted: boolean) => {
             setPushPermission(Boolean(granted));
             if (granted) {
-              registerCurrentDeviceAsAdmin(OneSignal);
+              syncAdminDeviceRegistration(adminEmail);
             }
           });
         }
       }
-      registerCurrentDeviceAsAdmin(OneSignal);
+      syncAdminDeviceRegistration(adminEmail);
     });
-  }, [isAdmin]);
+  }, [isAdmin, user?.email]);
 
   const [testBusy, setTestBusy] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -702,15 +698,15 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         body: JSON.stringify({
           eventType: 'contact_enquiry',
           clientName: 'TEST ALERT',
-          email: user?.email || 'test@techbaseaxis.com',
+          email: user?.email || 'techbaseaxis@gmail.com',
           subject: 'Test notification from Admin panel',
-          message: 'If you can read this on your phone, admin alerts work.',
+          message: 'If you can read this on your phone, admin alerts work properly!',
           idempotencyKey: `test:${Date.now()}`
         })
       });
       const data: any = await r.json().catch(() => ({}));
       if (data?.success) {
-        setTestResult({ ok: true, text: 'Test alert sent to OneSignal. It should appear on this admin device in a few seconds. If it does not, check the phone\'s notification settings for this browser.' });
+        setTestResult({ ok: true, text: `Test alert sent to OneSignal (ID: ${data.id || 'ok'}). It should appear on this admin device in a few seconds. If it does not, check your device/browser notification permissions.` });
       } else {
         const detail = JSON.stringify(data?.errors || data?.error || data).slice(0, 400);
         setTestResult({ ok: false, text: `OneSignal did not deliver the alert: ${detail}. Tip: sign in as admin on this device, allow notifications, reload and try again. Also check that ONESIGNAL_APP_ID matches the app the REST key belongs to.` });
@@ -726,12 +722,10 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       const granted = await requestPushPermission();
       setPushPermission(granted);
       if (granted) {
-        runWithOneSignal((OneSignal) => {
-          registerCurrentDeviceAsAdmin(OneSignal);
-        });
-        triggerToast('Push notifications enabled for this admin device!');
+        syncAdminDeviceRegistration(user?.email || 'techbaseaxis@gmail.com');
+        triggerToast('Push notifications enabled and registered for this admin device!');
       } else {
-        triggerToast('Notification permission dismissed or denied.');
+        triggerToast('Notification permission was dismissed or blocked in browser settings.');
       }
     } finally {
       setPushLoading(false);
@@ -825,6 +819,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         try {
           sessionStorage.setItem('tba_admin_console_session_unlocked', 'true');
         } catch (_) {}
+        syncAdminDeviceRegistration(emailTrim);
         setAuthSuccess('Founder Identity Verified! Access Granted.');
         triggerToast('Welcome back, Founder Bikram Ghosh.');
         setAuthLoading(false);
@@ -844,6 +839,7 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
           try {
             sessionStorage.setItem('tba_admin_console_session_unlocked', 'true');
           } catch (_) {}
+          syncAdminDeviceRegistration(authenticatedEmail);
           setAuthSuccess('Administrator authenticated! Unlocking Console...');
           triggerToast('Admin console unlocked successfully.');
           setAuthLoading(false);
@@ -1648,6 +1644,48 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Admin Device Push Alerts Status Banner */}
+      {!pushPermission ? (
+        <div className="p-3.5 sm:p-4 rounded-xl bg-amber-950/40 border border-amber-600/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono shadow-md">
+          <div className="flex items-center gap-2.5 text-amber-200">
+            <Bell className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+            <div>
+              <span className="font-bold text-white">Push Alerts Not Active on this Device:</span>{' '}
+              <span className="text-amber-200/90">Enable push alerts so client enquiries and bookings arrive on your phone/browser immediately.</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleEnablePush}
+            disabled={pushLoading}
+            className="shrink-0 px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            <Bell className="w-3.5 h-3.5" />
+            <span>{pushLoading ? 'Enabling...' : 'Enable Push Alerts Now'}</span>
+          </button>
+        </div>
+      ) : (
+        <div className="px-4 py-2 rounded-xl bg-emerald-950/30 border border-emerald-700/30 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+          <div className="flex items-center gap-2 text-emerald-300">
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <span>OneSignal Push Alerts Active on this admin device</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleTestAlert}
+            disabled={testBusy}
+            className="text-[11px] px-2.5 py-1 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 transition-colors cursor-pointer"
+          >
+            {testBusy ? 'Sending Test...' : 'Send Test Push Alert'}
+          </button>
+        </div>
+      )}
+      {testResult && (
+        <div className={`p-3 rounded-xl border text-xs font-mono ${testResult.ok ? 'bg-emerald-950/40 text-emerald-300 border-emerald-700/40' : 'bg-rose-950/50 text-rose-300 border-rose-700/50'}`}>
+          {testResult.text}
+        </div>
+      )}
 
       {/* Admin Module Navigation (dropdown menu) */}
       {(() => {

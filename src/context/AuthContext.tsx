@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (isAdmin) {
-        syncAdminDeviceRegistration();
+        syncAdminDeviceRegistration(activeUser.email);
       }
 
       // Send initial presence login/heartbeat

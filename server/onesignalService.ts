@@ -106,7 +106,6 @@ export interface OneSignalNotificationResponse {
 // Default identifiers (Can be overridden via server environment variables)
 const DEFAULT_APP_ID = 'f9cfc686-a78c-445f-a436-8b6bb2e6bdff';
 const DEFAULT_ADMIN_PLAYER_ID = '99a86c9f-366e-4625-9506-5af191a0297d';
-const DEFAULT_ADMIN_SUBSCRIPTION_ID = 'f860ea79-2143-41ca-8f77-e7008dd7d025';
 
 // Admin accounts. Their devices are linked to OneSignal as external_id = email
 // (the website calls OneSignal.login(email) when an admin is signed in), so alerts
@@ -129,7 +128,12 @@ function loadStoredAdminDevices(): Set<string> {
     if (fs.existsSync(adminDevicesFilePath)) {
       const parsed = JSON.parse(fs.readFileSync(adminDevicesFilePath, 'utf8'));
       if (Array.isArray(parsed)) {
-        parsed.forEach((id) => id && set.add(String(id)));
+        parsed.forEach((id) => {
+          // Exclude legacy dead test ID if present
+          if (id && typeof id === 'string' && id !== 'f860ea79-2143-41ca-8f77-e7008dd7d025') {
+            set.add(id.trim());
+          }
+        });
       }
     }
   } catch (_) {}
@@ -143,7 +147,11 @@ const activeAdminSubscriptions = loadStoredAdminDevices();
   try {
     const supaDevices = await getAdminDevicesFromSupabase();
     if (Array.isArray(supaDevices)) {
-      supaDevices.forEach((id) => id && activeAdminSubscriptions.add(String(id)));
+      supaDevices.forEach((id) => {
+        if (id && typeof id === 'string' && id !== 'f860ea79-2143-41ca-8f77-e7008dd7d025') {
+          activeAdminSubscriptions.add(id.trim());
+        }
+      });
       try {
         if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
         fs.writeFileSync(adminDevicesFilePath, JSON.stringify(Array.from(activeAdminSubscriptions), null, 2), 'utf8');
@@ -155,8 +163,8 @@ const activeAdminSubscriptions = loadStoredAdminDevices();
 /**
  * Dynamically register the active device where the Admin Console is currently open
  */
-export function registerAdminSubscription(subId: string): void {
-  if (subId && typeof subId === 'string' && subId.trim().length > 10) {
+export function registerAdminSubscription(subId: string, email?: string): void {
+  if (subId && typeof subId === 'string' && subId.trim().length > 6) {
     const cleanId = subId.trim();
     activeAdminSubscriptions.add(cleanId);
     try {
@@ -164,7 +172,7 @@ export function registerAdminSubscription(subId: string): void {
       fs.writeFileSync(adminDevicesFilePath, JSON.stringify(Array.from(activeAdminSubscriptions), null, 2), 'utf8');
       syncAdminDevicesToSupabase(Array.from(activeAdminSubscriptions)).catch(() => {});
     } catch (_) {}
-    console.log(`[OneSignal] Admin phone/device registered: ${cleanId}. Total active admin devices: ${activeAdminSubscriptions.size}`);
+    console.log(`[OneSignal] Admin phone/device registered: ${cleanId}${email ? ` (${email})` : ''}. Total active admin devices: ${activeAdminSubscriptions.size}`);
   }
 }
 
@@ -239,7 +247,7 @@ function formatCurrency(val?: number | string): string {
  */
 async function resolveAdminSubscriptions(appId: string, apiKey: string, adminPlayerId: string): Promise<string[]> {
   const subscriptions: string[] = [];
-  const primarySubId = process.env.ONESIGNAL_ADMIN_SUBSCRIPTION_ID || DEFAULT_ADMIN_SUBSCRIPTION_ID;
+  const primarySubId = process.env.ONESIGNAL_ADMIN_SUBSCRIPTION_ID;
 
   try {
     const res = await fetch(`https://api.onesignal.com/apps/${appId}/users/by/onesignal_id/${adminPlayerId}`, {
@@ -271,7 +279,7 @@ async function resolveAdminSubscriptions(appId: string, apiKey: string, adminPla
     console.warn('[OneSignal] Notice: Dynamic user subscription query completed:', err?.message || err);
   }
 
-  // Fallback to primary known subscription ID if array is empty
+  // Only fallback if explicit environment variable was configured
   if (subscriptions.length === 0 && primarySubId && !subscriptions.includes(primarySubId)) {
     subscriptions.push(primarySubId);
   }
@@ -550,46 +558,61 @@ export async function sendAdminOneSignalNotification(
   const adminEmails = getAdminEmails();
   const errors: string[] = [];
 
-  // Robust Admin-only delivery: tries most specific routes down to tags and player IDs
+  // Robust Admin-only delivery: tries most specific routes down to aliases, tags and registered subscriptions
   const routes: { label: string; targeting: Record<string, any>; skip?: boolean }[] = [
     {
-      label: 'registered admin devices',
+      label: 'registered active admin devices (subscription IDs)',
       targeting: { include_subscription_ids: combinedAdminSubs },
       skip: combinedAdminSubs.length === 0
     },
     {
-      label: 'admin player IDs',
-      targeting: { include_player_ids: Array.from(new Set([adminPlayerId, ...combinedAdminSubs])).filter(Boolean) }
-    },
-    {
-      label: 'admin accounts (external_id push)',
+      label: 'admin accounts (external_id aliases push)',
       targeting: { include_aliases: { external_id: adminEmails }, target_channel: 'push' }
     },
     {
-      label: 'admin accounts (external_id)',
-      targeting: { include_aliases: { external_id: adminEmails } }
+      label: 'admin accounts (legacy external_user_ids)',
+      targeting: { include_external_user_ids: adminEmails }
     },
     {
-      label: 'tag role=admin',
+      label: 'admin player IDs',
+      targeting: { include_player_ids: combinedAdminSubs },
+      skip: combinedAdminSubs.length === 0
+    },
+    {
+      label: 'admin tag role=admin',
       targeting: { filters: [{ field: 'tag', key: 'role', relation: '=', value: 'admin' }] }
     },
     {
-      label: 'tag is_active_admin',
+      label: 'admin tag is_active_admin=true',
       targeting: { filters: [{ field: 'tag', key: 'is_active_admin', relation: '=', value: 'true' }] }
     }
   ];
 
+  let anyRouteAccepted = false;
+
   for (const route of routes) {
     if (route.skip) continue;
     const { ok, json } = await post(route.label, route.targeting);
+    const recipients = typeof json?.recipients === 'number' ? json.recipients : (ok ? 1 : 0);
+
     if (ok) {
-      finalResult = { success: true, id: json.id, recipients: json.recipients, data: json };
-      break;
+      anyRouteAccepted = true;
+      if (recipients > 0) {
+        console.log(`[OneSignal] Alert successfully dispatched to ${recipients} admin device(s) via "${route.label}". Notification ID: ${json.id}`);
+        finalResult = { success: true, id: json.id, recipients, data: json };
+        break; // Successfully delivered to actual active admin recipient!
+      } else {
+        console.warn(`[OneSignal] Route "${route.label}" accepted (ID: ${json?.id}) but reported 0 recipients. Trying remaining routes to guarantee delivery to admin's active device...`);
+        if (!finalResult.success) {
+          finalResult = { success: true, id: json.id, recipients: 0, data: json };
+        }
+      }
+    } else {
+      errors.push(`${route.label}: ${JSON.stringify(json?.errors || json)}`);
     }
-    errors.push(`${route.label}: ${JSON.stringify(json?.errors || json)}`);
   }
 
-  if (!finalResult.success) {
+  if (!finalResult.success && !anyRouteAccepted) {
     finalResult = { success: false, errors };
   }
 

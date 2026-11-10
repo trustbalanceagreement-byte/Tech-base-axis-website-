@@ -3,12 +3,12 @@ export interface SitemapUrlEntry {
   lastmod?: string;
   changefreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
   priority?: number;
-  images?: { loc: string; title?: string; caption?: string }[];
+  images?: { loc: string }[];
 }
 
 /**
  * Dynamically generates a valid sitemaps.org XML string for search engine crawlers (Google, Bing, etc.)
- * Includes all essential pages: Home, Projects, Packages, Contact, Admin, and deep links.
+ * Strictly follows Google Search Console XML sitemap protocol and Google Image Sitemap guidelines.
  */
 export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): string {
   const currentDate = new Date().toISOString().split('T')[0];
@@ -21,9 +21,7 @@ export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): st
       lastmod: currentDate,
       images: [
         {
-          loc: `${baseUrl}/bikram-ghosh.jpg`,
-          title: 'Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata',
-          caption: 'Bikram Ghosh Web Developer in Kolkata, Founder of Tech Base Axis'
+          loc: `${baseUrl}/bikram-ghosh.jpg`
         }
       ],
     },
@@ -36,9 +34,7 @@ export function generateSitemapXml(baseUrl = 'https://www.tbaonline.online'): st
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
 ${allEntries
   .map(
     (e) => `  <url>
@@ -46,7 +42,7 @@ ${allEntries
     <lastmod>${e.lastmod || currentDate}</lastmod>
     <changefreq>${e.changefreq || 'weekly'}</changefreq>
     <priority>${e.priority !== undefined ? e.priority.toFixed(1) : '0.5'}</priority>${(e.images || [])
-      .map((im) => `\n    <image:image>\n      <image:loc>${im.loc}</image:loc>${im.title ? `\n      <image:title>${im.title}</image:title>` : ''}${im.caption ? `\n      <image:caption>${im.caption}</image:caption>` : ''}\n    </image:image>`)
+      .map((im) => `\n    <image:image>\n      <image:loc>${im.loc}</image:loc>\n    </image:image>`)
       .join('')}
   </url>`
   )

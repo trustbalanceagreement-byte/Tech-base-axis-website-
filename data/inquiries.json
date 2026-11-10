@@ -1,5 +1,37 @@
 [
   {
+    "id": "inq-1794309823996-ftfj",
+    "clientName": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "company": "Direct Founder",
+    "projectType": "Web Architecture",
+    "budgetRange": "Standard",
+    "timeline": "Standard",
+    "details": "Need e-commerce website development",
+    "createdAt": "2026-11-10T11:23:43.996Z",
+    "status": "New",
+    "priority": "Normal",
+    "notes": "Triggered via contact_enquiry. Phone: N/A.",
+    "eventType": "contact_enquiry",
+    "cloudSavedAt": "2026-11-10T11:23:43.996Z"
+  },
+  {
+    "id": "inq-1794309823994-u5eb",
+    "clientName": "Rahul Sharma",
+    "email": "rahul@example.com",
+    "company": "Direct Founder",
+    "projectType": "Web Architecture",
+    "budgetRange": "Standard",
+    "timeline": "Standard",
+    "details": "Need e-commerce website development",
+    "createdAt": "2026-11-10T11:23:43.994Z",
+    "status": "New",
+    "priority": "Normal",
+    "notes": "Triggered via contact_enquiry. Phone: N/A.",
+    "eventType": "contact_enquiry",
+    "cloudSavedAt": "2026-11-10T11:23:43.995Z"
+  },
+  {
     "id": "plan-dustu-1",
     "clientName": "Dustu",
     "email": "dustu0736@gmail.com",

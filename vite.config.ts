@@ -592,16 +592,17 @@ function onesignalDevApiPlugin(): Plugin {
           try {
             const parsed = JSON.parse(body || '{}');
             const subscriptionId = parsed.subscriptionId;
+            const email = parsed.email;
             if (!subscriptionId) {
               res.statusCode = 400;
               res.setHeader('Content-Type', 'application/json');
               res.end(JSON.stringify({ error: 'Missing subscriptionId' }));
               return;
             }
-            registerAdminSubscription(subscriptionId);
+            registerAdminSubscription(subscriptionId, email);
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = 200;
-            res.end(JSON.stringify({ success: true, registered: subscriptionId }));
+            res.end(JSON.stringify({ success: true, registered: subscriptionId, email }));
           } catch (err: any) {
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
