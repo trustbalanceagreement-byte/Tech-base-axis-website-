@@ -78,7 +78,26 @@ export interface ClientInquiry {
   status: 'New' | 'Reviewing' | 'Proposal Sent' | 'In Development' | 'Completed';
   priority: 'Normal' | 'High' | 'Critical';
   notes?: string;
-  eventType?: 'package_booking' | 'appointment' | 'quote_request' | 'contact_enquiry' | 'payment_success' | 'proposal_accepted' | 'revision_request' | 'support_request' | 'inquiry_message';
+  eventType?: 
+    | 'package_booking' 
+    | 'booking_confirmation'
+    | 'appointment' 
+    | 'appointment_booked'
+    | 'quote_request' 
+    | 'contact_enquiry' 
+    | 'inquiry_message'
+    | 'payment_success' 
+    | 'proposal_accepted' 
+    | 'revision_request' 
+    | 'support_request' 
+    | 'review_submitted'
+    | 'review_message'
+    | 'account_created'
+    | 'user_signup'
+    | 'new_account'
+    | 'maintenance_message'
+    | 'maintenance_alert'
+    | 'maintenance_request';
   phone?: string;
   websiteType?: string;
   selectedFeatures?: string[];

@@ -5,14 +5,14 @@ import { sendAdminOneSignalNotification } from '../server/onesignalService.js';
 export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   try {
-    const eventData = req.body;
-    if (!eventData || typeof eventData !== 'object') {
+    const rawBody = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body;
+    if (!rawBody || typeof rawBody !== 'object') {
       return res.status(400).json({ error: 'Missing notification payload' });
     }
     const result = await sendAdminOneSignalNotification({
-      ...eventData,
-      clientName: eventData.clientName || (eventData.email ? String(eventData.email).split('@')[0] : 'Client'),
-      email: eventData.email || eventData.clientEmail || ''
+      ...rawBody,
+      clientName: rawBody.clientName || (rawBody.email ? String(rawBody.email).split('@')[0] : 'Client'),
+      email: rawBody.email || rawBody.clientEmail || ''
     });
     return res.status(200).json(result);
   } catch (error: any) {

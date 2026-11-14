@@ -1,25 +1,32 @@
 import "dotenv/config";
 import fs from 'fs';
 import path from 'path';
-import { syncAdminDevicesToSupabase, getAdminDevicesFromSupabase } from './supabaseHelper.ts';
 import { recordInquiryFromNotification } from './inquiryHelper.ts';
 
 /**
  * OneSignal Admin Notification Automation Service (Server-Side Only)
  * 
- * Target Admin OneSignal Player ID: 99a86c9f-366e-4625-9506-5af191a0297d
+ * Target Admin OneSignal Subscription / Player ID: 32007a0b-38ed-4800-a681-f663fd00d188
+ * OneSignal App ID: f9cfc686-a78c-445f-a436-8b6bb2e6bdff
  * Registered Domain: https://www.tbaonline.online
  * 
- * SECURITY: REST API key is loaded strictly from process.env.ONESIGNAL_REST_API_KEY
- * and NEVER exposed to frontend or client bundles.
+ * SECURITY:
+ * - REST API key is loaded strictly from process.env.ONESIGNAL_REST_API_KEY
+ *   and NEVER exposed to frontend or client bundles.
+ * - Notifications are routed EXCLUSIVELY to ADMIN_PLAYER_ID using
+ *   `include_subscription_ids: [adminPlayerId]` with NO fallback to segments,
+ *   client-writable tags, external_id aliases, or dynamically registered devices.
  */
 
 export interface AdminNotificationEvent {
   eventType: 
     | 'account_created'
     | 'user_signup'
+    | 'new_account'
     | 'package_booking'
     | 'appointment'
+    | 'appointment_booked'
+    | 'book_appointment'
     | 'quote_request'
     | 'contact_enquiry'
     | 'inquiry_message'
@@ -27,7 +34,8 @@ export interface AdminNotificationEvent {
     | 'proposal_accepted'
     | 'revision_request'
     | 'support_request'
-    | 'review_submitted';
+    | 'review_submitted'
+    | 'review_message';
   
   // Client identification
   clientId?: string;
@@ -105,71 +113,93 @@ export interface OneSignalNotificationResponse {
 
 // Default identifiers (Can be overridden via server environment variables)
 const DEFAULT_APP_ID = 'f9cfc686-a78c-445f-a436-8b6bb2e6bdff';
-const DEFAULT_ADMIN_PLAYER_ID = '99a86c9f-366e-4625-9506-5af191a0297d';
-const DEFAULT_ADMIN_SUBSCRIPTION_ID = 'f860ea79-2143-41ca-8f77-e7008dd7d025';
-
-// Admin accounts. Their devices are linked to OneSignal as external_id = email
-// (the website calls OneSignal.login(email) when an admin is signed in), so alerts
-// follow the admin's phone/browser and reach NOBODY else. Override with ADMIN_EMAILS (comma separated).
-function getAdminEmails(): string[] {
-  const fromEnv = (process.env.ADMIN_EMAILS || '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (fromEnv.length) return fromEnv;
-  return ['techbaseaxis@gmail.com', 'techbaseaixe@gmail.com', 'bgho40185@gmail.com'];
-}
+const DEFAULT_ADMIN_PLAYER_ID = '32007a0b-38ed-4800-a681-f663fd00d188';
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const dataDir = path.join(process.cwd(), 'data');
-const adminDevicesFilePath = path.join(dataDir, 'admin_devices.json');
-
-function loadStoredAdminDevices(): Set<string> {
-  const set = new Set<string>();
-  try {
-    if (fs.existsSync(adminDevicesFilePath)) {
-      const parsed = JSON.parse(fs.readFileSync(adminDevicesFilePath, 'utf8'));
-      if (Array.isArray(parsed)) {
-        parsed.forEach((id) => id && set.add(String(id)));
-      }
-    }
-  } catch (_) {}
-  return set;
-}
-
-// Store of actively registered admin phone/browser subscription IDs
-const activeAdminSubscriptions = loadStoredAdminDevices();
-
-(async () => {
-  try {
-    const supaDevices = await getAdminDevicesFromSupabase();
-    if (Array.isArray(supaDevices)) {
-      supaDevices.forEach((id) => id && activeAdminSubscriptions.add(String(id)));
-      try {
-        if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-        fs.writeFileSync(adminDevicesFilePath, JSON.stringify(Array.from(activeAdminSubscriptions), null, 2), 'utf8');
-      } catch (_) {}
-    }
-  } catch (_) {}
-})();
 
 /**
- * Dynamically register the active device where the Admin Console is currently open
+ * Resolves and validates the single authorized ADMIN_PLAYER_ID.
+ * Rejects invalid UUIDs and guards against accidentally passing ONESIGNAL_APP_ID as the player ID.
  */
-export function registerAdminSubscription(subId: string): void {
-  if (subId && typeof subId === 'string' && subId.trim().length > 10) {
-    const cleanId = subId.trim();
-    activeAdminSubscriptions.add(cleanId);
-    try {
-      if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-      fs.writeFileSync(adminDevicesFilePath, JSON.stringify(Array.from(activeAdminSubscriptions), null, 2), 'utf8');
-      syncAdminDevicesToSupabase(Array.from(activeAdminSubscriptions)).catch(() => {});
-    } catch (_) {}
-    console.log(`[OneSignal] Admin phone/device registered: ${cleanId}. Total active admin devices: ${activeAdminSubscriptions.size}`);
+export function resolveTargetAdminPlayerId(appId?: string): { adminPlayerId?: string; error?: string } {
+  const resolvedAppId = (appId || process.env.ONESIGNAL_APP_ID || DEFAULT_APP_ID).trim();
+  const rawCandidate = (
+    process.env.ADMIN_PLAYER_ID ||
+    process.env.ONESIGNAL_ADMIN_PLAYER_ID ||
+    DEFAULT_ADMIN_PLAYER_ID
+  ).trim();
+
+  if (!rawCandidate || !UUID_REGEX.test(rawCandidate)) {
+    return {
+      error: `Invalid ADMIN_PLAYER_ID ("${rawCandidate}"). Expected a valid OneSignal subscription/player UUID.`
+    };
   }
+
+  if (rawCandidate.toLowerCase() === resolvedAppId.toLowerCase()) {
+    return {
+      error: `Misconfigured ADMIN_PLAYER_ID: "${rawCandidate}" matches ONESIGNAL_APP_ID. Set ADMIN_PLAYER_ID to the admin device subscription/player ID instead of the App ID.`
+    };
+  }
+
+  return { adminPlayerId: rawCandidate };
+}
+
+export function getTargetAdminPlayerId(appId?: string): string {
+  const { adminPlayerId } = resolveTargetAdminPlayerId(appId);
+  return adminPlayerId || DEFAULT_ADMIN_PLAYER_ID;
+}
+
+/**
+ * Backwards-compatible registration hook.
+ * Strict security policy: public/unauthenticated calls cannot add arbitrary devices to admin alerts.
+ * Only verifies whether the incoming ID matches the locked ADMIN_PLAYER_ID.
+ */
+export function registerAdminSubscription(subId: string, _email?: string): { ok: boolean; error?: string } {
+  if (!subId || typeof subId !== 'string') {
+    return { ok: false, error: 'Missing subscriptionId' };
+  }
+  const cleanId = subId.trim();
+  const { adminPlayerId } = resolveTargetAdminPlayerId();
+  if (adminPlayerId && cleanId.toLowerCase() === adminPlayerId.toLowerCase()) {
+    console.log(`[OneSignal] Verified active admin device matches ADMIN_PLAYER_ID (${adminPlayerId}).`);
+    return { ok: true };
+  }
+  console.warn(`[OneSignal] Ignored device registration (${cleanId}): notifications are strictly locked to ADMIN_PLAYER_ID.`);
+  return {
+    ok: false,
+    error: 'Unauthorized: admin push alerts are strictly locked to ADMIN_PLAYER_ID.'
+  };
+}
+
+export function unregisterAdminSubscription(_subId: string): boolean {
+  return false;
+}
+
+export function setTargetAdminDevice(_opts?: {
+  targetAdminPlayerId?: string;
+  targetAdminSubscriptionId?: string;
+}): { targetAdminPlayerId: string; lockedToEnvAdminPlayerId: true } {
+  return {
+    targetAdminPlayerId: getTargetAdminPlayerId(),
+    lockedToEnvAdminPlayerId: true
+  };
+}
+
+export function getNotificationDiagnosticInfo() {
+  const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
+  const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : 'default';
+  return {
+    onesignalReady: hasKey,
+    appIdPreview: appId,
+    targetAdminPlayerId: getTargetAdminPlayerId(),
+    timestamp: new Date().toISOString()
+  };
 }
 
 export function getActiveAdminSubscriptions(): string[] {
-  return Array.from(activeAdminSubscriptions);
+  const { adminPlayerId } = resolveTargetAdminPlayerId();
+  return adminPlayerId ? [adminPlayerId] : [];
 }
 
 const recentNotificationsFilePath = path.join(dataDir, 'recent_notifications.json');
@@ -233,51 +263,7 @@ function formatCurrency(val?: number | string): string {
   return num.toLocaleString('en-IN');
 }
 
-/**
- * Resolves active subscription IDs for admin player/user ID.
- * Queries OneSignal v16 User API and auto-heals any muted subscription flag.
- */
-async function resolveAdminSubscriptions(appId: string, apiKey: string, adminPlayerId: string): Promise<string[]> {
-  const subscriptions: string[] = [];
-  const primarySubId = process.env.ONESIGNAL_ADMIN_SUBSCRIPTION_ID || DEFAULT_ADMIN_SUBSCRIPTION_ID;
 
-  try {
-    const res = await fetch(`https://api.onesignal.com/apps/${appId}/users/by/onesignal_id/${adminPlayerId}`, {
-      headers: {
-        'Authorization': `Key ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data?.subscriptions)) {
-        for (const sub of data.subscriptions) {
-          if (sub.token && sub.id) {
-            subscriptions.push(sub.id);
-            // Self-healing: if subscription was disabled or notification_types < 0, re-enable
-            if (sub.enabled === false || (sub.notification_types !== undefined && sub.notification_types < 0)) {
-              fetch(`https://api.onesignal.com/apps/${appId}/subscriptions/${sub.id}`, {
-                method: 'PATCH',
-                headers: { 'Authorization': `Key ${apiKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subscription: { enabled: true, notification_types: 1 } })
-              }).catch(() => {});
-            }
-          }
-        }
-      }
-    }
-  } catch (err: any) {
-    console.warn('[OneSignal] Notice: Dynamic user subscription query completed:', err?.message || err);
-  }
-
-  // Fallback to primary known subscription ID if array is empty
-  if (subscriptions.length === 0 && primarySubId && !subscriptions.includes(primarySubId)) {
-    subscriptions.push(primarySubId);
-  }
-
-  return subscriptions;
-}
 
 /**
  * Builds the notification title and actionable body according to the Tech Base Axis spec.
@@ -292,7 +278,8 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
 
   switch (event.eventType) {
     case 'account_created':
-    case 'user_signup': {
+    case 'user_signup':
+    case 'new_account': {
       title = '👤 New Client Account Created';
       body = `${clientName} (${event.email || event.clientEmail || 'Client'}) registered a new account on Tech Base Axis.`;
       const id = event.clientId || '';
@@ -312,7 +299,9 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       break;
     }
 
-    case 'appointment': {
+    case 'appointment':
+    case 'appointment_booked':
+    case 'book_appointment': {
       const dateStr = event.date || event.appointmentDate || 'Upcoming Date';
       const timeStr = event.time || event.appointmentTime || '';
       title = '📅 New Appointment';
@@ -372,9 +361,10 @@ function buildNotificationContent(event: AdminNotificationEvent): { title: strin
       break;
     }
 
-    case 'review_submitted': {
+    case 'review_submitted':
+    case 'review_message': {
       const stars = Number(event.rating) || 0;
-      const text = (event.reviewText || event.message || '').trim();
+      const text = (event.reviewText || event.message || event.details || '').trim();
       const short = text.length > 140 ? `${text.slice(0, 137)}...` : text;
       title = stars ? `⭐ New Client Review (${stars}/5)` : '⭐ New Client Review';
       body = short
@@ -423,16 +413,24 @@ export async function sendAdminOneSignalNotification(
     recordInquiryFromNotification(eventData);
   } catch (_) {}
 
-  // 1. Resolve configuration from environment
-  const appId = config?.appId || process.env.ONESIGNAL_APP_ID || DEFAULT_APP_ID;
-  const apiKey = config?.apiKey || process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY;
-  const adminPlayerId = process.env.ONESIGNAL_ADMIN_PLAYER_ID || DEFAULT_ADMIN_PLAYER_ID;
+  // 1. Resolve and validate configuration from environment
+  const appId = (config?.appId || process.env.ONESIGNAL_APP_ID || DEFAULT_APP_ID).trim();
+  const apiKey = (config?.apiKey || process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY || '').trim();
+  const { adminPlayerId, error: adminIdError } = resolveTargetAdminPlayerId(appId);
 
   if (!apiKey) {
     console.warn('[OneSignal] Note: ONESIGNAL_REST_API_KEY is not defined in server environment. Skipping push dispatch.');
     return {
       success: false,
       errors: ['ONESIGNAL_REST_API_KEY not configured in server environment. Set ONESIGNAL_REST_API_KEY in .env']
+    };
+  }
+
+  if (!adminPlayerId || adminIdError) {
+    console.error(`[OneSignal] ${adminIdError}`);
+    return {
+      success: false,
+      errors: [adminIdError || 'ADMIN_PLAYER_ID is not configured.']
     };
   }
 
@@ -458,17 +456,12 @@ export async function sendAdminOneSignalNotification(
   // 3. Build notification content
   const { title, body, deepLink } = buildNotificationContent(eventData);
 
-  // 4. Resolve Target Admin Device Subscriptions
-  // If the admin opened the admin panel on a phone/browser, its subscription is registered in activeAdminSubscriptions.
-  const dynamicAdminSubs = getActiveAdminSubscriptions();
-  const knownAdminSubs = await resolveAdminSubscriptions(appId, apiKey, adminPlayerId);
-  const combinedAdminSubs = Array.from(new Set([...dynamicAdminSubs, ...knownAdminSubs])).filter(Boolean);
-
-  // 5. Construct payload for OneSignal REST API
-  // STRICT ADMIN ROUTING: Target ONLY the phone/device where the Admin Panel is open,
-  // or devices tagged with role='admin'. Clients/subscribers are NEVER targeted!
+  // 4. Construct payload for OneSignal REST API
+  // STRICT SINGLE-DEVICE ADMIN ROUTING:
+  // Target ONLY the single subscription/player registered with ADMIN_PLAYER_ID.
+  // Public user subscriptions, segments, tags, and external_id aliases are NEVER targeted.
   const commonNotificationData = {
-    event: 'new_inquiry', // Unified real-time event identifier
+    event: 'new_inquiry',
     action: 'new_inquiry',
     type: 'new_inquiry',
     inquiryType: eventData.eventType,
@@ -494,12 +487,13 @@ export async function sendAdminOneSignalNotification(
     details: eventData.details || eventData.message || '',
     referenceId: referenceId || '',
     timestamp: eventData.timestamp || new Date().toISOString(),
-    adminPlayerId: adminPlayerId,
-    deepLink: deepLink
+    adminPlayerId,
+    deepLink
   };
 
-  const baseBody = {
+  const payload = {
     app_id: appId,
+    include_subscription_ids: [adminPlayerId],
     headings: { en: title },
     contents: { en: body },
     web_url: deepLink,
@@ -509,88 +503,55 @@ export async function sendAdminOneSignalNotification(
     data: commonNotificationData
   };
 
-  const post = async (label: string, targeting: Record<string, any>) => {
-    const primaryAuth = apiKey.startsWith('os_v2_') ? `Key ${apiKey}` : `Basic ${apiKey}`;
-    const secondaryAuth = apiKey.startsWith('os_v2_') ? `Basic ${apiKey}` : `Key ${apiKey}`;
+  const primaryAuth = apiKey.startsWith('os_v2_') ? `Key ${apiKey}` : `Basic ${apiKey}`;
+  const secondaryAuth = apiKey.startsWith('os_v2_') ? `Basic ${apiKey}` : `Key ${apiKey}`;
 
-    const trySend = async (authHeader: string) => {
-      try {
-        const response = await fetch('https://api.onesignal.com/notifications', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json; charset=utf-8',
-            'Authorization': authHeader
-          },
-          body: JSON.stringify({ ...baseBody, ...targeting })
-        });
-        const json: any = await response.json().catch(() => ({}));
-        const ok = response.ok && Boolean(json?.id);
-        return { ok, status: response.status, json };
-      } catch (err: any) {
-        return { ok: false, status: 500, json: { errors: [err?.message || String(err)] } };
-      }
-    };
-
-    let result = await trySend(primaryAuth);
-    // If rejected with 401/403 or Access denied, try alternative scheme
-    if (!result.ok && (result.status === 401 || result.status === 403)) {
-      const retryResult = await trySend(secondaryAuth);
-      if (retryResult.ok) {
-        result = retryResult;
-      }
+  const trySend = async (authHeader: string) => {
+    try {
+      const response = await fetch('https://api.onesignal.com/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Authorization': authHeader
+        },
+        body: JSON.stringify(payload)
+      });
+      const json: any = await response.json().catch(() => ({}));
+      const hasId = typeof json?.id === 'string' && json.id.trim().length > 0;
+      const hasRecipients = json?.recipients === undefined || Number(json.recipients) > 0;
+      const hasErrors = Array.isArray(json?.errors) && json.errors.length > 0;
+      const ok = response.ok && hasId && hasRecipients && !hasErrors;
+      return { ok, status: response.status, json };
+    } catch (err: any) {
+      return { ok: false, status: 500, json: { errors: [err?.message || String(err)] } };
     }
-
-    const ok = result.ok;
-    const json = result.json;
-    console.log(`[OneSignal] ${label}: ${ok ? 'sent' : 'not delivered'} (HTTP ${result.status})${ok ? '' : ' ' + JSON.stringify(json?.errors || json)}`);
-    return { ok, json };
   };
 
-  let finalResult: OneSignalNotificationResponse = { success: false };
-  const adminEmails = getAdminEmails();
-  const errors: string[] = [];
-
-  // Robust Admin-only delivery: tries most specific routes down to tags and player IDs
-  const routes: { label: string; targeting: Record<string, any>; skip?: boolean }[] = [
-    {
-      label: 'registered admin devices',
-      targeting: { include_subscription_ids: combinedAdminSubs },
-      skip: combinedAdminSubs.length === 0
-    },
-    {
-      label: 'admin player IDs',
-      targeting: { include_player_ids: Array.from(new Set([adminPlayerId, ...combinedAdminSubs])).filter(Boolean) }
-    },
-    {
-      label: 'admin accounts (external_id push)',
-      targeting: { include_aliases: { external_id: adminEmails }, target_channel: 'push' }
-    },
-    {
-      label: 'admin accounts (external_id)',
-      targeting: { include_aliases: { external_id: adminEmails } }
-    },
-    {
-      label: 'tag role=admin',
-      targeting: { filters: [{ field: 'tag', key: 'role', relation: '=', value: 'admin' }] }
-    },
-    {
-      label: 'tag is_active_admin',
-      targeting: { filters: [{ field: 'tag', key: 'is_active_admin', relation: '=', value: 'true' }] }
+  let result = await trySend(primaryAuth);
+  if (!result.ok && (result.status === 401 || result.status === 403)) {
+    const retryResult = await trySend(secondaryAuth);
+    if (retryResult.ok) {
+      result = retryResult;
     }
-  ];
-
-  for (const route of routes) {
-    if (route.skip) continue;
-    const { ok, json } = await post(route.label, route.targeting);
-    if (ok) {
-      finalResult = { success: true, id: json.id, recipients: json.recipients, data: json };
-      break;
-    }
-    errors.push(`${route.label}: ${JSON.stringify(json?.errors || json)}`);
   }
 
-  if (!finalResult.success) {
-    finalResult = { success: false, errors };
+  let finalResult: OneSignalNotificationResponse;
+  if (result.ok) {
+    finalResult = {
+      success: true,
+      id: result.json.id,
+      recipients: result.json.recipients,
+      data: result.json
+    };
+  } else {
+    const errDetail = result.json?.errors
+      ? (Array.isArray(result.json.errors) ? result.json.errors.map(String) : [JSON.stringify(result.json.errors)])
+      : [`HTTP ${result.status}: ${JSON.stringify(result.json)}`];
+    finalResult = {
+      success: false,
+      errors: errDetail,
+      data: result.json
+    };
   }
 
   // Store in idempotency cache
@@ -601,7 +562,9 @@ export async function sendAdminOneSignalNotification(
     });
   }
 
-  console.log(`[OneSignal] "${title}" -> ${finalResult.success ? 'delivered to admin device(s)' : 'NOT delivered to any admin device'}`);
+  console.log(
+    `[OneSignal] "${title}" -> ${finalResult.success ? `delivered strictly to ADMIN_PLAYER_ID (${adminPlayerId})` : `NOT delivered to ADMIN_PLAYER_ID (${adminPlayerId}): ${JSON.stringify(finalResult.errors)}`}`
+  );
   return finalResult;
 }
 

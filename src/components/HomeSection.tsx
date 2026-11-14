@@ -84,12 +84,17 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
       fetch('/api/notify-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
         body: JSON.stringify({
           eventType: 'review_submitted',
+          clientId: user?.uid || `review-${newItem.tempId}`,
           clientName: data.name,
+          clientEmail: user?.email || '',
+          email: user?.email || '',
           reviewerRole: data.role,
           rating: data.rating,
           reviewText: data.testimonial,
+          details: data.testimonial,
           idempotencyKey: `review:${newItem.tempId}`,
           timestamp: new Date().toISOString()
         })
@@ -132,7 +137,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                       <span className="block">HELLO, I'M</span>
                       <span className="block">BIKRAM</span>
                       <span className="block">GHOSH</span>
-                      <span className="sr-only"> - Web Development Company in Kolkata, Tech Base Axis</span>
+                      <span className="sr-only"> - Founder of Tech Base Axis</span>
                     </h1>
                   </div>
 
@@ -149,8 +154,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = founderImage;
                         }}
-                        alt="Bikram Ghosh - Founder and Full Stack Web Developer at Tech Base Axis Kolkata"
-                        title="Bikram Ghosh - Web Developer in Kolkata"
+                        alt="Bikram Ghosh - Founder &amp; Web Developer at Tech Base Axis"
+                        title="Bikram Ghosh - Tech Base Axis"
                         itemProp="image"
                         fetchPriority="high"
                         loading="eager"
@@ -159,24 +164,24 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                     </div>
 
                     <div className="absolute -bottom-1 -left-1 z-20 px-2.5 py-0.5 rounded-md bg-black/95 border border-neutral-800 text-[10px] xs:text-[11px] font-mono text-neutral-200 shadow-md">
-                      <span className="text-[#e61e2b] font-bold">FOUNDER</span>
+                      <span className="text-[#e61e2b] font-bold">TECH BASE AXIS</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Tagline */}
+                {/* Subtitle / Role Tagline */}
                 <div className="pt-2 pb-1">
-                  <div className="flex items-center gap-2.5">
-                    <span aria-hidden="true" className="font-display text-2xl sm:text-3xl md:text-4xl text-[#e61e2b] font-black leading-tight tracking-tighter shrink-0 drop-shadow-[0_0_8px_rgba(230,30,43,0.55)]">//</span>
-                    <h2 className="font-display text-2xl sm:text-3xl md:text-4xl text-white font-black tracking-wide uppercase leading-tight">
-                      WELCOME TO MY PORTFOLIO
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-0.5 bg-[#e61e2b] shrink-0" />
+                    <h2 className="font-mono text-xs sm:text-sm text-[#e61e2b] uppercase tracking-wider font-semibold">
+                      Principal Full-Stack Architect &amp; Founder
                     </h2>
                   </div>
                 </div>
 
                 {/* Bio Paragraph */}
                 <p className="text-neutral-300 text-sm sm:text-base leading-relaxed max-w-lg">
-                  Senior technical systems engineer, founder, and principal architect with over 6 years of expertise building resilient distributed cloud backends, enterprise full-stack web platforms, and generative AI reasoning pipelines that deliver verified zero-latency user experiences.
+                  Senior technical engineer and system architect with over 6 years of expertise building resilient distributed systems, enterprise SaaS solutions, and responsive high-performance web applications under the Tech Base Axis banner.
                 </p>
 
                 {/* Verified Metrics Grid */}
@@ -225,8 +230,8 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = founderImage;
                       }}
-                      alt="Bikram Ghosh - Founder and Lead Full Stack Web Developer at Tech Base Axis Kolkata"
-                      title="Bikram Ghosh - Web Developer in Kolkata"
+                      alt="Bikram Ghosh - Founder &amp; Full Stack Web Developer at Tech Base Axis"
+                      title="Bikram Ghosh - Tech Base Axis"
                       itemProp="image"
                       fetchPriority="high"
                       loading="eager"

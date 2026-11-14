@@ -56,15 +56,15 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     setError('');
     setSubmitted(true);
 
-    setTimeout(() => {
-      onSubmitReview({
-        name: name.trim(),
-        role: role.trim() || 'Verified Client',
-        testimonial: testimonial.trim(),
-        rating,
-        avatar: userAvatar
-      });
+    onSubmitReview({
+      name: name.trim(),
+      role: role.trim() || 'Verified Client',
+      testimonial: testimonial.trim(),
+      rating,
+      avatar: userAvatar
+    });
 
+    setTimeout(() => {
       // Reset form
       setName(user?.displayName || '');
       setRole('');

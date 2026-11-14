@@ -7,6 +7,7 @@ import {
   sendOneSignalPushNotification, 
   registerAdminSubscription,
   getRecentNotifications,
+  getTargetAdminPlayerId,
   type AdminNotificationEvent 
 } from "./server/onesignalService.ts";
 import { processVerifyPayment } from "./server/verifyPayment.ts";
@@ -452,7 +453,7 @@ app.get("/api/health", (_req, res) => {
 app.get("/api/notification-status", (_req, res) => {
   const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
   const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : "default";
-  const targetId = process.env.ONESIGNAL_ADMIN_PLAYER_ID || "99a86c9f-366e-4625-9506-5af191a0297d";
+  const targetId = getTargetAdminPlayerId();
 
   res.status(200).json({
     onesignalReady: hasKey,

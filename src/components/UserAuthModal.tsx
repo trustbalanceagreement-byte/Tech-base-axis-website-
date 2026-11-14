@@ -26,7 +26,8 @@ import {
   signInWithPopup, 
   googleProvider,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  getAdditionalUserInfo
 } from '../lib/firebase';
 
 interface UserAuthModalProps {
@@ -47,6 +48,7 @@ const notifyAdminNewAccount = (name: string, email: string, userId?: string) => 
     fetch('/api/notify-admin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
       body: JSON.stringify({
         eventType: 'account_created',
         clientId: userId || email,
@@ -444,7 +446,21 @@ export const UserAuthModal: React.FC<UserAuthModalProps> = ({
         ADMIN_EMAILS.some((adm) => adm.toLowerCase() === userCredential.user.email?.toLowerCase())
       );
 
-      const isNewUser = Boolean((userCredential as any)?._tokenResponse?.isNewUser);
+      const additionalInfo = getAdditionalUserInfo(userCredential);
+      const createdAtMs = userCredential.user.metadata?.creationTime
+        ? Date.parse(userCredential.user.metadata.creationTime)
+        : 0;
+      const lastSignInMs = userCredential.user.metadata?.lastSignInTime
+        ? Date.parse(userCredential.user.metadata.lastSignInTime)
+        : 0;
+      const isFirstLoginTimestamp = Boolean(
+        createdAtMs && lastSignInMs && Math.abs(lastSignInMs - createdAtMs) < 10_000
+      );
+      const isNewUser = Boolean(
+        additionalInfo?.isNewUser ||
+        (userCredential as any)?._tokenResponse?.isNewUser ||
+        isFirstLoginTimestamp
+      );
 
       recordUserActivityEvent({
         userId: userCredential.user.uid,

@@ -46,59 +46,72 @@ declare global {
   interface Window {
     OneSignalDeferred?: Array<(OneSignal: OneSignalInstance) => void | Promise<void>>;
     OneSignal?: OneSignalInstance;
+    __oneSignalInitialized?: boolean;
+    __oneSignalInitPromise?: Promise<boolean>;
   }
 }
 
 /**
- * Executes a callback when OneSignal is initialized and ready.
+ * Resolves with the initialized OneSignal instance, or null if OneSignal is
+ * disabled/unavailable on the current origin (e.g. preview domains).
+ */
+export const getReadyOneSignal = async (): Promise<OneSignalInstance | null> => {
+  if (typeof window === 'undefined') return null;
+
+  if (window.__oneSignalInitPromise) {
+    try {
+      const initialized = await window.__oneSignalInitPromise;
+      if (!initialized || !window.__oneSignalInitialized || !window.OneSignal) {
+        return null;
+      }
+      return window.OneSignal;
+    } catch {
+      return null;
+    }
+  }
+
+  if (window.__oneSignalInitialized && window.OneSignal) {
+    return window.OneSignal;
+  }
+
+  return null;
+};
+
+/**
+ * Executes a callback only when OneSignal has initialized successfully.
  */
 export const runWithOneSignal = (callback: (OneSignal: OneSignalInstance) => void | Promise<void>): void => {
   if (typeof window === 'undefined') return;
 
-  if (window.OneSignal) {
-    try {
-      const result = callback(window.OneSignal);
-      if (result && typeof (result as any).catch === 'function') {
-        (result as any).catch((err: any) => {
-          console.warn('[OneSignal] Callback notice:', err?.message || err);
-        });
+  getReadyOneSignal()
+    .then(async (OneSignal) => {
+      if (!OneSignal) return;
+      try {
+        await callback(OneSignal);
+      } catch (err: any) {
+        console.warn('[OneSignal] Execution notice:', err?.message || err);
       }
-    } catch (err: any) {
-      console.warn('[OneSignal] Execution notice:', err?.message || err);
-    }
-    return;
-  }
-
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  window.OneSignalDeferred.push(async (OneSignal) => {
-    try {
-      await callback(OneSignal);
-    } catch (err: any) {
-      console.warn('[OneSignal] Deferred execution notice:', err?.message || err);
-    }
-  });
+    })
+    .catch(() => {});
 };
 
 /**
  * Prompts the user to grant push notification permissions.
  */
 export const requestPushPermission = async (): Promise<boolean> => {
-  return new Promise((resolve) => {
-    runWithOneSignal(async (OneSignal) => {
-      try {
-        if (OneSignal.Notifications?.requestPermission) {
-          await OneSignal.Notifications.requestPermission();
-          const granted = OneSignal.Notifications.permission;
-          resolve(Boolean(granted));
-        } else {
-          resolve(false);
-        }
-      } catch (err: any) {
-        console.warn('[OneSignal] Permission request notice:', err?.message || err);
-        resolve(false);
-      }
-    });
-  });
+  const OneSignal = await getReadyOneSignal();
+  if (!OneSignal) return false;
+
+  try {
+    if (OneSignal.Notifications?.requestPermission) {
+      await OneSignal.Notifications.requestPermission();
+      return Boolean(OneSignal.Notifications.permission);
+    }
+    return false;
+  } catch (err: any) {
+    console.warn('[OneSignal] Permission request notice:', err?.message || err);
+    return false;
+  }
 };
 
 /**

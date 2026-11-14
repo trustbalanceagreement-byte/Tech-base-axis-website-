@@ -11,6 +11,7 @@ import {
   sendOneSignalPushNotification, 
   registerAdminSubscription,
   getRecentNotifications,
+  getTargetAdminPlayerId,
   AdminNotificationEvent 
 } from './server/onesignalService';
 import {
@@ -494,7 +495,7 @@ function onesignalDevApiPlugin(): Plugin {
       server.middlewares.use('/api/notification-status', (_req, res) => {
         const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
         const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : 'default';
-        const targetId = process.env.ONESIGNAL_ADMIN_PLAYER_ID || '99a86c9f-366e-4625-9506-5af191a0297d';
+        const targetId = getTargetAdminPlayerId();
 
         res.setHeader('Content-Type', 'application/json');
         res.statusCode = 200;
@@ -563,10 +564,15 @@ function onesignalDevApiPlugin(): Plugin {
         req.on('end', async () => {
           try {
             const eventData: AdminNotificationEvent = JSON.parse(body || '{}');
+            const normalizedEvent: AdminNotificationEvent = {
+              ...eventData,
+              clientName: eventData.clientName || (eventData.email ? eventData.email.split('@')[0] : 'Client'),
+              email: eventData.email || eventData.clientEmail || ''
+            };
             try {
-              recordInquiryFromNotification(eventData);
+              recordInquiryFromNotification(normalizedEvent);
             } catch (_) {}
-            const result = await sendAdminOneSignalNotification(eventData);
+            const result = await sendAdminOneSignalNotification(normalizedEvent);
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = result.success ? 200 : 502;
             res.end(JSON.stringify(result));
