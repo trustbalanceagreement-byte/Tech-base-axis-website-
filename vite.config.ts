@@ -11,6 +11,8 @@ import {
   sendOneSignalPushNotification, 
   registerAdminSubscription,
   getRecentNotifications,
+  getNotificationAttempts,
+  getNotificationDiagnosticInfo,
   getTargetAdminPlayerId,
   AdminNotificationEvent 
 } from './server/onesignalService';
@@ -493,32 +495,25 @@ function onesignalDevApiPlugin(): Plugin {
       });
       // Diagnostic status
       server.middlewares.use('/api/notification-status', (_req, res) => {
-        const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
-        const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : 'default';
-        const targetId = getTargetAdminPlayerId();
-
         res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Cache-Control', 'no-store');
         res.statusCode = 200;
-        res.end(JSON.stringify({
-          onesignalReady: hasKey,
-          appIdPreview: appId,
-          targetAdminPlayerId: targetId,
-          timestamp: new Date().toISOString()
-        }));
+        res.end(JSON.stringify(getNotificationDiagnosticInfo()));
       });
 
-      // Recent notifications endpoint for admin real-time alerts
+      // Recent notifications & attempt audit log endpoint for admin real-time alerts
       server.middlewares.use('/api/notifications/recent', (_req, res) => {
         try {
           const list = getRecentNotifications();
+          const attempts = getNotificationAttempts(50);
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Cache-Control', 'no-store');
           res.statusCode = 200;
-          res.end(JSON.stringify({ success: true, notifications: list }));
+          res.end(JSON.stringify({ success: true, notifications: list, attempts }));
         } catch (err: any) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: err?.message || 'Failed to get notifications', notifications: [] }));
+          res.end(JSON.stringify({ error: err?.message || 'Failed to get notifications', notifications: [], attempts: [] }));
         }
       });
 

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // Supabase Project Credentials
 export const SUPABASE_PROJECT_ID = 'httjpsskqtgjtmjgrjgs';
@@ -16,19 +16,17 @@ export const SUPABASE_SERVICE_ROLE_KEY =
 
 export const SUPABASE_STORAGE_BUCKET = 'Tech Base Axis Storege';
 
-type GlobalWithSupabase = typeof globalThis & {
-  __tbaSupabaseClient?: ReturnType<typeof createClient>;
-  __tbaSupabaseAdminClient?: ReturnType<typeof createClient>;
+const globalForSupabase = globalThis as unknown as {
+  __tbaSupabaseAnon?: SupabaseClient;
+  __tbaSupabaseAdmin?: SupabaseClient;
 };
-
-const globalRef = globalThis as GlobalWithSupabase;
 
 /**
  * Initialized Supabase client for client-side public reads
  */
-export const supabase =
-  globalRef.__tbaSupabaseClient ??
-  (globalRef.__tbaSupabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+export const supabase: SupabaseClient =
+  globalForSupabase.__tbaSupabaseAnon ??
+  (globalForSupabase.__tbaSupabaseAnon = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
       storageKey: `sb-${SUPABASE_PROJECT_ID}-auth-token`,
       persistSession: true,
@@ -40,11 +38,11 @@ export const supabase =
  * Direct Privileged Client for seamless uploads on live custom domains & serverless hosts
  * Bypasses RLS write blocks directly from the browser without requiring a Node.js server
  */
-export const supabaseAdmin =
-  globalRef.__tbaSupabaseAdminClient ??
-  (globalRef.__tbaSupabaseAdminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+export const supabaseAdmin: SupabaseClient =
+  globalForSupabase.__tbaSupabaseAdmin ??
+  (globalForSupabase.__tbaSupabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
-      storageKey: `sb-${SUPABASE_PROJECT_ID}-admin-storage`,
+      storageKey: `sb-${SUPABASE_PROJECT_ID}-admin-storage-token`,
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false

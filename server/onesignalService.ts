@@ -111,6 +111,29 @@ export interface OneSignalNotificationResponse {
   cached?: boolean;
 }
 
+export interface NotificationAttemptRecord {
+  attemptId: string;
+  timestamp: string;
+  eventType: string;
+  clientName: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  referenceId?: string;
+  idempotencyKey?: string;
+  alertTitle: string;
+  alertBody: string;
+  deepLink: string;
+  appId: string;
+  targetPlayerIds: string[];
+  targetAdminPlayerId?: string;
+  status: 'sent' | 'failed' | 'skipped' | 'cached';
+  success: boolean;
+  oneSignalNotificationId?: string;
+  recipients?: number;
+  httpStatus?: number;
+  errors?: string[];
+}
+
 // Default identifiers (Can be overridden via server environment variables)
 const DEFAULT_APP_ID = 'f9cfc686-a78c-445f-a436-8b6bb2e6bdff';
 const DEFAULT_ADMIN_PLAYER_ID = '32007a0b-38ed-4800-a681-f663fd00d188';
@@ -189,10 +212,13 @@ export function setTargetAdminDevice(_opts?: {
 export function getNotificationDiagnosticInfo() {
   const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
   const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : 'default';
+  const attempts = getNotificationAttempts(25);
   return {
     onesignalReady: hasKey,
     appIdPreview: appId,
     targetAdminPlayerId: getTargetAdminPlayerId(),
+    attemptCount: attempts.length,
+    recentAttempts: attempts,
     timestamp: new Date().toISOString()
   };
 }
@@ -203,6 +229,57 @@ export function getActiveAdminSubscriptions(): string[] {
 }
 
 const recentNotificationsFilePath = path.join(dataDir, 'recent_notifications.json');
+const notificationAttemptsFilePath = path.join(dataDir, 'notification_attempts.json');
+const MAX_LOCAL_ATTEMPTS = 100;
+let inMemoryNotificationAttempts: NotificationAttemptRecord[] = [];
+
+export function getNotificationAttempts(limit = 50): NotificationAttemptRecord[] {
+  let diskAttempts: NotificationAttemptRecord[] = [];
+  try {
+    if (fs.existsSync(notificationAttemptsFilePath)) {
+      const parsed = JSON.parse(fs.readFileSync(notificationAttemptsFilePath, 'utf8'));
+      if (Array.isArray(parsed)) {
+        diskAttempts = parsed;
+      }
+    }
+  } catch (_) {}
+
+  const mergedMap = new Map<string, NotificationAttemptRecord>();
+  for (const item of [...inMemoryNotificationAttempts, ...diskAttempts]) {
+    if (item && item.attemptId && !mergedMap.has(item.attemptId)) {
+      mergedMap.set(item.attemptId, item);
+    }
+  }
+
+  return Array.from(mergedMap.values())
+    .sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''))
+    .slice(0, limit);
+}
+
+export function recordNotificationAttempt(attempt: NotificationAttemptRecord): void {
+  try {
+    inMemoryNotificationAttempts = [
+      attempt,
+      ...inMemoryNotificationAttempts.filter((item) => item.attemptId !== attempt.attemptId)
+    ].slice(0, MAX_LOCAL_ATTEMPTS);
+
+    let existing: NotificationAttemptRecord[] = [];
+    if (fs.existsSync(notificationAttemptsFilePath)) {
+      try {
+        const parsed = JSON.parse(fs.readFileSync(notificationAttemptsFilePath, 'utf8'));
+        if (Array.isArray(parsed)) existing = parsed;
+      } catch (_) {}
+    }
+
+    const updated = [
+      attempt,
+      ...existing.filter((item) => item && item.attemptId !== attempt.attemptId)
+    ].slice(0, MAX_LOCAL_ATTEMPTS);
+
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(notificationAttemptsFilePath, JSON.stringify(updated, null, 2), 'utf8');
+  } catch (_) {}
+}
 
 export function getRecentNotifications(): AdminNotificationEvent[] {
   try {
@@ -417,24 +494,9 @@ export async function sendAdminOneSignalNotification(
   const appId = (config?.appId || process.env.ONESIGNAL_APP_ID || DEFAULT_APP_ID).trim();
   const apiKey = (config?.apiKey || process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY || '').trim();
   const { adminPlayerId, error: adminIdError } = resolveTargetAdminPlayerId(appId);
+  const targetPlayerIds = adminPlayerId ? [adminPlayerId] : [];
 
-  if (!apiKey) {
-    console.warn('[OneSignal] Note: ONESIGNAL_REST_API_KEY is not defined in server environment. Skipping push dispatch.');
-    return {
-      success: false,
-      errors: ['ONESIGNAL_REST_API_KEY not configured in server environment. Set ONESIGNAL_REST_API_KEY in .env']
-    };
-  }
-
-  if (!adminPlayerId || adminIdError) {
-    console.error(`[OneSignal] ${adminIdError}`);
-    return {
-      success: false,
-      errors: [adminIdError || 'ADMIN_PLAYER_ID is not configured.']
-    };
-  }
-
-  // 2. Idempotency Check
+  // 2. Build notification content & reference metadata upfront so every attempt is auditable
   const referenceId = 
     eventData.idempotencyKey || 
     eventData.bookingId || 
@@ -447,14 +509,68 @@ export async function sendAdminOneSignalNotification(
     eventData.ticketId;
 
   const idempotencyKey = referenceId ? `${eventData.eventType}:${referenceId}` : '';
+  const { title, body, deepLink } = buildNotificationContent(eventData);
+  const attemptTimestamp = new Date().toISOString();
+  const attemptBase = {
+    attemptId: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+    timestamp: attemptTimestamp,
+    eventType: eventData.eventType || 'unknown',
+    clientName: eventData.clientName || 'Client',
+    clientEmail: eventData.clientEmail || eventData.email || undefined,
+    clientPhone: eventData.clientPhone || eventData.phone || undefined,
+    referenceId: referenceId || undefined,
+    idempotencyKey: idempotencyKey || undefined,
+    alertTitle: title,
+    alertBody: body,
+    deepLink,
+    appId,
+    targetPlayerIds,
+    targetAdminPlayerId: adminPlayerId
+  };
+
+  if (!apiKey) {
+    const errors = ['ONESIGNAL_REST_API_KEY not configured in server environment. Set ONESIGNAL_REST_API_KEY in .env'];
+    console.warn('[OneSignal] Note: ONESIGNAL_REST_API_KEY is not defined in server environment. Skipping push dispatch.');
+    recordNotificationAttempt({
+      ...attemptBase,
+      status: 'skipped',
+      success: false,
+      errors
+    });
+    return {
+      success: false,
+      errors
+    };
+  }
+
+  if (!adminPlayerId || adminIdError) {
+    const errors = [adminIdError || 'ADMIN_PLAYER_ID is not configured.'];
+    console.error(`[OneSignal] ${adminIdError}`);
+    recordNotificationAttempt({
+      ...attemptBase,
+      status: 'failed',
+      success: false,
+      errors
+    });
+    return {
+      success: false,
+      errors
+    };
+  }
+
+  // 3. Idempotency Check
   if (idempotencyKey && idempotencyCache.has(idempotencyKey)) {
     const cached = idempotencyCache.get(idempotencyKey)!;
     console.log(`[OneSignal] Idempotent dispatch skipped for key: ${idempotencyKey}`);
+    recordNotificationAttempt({
+      ...attemptBase,
+      status: 'cached',
+      success: Boolean(cached.response.success),
+      oneSignalNotificationId: cached.response.id,
+      recipients: cached.response.recipients
+    });
     return { ...cached.response, cached: true };
   }
-
-  // 3. Build notification content
-  const { title, body, deepLink } = buildNotificationContent(eventData);
 
   // 4. Construct payload for OneSignal REST API
   // STRICT SINGLE-DEVICE ADMIN ROUTING:
@@ -553,6 +669,17 @@ export async function sendAdminOneSignalNotification(
       data: result.json
     };
   }
+
+  // Record local notification attempt history (including target player IDs & outcome)
+  recordNotificationAttempt({
+    ...attemptBase,
+    status: finalResult.success ? 'sent' : 'failed',
+    success: finalResult.success,
+    oneSignalNotificationId: finalResult.id,
+    recipients: finalResult.recipients,
+    httpStatus: result.status,
+    errors: finalResult.errors
+  });
 
   // Store in idempotency cache
   if (idempotencyKey && finalResult.success) {

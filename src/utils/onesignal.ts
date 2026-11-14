@@ -46,72 +46,98 @@ declare global {
   interface Window {
     OneSignalDeferred?: Array<(OneSignal: OneSignalInstance) => void | Promise<void>>;
     OneSignal?: OneSignalInstance;
-    __oneSignalInitialized?: boolean;
+    __oneSignalReady?: boolean;
     __oneSignalInitPromise?: Promise<boolean>;
   }
 }
 
-/**
- * Resolves with the initialized OneSignal instance, or null if OneSignal is
- * disabled/unavailable on the current origin (e.g. preview domains).
- */
-export const getReadyOneSignal = async (): Promise<OneSignalInstance | null> => {
-  if (typeof window === 'undefined') return null;
-
-  if (window.__oneSignalInitPromise) {
-    try {
-      const initialized = await window.__oneSignalInitPromise;
-      if (!initialized || !window.__oneSignalInitialized || !window.OneSignal) {
-        return null;
-      }
-      return window.OneSignal;
-    } catch {
-      return null;
-    }
-  }
-
-  if (window.__oneSignalInitialized && window.OneSignal) {
-    return window.OneSignal;
-  }
-
-  return null;
+export const isOneSignalAllowedOrigin = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return (
+    host === 'www.tbaonline.online' ||
+    host === 'tbaonline.online' ||
+    host === 'localhost' ||
+    host === '127.0.0.1'
+  );
 };
 
 /**
- * Executes a callback only when OneSignal has initialized successfully.
+ * Executes a callback when OneSignal is initialized and ready.
  */
-export const runWithOneSignal = (callback: (OneSignal: OneSignalInstance) => void | Promise<void>): void => {
-  if (typeof window === 'undefined') return;
+export const runWithOneSignal = (
+  callback: (OneSignal: OneSignalInstance) => void | Promise<void>,
+  onUnavailable?: () => void
+): void => {
+  if (typeof window === 'undefined' || !isOneSignalAllowedOrigin()) {
+    onUnavailable?.();
+    return;
+  }
 
-  getReadyOneSignal()
-    .then(async (OneSignal) => {
-      if (!OneSignal) return;
-      try {
-        await callback(OneSignal);
-      } catch (err: any) {
-        console.warn('[OneSignal] Execution notice:', err?.message || err);
+  const executeIfReady = () => {
+    const sdk = window.OneSignal;
+    if (!window.__oneSignalReady || !sdk || !sdk.User) {
+      onUnavailable?.();
+      return;
+    }
+    try {
+      const result = callback(sdk);
+      if (result && typeof (result as any).catch === 'function') {
+        (result as any).catch((err: any) => {
+          console.warn('[OneSignal] Callback notice:', err?.message || err);
+        });
       }
-    })
-    .catch(() => {});
+    } catch (err: any) {
+      console.warn('[OneSignal] Execution notice:', err?.message || err);
+    }
+  };
+
+  if (window.__oneSignalInitPromise) {
+    window.__oneSignalInitPromise
+      .then((ready) => {
+        if (!ready) {
+          onUnavailable?.();
+          return;
+        }
+        executeIfReady();
+      })
+      .catch(() => {
+        onUnavailable?.();
+      });
+    return;
+  }
+
+  if (window.OneSignal && window.__oneSignalReady) {
+    executeIfReady();
+    return;
+  }
+
+  onUnavailable?.();
 };
 
 /**
  * Prompts the user to grant push notification permissions.
  */
 export const requestPushPermission = async (): Promise<boolean> => {
-  const OneSignal = await getReadyOneSignal();
-  if (!OneSignal) return false;
-
-  try {
-    if (OneSignal.Notifications?.requestPermission) {
-      await OneSignal.Notifications.requestPermission();
-      return Boolean(OneSignal.Notifications.permission);
-    }
-    return false;
-  } catch (err: any) {
-    console.warn('[OneSignal] Permission request notice:', err?.message || err);
-    return false;
-  }
+  return new Promise((resolve) => {
+    runWithOneSignal(
+      async (OneSignal) => {
+        try {
+          if (OneSignal.Notifications?.requestPermission) {
+            await OneSignal.Notifications.requestPermission();
+            const granted = OneSignal.Notifications.permission;
+            resolve(Boolean(granted));
+          } else {
+            resolve(false);
+          }
+        } catch (err: any) {
+          console.warn('[OneSignal] Permission request notice:', err?.message || err);
+          resolve(false);
+        }
+      },
+      () => resolve(false)
+    );
+  });
 };
 
 /**

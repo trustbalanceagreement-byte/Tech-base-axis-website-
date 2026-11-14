@@ -7,6 +7,8 @@ import {
   sendOneSignalPushNotification, 
   registerAdminSubscription,
   getRecentNotifications,
+  getNotificationAttempts,
+  getNotificationDiagnosticInfo,
   getTargetAdminPlayerId,
   type AdminNotificationEvent 
 } from "./server/onesignalService.ts";
@@ -451,26 +453,19 @@ app.get("/api/health", (_req, res) => {
 
 // Diagnostic check (Safe: never prints key)
 app.get("/api/notification-status", (_req, res) => {
-  const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
-  const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : "default";
-  const targetId = getTargetAdminPlayerId();
-
-  res.status(200).json({
-    onesignalReady: hasKey,
-    appIdPreview: appId,
-    targetAdminPlayerId: targetId,
-    timestamp: new Date().toISOString()
-  });
+  res.setHeader("Cache-Control", "no-store");
+  res.status(200).json(getNotificationDiagnosticInfo());
 });
 
-// GET /api/notifications/recent - List recent live notifications for Admin Dashboard
+// GET /api/notifications/recent - List recent live notifications & attempt audit log for Admin Dashboard
 app.get("/api/notifications/recent", (_req, res) => {
   try {
     const list = getRecentNotifications();
+    const attempts = getNotificationAttempts(50);
     res.setHeader("Cache-Control", "no-store");
-    res.status(200).json({ success: true, notifications: list });
+    res.status(200).json({ success: true, notifications: list, attempts });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message || "Failed to load recent notifications", notifications: [] });
+    res.status(500).json({ error: err?.message || "Failed to load recent notifications", notifications: [], attempts: [] });
   }
 });
 

@@ -20,7 +20,12 @@ import {
   Sparkles,
   ShieldCheck,
   AlertTriangle,
-  Send
+  Send,
+  History,
+  XCircle,
+  Clock,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { ClientInquiry } from '../types';
 import { getDeviceInfoString, getAdminPushSubscriptionId } from '../utils/onesignal';
@@ -91,13 +96,55 @@ export const AdminContactInbox: React.FC<Props> = (p) => {
   const [query, setQuery] = useState('');
   const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(null);
   const [deviceInfoText, setDeviceInfoText] = useState<string>('Logged-in Device');
+  const [attempts, setAttempts] = useState<Array<{
+    attemptId: string;
+    timestamp: string;
+    eventType: string;
+    clientName: string;
+    clientEmail?: string;
+    referenceId?: string;
+    alertTitle: string;
+    alertBody: string;
+    targetPlayerIds: string[];
+    status: 'sent' | 'failed' | 'skipped' | 'cached';
+    success: boolean;
+    oneSignalNotificationId?: string;
+    recipients?: number;
+    errors?: string[];
+  }>>([]);
+  const [showAuditLog, setShowAuditLog] = useState(false);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+
+  const loadNotificationAttempts = async () => {
+    setLoadingAudit(true);
+    try {
+      const res = await fetch('/api/notifications/recent', { cache: 'no-store' });
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json?.attempts)) {
+          setAttempts(json.attempts);
+        }
+      }
+    } catch (_) {
+      // Non-blocking
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
 
   useEffect(() => {
     setDeviceInfoText(getDeviceInfoString());
     getAdminPushSubscriptionId().then((id) => {
       if (id) setCurrentDeviceId(id);
     });
+    loadNotificationAttempts();
   }, []);
+
+  useEffect(() => {
+    if (p.testResult) {
+      loadNotificationAttempts();
+    }
+  }, [p.testResult]);
 
   const counts = useMemo(() => {
     const c: Record<TypeKey, number> = { 
@@ -237,6 +284,117 @@ export const AdminContactInbox: React.FC<Props> = (p) => {
             {p.testResult.text}
           </div>
         )}
+
+        {/* Notification Attempt Audit Log (User Events -> Admin Alerts + Target Player IDs) */}
+        <div className="mt-4 pt-3.5 border-t border-neutral-800/80">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => {
+                const next = !showAuditLog;
+                setShowAuditLog(next);
+                if (next) loadNotificationAttempts();
+              }}
+              className="text-xs font-mono text-neutral-300 hover:text-white flex items-center gap-2 cursor-pointer transition-colors"
+            >
+              <History className="w-3.5 h-3.5 text-sky-400" />
+              <span>Notification Attempt History ({attempts.length})</span>
+              {showAuditLog ? <ChevronUp className="w-3.5 h-3.5 text-neutral-500" /> : <ChevronDown className="w-3.5 h-3.5 text-neutral-500" />}
+            </button>
+
+            {showAuditLog && (
+              <button
+                type="button"
+                onClick={loadNotificationAttempts}
+                disabled={loadingAudit}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-800 flex items-center gap-1 cursor-pointer disabled:opacity-50"
+              >
+                <RotateCcw className={`w-3 h-3 ${loadingAudit ? 'animate-spin text-sky-400' : ''}`} />
+                <span>Refresh Log</span>
+              </button>
+            )}
+          </div>
+
+          {showAuditLog && (
+            <div className="mt-3 space-y-2 max-h-72 overflow-y-auto pr-1">
+              {attempts.length === 0 ? (
+                <div className="text-xs font-mono text-neutral-500 bg-black/40 border border-neutral-800/80 rounded-xl p-3 text-center">
+                  No notification dispatch attempts recorded yet. Trigger a user event or test alert to audit delivery.
+                </div>
+              ) : (
+                attempts.slice(0, 25).map((att) => {
+                  const statusTone =
+                    att.status === 'sent'
+                      ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
+                      : att.status === 'cached'
+                      ? 'bg-sky-950/60 text-sky-300 border-sky-700/50'
+                      : att.status === 'skipped'
+                      ? 'bg-amber-950/60 text-amber-300 border-amber-700/50'
+                      : 'bg-rose-950/60 text-rose-300 border-rose-700/50';
+
+                  return (
+                    <div
+                      key={att.attemptId}
+                      className="rounded-xl border border-neutral-800/90 bg-black/50 p-3 text-xs font-mono space-y-1.5"
+                    >
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase border ${statusTone}`}>
+                            {att.status}
+                          </span>
+                          <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 text-[10px]">
+                            {att.eventType}
+                          </span>
+                          <span className="text-white font-semibold truncate">
+                            {att.clientName}
+                          </span>
+                          {att.clientEmail && (
+                            <span className="text-neutral-400 truncate text-[11px]">
+                              ({att.clientEmail})
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-neutral-500 flex items-center gap-1 shrink-0">
+                          <Clock className="w-3 h-3" />
+                          {new Date(att.timestamp).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+
+                      <div className="text-neutral-200 font-sans text-xs">
+                        <span className="font-semibold text-white">{att.alertTitle}</span>
+                        {att.alertBody ? <span className="text-neutral-400"> — {att.alertBody}</span> : null}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-neutral-400">
+                        <span>
+                          Target Player ID(s):{' '}
+                          <code className="text-sky-300 select-all">
+                            {att.targetPlayerIds && att.targetPlayerIds.length > 0 ? att.targetPlayerIds.join(', ') : 'None'}
+                          </code>
+                        </span>
+                        {att.oneSignalNotificationId && (
+                          <span>
+                            OneSignal ID: <code className="text-emerald-300">{att.oneSignalNotificationId}</code>
+                          </span>
+                        )}
+                        {typeof att.recipients === 'number' && (
+                          <span>Recipients: <strong className="text-white">{att.recipients}</strong></span>
+                        )}
+                      </div>
+
+                      {att.errors && att.errors.length > 0 && (
+                        <div className="text-[11px] text-rose-300 flex items-start gap-1 pt-0.5">
+                          <XCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                          <span className="break-words">{att.errors.join(' | ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Main Inbox Header & Controls */}
