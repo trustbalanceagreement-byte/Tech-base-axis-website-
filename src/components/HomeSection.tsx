@@ -8,6 +8,7 @@ import { AboutSection } from './AboutSection';
 import { HowWeWorkSection } from './HowWeWorkSection';
 import { StaggerTestimonials, TestimonialItem, INITIAL_TESTIMONIALS } from './ui/stagger-testimonials';
 import { ReviewModal, NewReviewData } from './ReviewModal';
+import { GoogleReviewButton } from './GoogleReview';
 import { 
   Terminal, 
   Cpu, 
@@ -435,6 +436,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6 sm:pt-8"
       >
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+          <GoogleReviewButton />
           <h2 className="font-display text-4xl sm:text-5xl md:text-6xl text-white font-black tracking-tight uppercase">
             Client Reviews
           </h2>

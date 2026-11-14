@@ -35,6 +35,7 @@ import { PrivacyPolicySection } from './components/PrivacyPolicySection';
 import { TermsSection } from './components/TermsSection';
 import { CookieConsentBanner } from './components/CookieConsentBanner';
 import { Footer } from './components/Footer';
+import { GoogleReviewThanks } from './components/GoogleReview';
 import { useSectionSEO, SECTION_PATHS, sectionFromPath } from './hooks/useSectionSEO';
 import { FullPageSkeleton } from './components/ui/Skeleton';
 
@@ -345,6 +346,8 @@ function AppShell() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] text-neutral-100 flex flex-col obsidian-grid selection:bg-red-600/30 selection:text-red-200">
+      <GoogleReviewThanks />
+
       {/* Top Navbar */}
       <Navbar
         activeSection={activeSection}
