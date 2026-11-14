@@ -7,7 +7,7 @@ import {
 } from '../lib/firebase';
 
 import { getAutoAvatarUrl } from '../utils/avatar';
-import { identifyOneSignalUser, logoutOneSignalUser } from '../utils/onesignal';
+import { identifyOneSignalUser, logoutOneSignalUser, syncAdminDeviceRegistration } from '../utils/onesignal';
 import { recordUserActivityEvent } from '../services/userActivityService';
 
 export const ADMIN_EMAILS = [
@@ -85,10 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sync active user with OneSignal push notification system & Presence tracking
   useEffect(() => {
     if (activeUser?.email) {
-      identifyOneSignalUser(activeUser.email.trim().toLowerCase(), {
+      identifyOneSignalUser(activeUser.email, {
         role: isAdmin ? 'admin' : 'client',
         displayName: activeUser.displayName || 'User'
       });
+
+      if (isAdmin) {
+        syncAdminDeviceRegistration();
+      }
 
       // Send initial presence login/heartbeat
       recordUserActivityEvent({

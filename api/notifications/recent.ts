@@ -1,4 +1,4 @@
-import { getRecentNotifications, getNotificationAttempts } from '../../server/onesignalService.js';
+import { getRecentNotifications } from '../../server/onesignalService.js';
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Cache-Control', 'no-store');
@@ -10,9 +10,8 @@ export default async function handler(req: any, res: any) {
 
   try {
     const list = getRecentNotifications();
-    const attempts = getNotificationAttempts(50);
-    return res.status(200).json({ success: true, notifications: list, attempts });
+    return res.status(200).json({ success: true, notifications: list });
   } catch (err: any) {
-    return res.status(500).json({ error: err?.message || 'Failed to get notifications', notifications: [], attempts: [] });
+    return res.status(500).json({ error: err?.message || 'Failed to get notifications', notifications: [] });
   }
 }

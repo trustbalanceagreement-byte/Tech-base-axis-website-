@@ -2,10 +2,8 @@ import { Project, ServicePackage, ClientInquiry, ArchitectureSkill } from '../ty
 
 export const FOUNDER_INFO = {
   name: "Bikram Ghosh",
-  founderBrand: "Bikram Ghosh",
   role: "Principal Full-Stack Architect & Founder",
   agency: "Tech Base Axis",
-  shortName: "TBA",
   email: "techbaseaxis@gmail.com",
   whatsapp: "+91 94772 01106",
   whatsappRaw: "919477201106",
@@ -14,11 +12,9 @@ export const FOUNDER_INFO = {
   facebookUrl: "https://www.facebook.com/share/14k5nbF6FpS/",
   linkedinUrl: "https://www.linkedin.com/in/tech-base-axis-b19b30411",
   photoUrl: "https://www.tbaonline.online/bikram-ghosh.jpg",
-  websiteUrl: "https://www.tbaonline.online/",
   location: "Kolkata, West Bengal, India",
-  serviceAreas: "Kolkata, West Bengal, India & Global Remote",
   availability: "Available for Architecture & Web Development Engagements",
-  tagline: "Engineering High-Performance Web Applications & Scalable Cloud Ecosystems",
+  tagline: "Engineering Obsidian-Grade Web Applications & Scalable Cloud Ecosystems",
   bio: "Senior technical engineer and system architect with over 6 years of expertise building resilient distributed systems, enterprise SaaS solutions, AI-integrated workflows, and responsive high-performance web applications under the Tech Base Axis banner."
 };
 

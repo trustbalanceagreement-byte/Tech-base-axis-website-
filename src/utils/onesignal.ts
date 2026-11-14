@@ -46,42 +46,18 @@ declare global {
   interface Window {
     OneSignalDeferred?: Array<(OneSignal: OneSignalInstance) => void | Promise<void>>;
     OneSignal?: OneSignalInstance;
-    __oneSignalReady?: boolean;
-    __oneSignalInitPromise?: Promise<boolean>;
   }
 }
-
-export const isOneSignalAllowedOrigin = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  const host = window.location.hostname;
-  return (
-    host === 'www.tbaonline.online' ||
-    host === 'tbaonline.online' ||
-    host === 'localhost' ||
-    host === '127.0.0.1'
-  );
-};
 
 /**
  * Executes a callback when OneSignal is initialized and ready.
  */
-export const runWithOneSignal = (
-  callback: (OneSignal: OneSignalInstance) => void | Promise<void>,
-  onUnavailable?: () => void
-): void => {
-  if (typeof window === 'undefined' || !isOneSignalAllowedOrigin()) {
-    onUnavailable?.();
-    return;
-  }
+export const runWithOneSignal = (callback: (OneSignal: OneSignalInstance) => void | Promise<void>): void => {
+  if (typeof window === 'undefined') return;
 
-  const executeIfReady = () => {
-    const sdk = window.OneSignal;
-    if (!window.__oneSignalReady || !sdk || !sdk.User) {
-      onUnavailable?.();
-      return;
-    }
+  if (window.OneSignal) {
     try {
-      const result = callback(sdk);
+      const result = callback(window.OneSignal);
       if (result && typeof (result as any).catch === 'function') {
         (result as any).catch((err: any) => {
           console.warn('[OneSignal] Callback notice:', err?.message || err);
@@ -90,29 +66,17 @@ export const runWithOneSignal = (
     } catch (err: any) {
       console.warn('[OneSignal] Execution notice:', err?.message || err);
     }
-  };
-
-  if (window.__oneSignalInitPromise) {
-    window.__oneSignalInitPromise
-      .then((ready) => {
-        if (!ready) {
-          onUnavailable?.();
-          return;
-        }
-        executeIfReady();
-      })
-      .catch(() => {
-        onUnavailable?.();
-      });
     return;
   }
 
-  if (window.OneSignal && window.__oneSignalReady) {
-    executeIfReady();
-    return;
-  }
-
-  onUnavailable?.();
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  window.OneSignalDeferred.push(async (OneSignal) => {
+    try {
+      await callback(OneSignal);
+    } catch (err: any) {
+      console.warn('[OneSignal] Deferred execution notice:', err?.message || err);
+    }
+  });
 };
 
 /**
@@ -120,23 +84,20 @@ export const runWithOneSignal = (
  */
 export const requestPushPermission = async (): Promise<boolean> => {
   return new Promise((resolve) => {
-    runWithOneSignal(
-      async (OneSignal) => {
-        try {
-          if (OneSignal.Notifications?.requestPermission) {
-            await OneSignal.Notifications.requestPermission();
-            const granted = OneSignal.Notifications.permission;
-            resolve(Boolean(granted));
-          } else {
-            resolve(false);
-          }
-        } catch (err: any) {
-          console.warn('[OneSignal] Permission request notice:', err?.message || err);
+    runWithOneSignal(async (OneSignal) => {
+      try {
+        if (OneSignal.Notifications?.requestPermission) {
+          await OneSignal.Notifications.requestPermission();
+          const granted = OneSignal.Notifications.permission;
+          resolve(Boolean(granted));
+        } else {
           resolve(false);
         }
-      },
-      () => resolve(false)
-    );
+      } catch (err: any) {
+        console.warn('[OneSignal] Permission request notice:', err?.message || err);
+        resolve(false);
+      }
+    });
   });
 };
 
@@ -188,166 +149,33 @@ export const identifyOneSignalUser = (userId: string, tags?: Record<string, stri
 };
 
 /**
- * Returns a concise human-readable label for the current browser/device.
- */
-export const getDeviceInfoString = (): string => {
-  if (typeof navigator === 'undefined') return 'Unknown Device';
-  const ua = navigator.userAgent || '';
-  const os = /Android/i.test(ua)
-    ? 'Android'
-    : /iPhone|iPad|iPod/i.test(ua)
-    ? 'iOS'
-    : /Windows/i.test(ua)
-    ? 'Windows'
-    : /Mac OS X|Macintosh/i.test(ua)
-    ? 'macOS'
-    : /Linux/i.test(ua)
-    ? 'Linux'
-    : 'Desktop';
-
-  const browser = /Edg\//i.test(ua)
-    ? 'Edge'
-    : /OPR\//i.test(ua)
-    ? 'Opera'
-    : /Chrome\//i.test(ua) && !/Edg\//i.test(ua)
-    ? 'Chrome'
-    : /Safari\//i.test(ua) && !/Chrome\//i.test(ua)
-    ? 'Safari'
-    : /Firefox\//i.test(ua)
-    ? 'Firefox'
-    : 'Browser';
-
-  return `${browser} on ${os}`;
-};
-
-/**
- * Returns the active OneSignal push subscription ID if available and initialized.
- */
-export const getAdminPushSubscriptionId = async (): Promise<string | null> => {
-  if (typeof window === 'undefined' || !isOneSignalAllowedOrigin()) return null;
-  try {
-    if (window.__oneSignalInitPromise) {
-      const ready = await window.__oneSignalInitPromise;
-      if (!ready) return null;
-    }
-    if (!window.__oneSignalReady || !window.OneSignal?.User) return null;
-    return window.OneSignal.User.PushSubscription?.id || null;
-  } catch {
-    return null;
-  }
-};
-
-export interface OneSignalClientStatus {
-  ready: boolean;
-  supported: boolean;
-  permission: boolean;
-  optedIn: boolean;
-  subscriptionId: string | null;
-  initError: string | null;
-}
-
-/**
- * Returns the current client-side OneSignal readiness and permission status.
- */
-export const getOneSignalStatus = async (): Promise<OneSignalClientStatus> => {
-  const supported =
-    typeof window !== 'undefined' &&
-    'Notification' in window &&
-    'serviceWorker' in navigator;
-
-  if (typeof window === 'undefined' || !isOneSignalAllowedOrigin()) {
-    return {
-      ready: false,
-      supported,
-      permission: false,
-      optedIn: false,
-      subscriptionId: null,
-      initError: 'OneSignal Web Push is registered to https://www.tbaonline.online.'
-    };
-  }
-
-  try {
-    if (window.__oneSignalInitPromise) {
-      const ok = await window.__oneSignalInitPromise;
-      if (!ok) {
-        return {
-          ready: false,
-          supported,
-          permission: false,
-          optedIn: false,
-          subscriptionId: null,
-          initError: 'OneSignal did not initialize on this origin.'
-        };
-      }
-    }
-
-    const sdk = window.OneSignal;
-    if (!window.__oneSignalReady || !sdk || !sdk.User) {
-      return {
-        ready: false,
-        supported,
-        permission: false,
-        optedIn: false,
-        subscriptionId: null,
-        initError: 'OneSignal SDK is not ready yet.'
-      };
-    }
-
-    const permission = Boolean(sdk.Notifications?.permission);
-    const optedIn = sdk.User.PushSubscription?.optedIn !== false && permission;
-    const subscriptionId = sdk.User.PushSubscription?.id || null;
-
-    return {
-      ready: true,
-      supported,
-      permission,
-      optedIn,
-      subscriptionId,
-      initError: null
-    };
-  } catch (err: any) {
-    return {
-      ready: false,
-      supported,
-      permission: false,
-      optedIn: false,
-      subscriptionId: null,
-      initError: err?.message || 'Unable to read OneSignal status.'
-    };
-  }
-};
-
-/**
  * Registers the active browser/phone directly as an admin device
  */
-export const syncAdminDeviceRegistration = (adminEmail?: string | null): void => {
+export const syncAdminDeviceRegistration = (): void => {
   runWithOneSignal(async (OneSignal) => {
     try {
       if (OneSignal.User?.addTag) {
         OneSignal.User.addTag('role', 'admin');
         OneSignal.User.addTag('is_active_admin', 'true');
       }
-      const sendRegistration = (subId?: string | null) => {
-        if (subId && subId.length > 10) {
-          fetch('/api/register-admin-device', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              subscriptionId: subId,
-              ...(adminEmail ? { email: adminEmail } : {}),
-              device: getDeviceInfoString()
-            })
-          }).catch(() => {});
-        }
-      };
-
       const subId = OneSignal.User?.PushSubscription?.id;
-      sendRegistration(subId);
-
+      if (subId && subId.length > 10) {
+        fetch('/api/register-admin-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: subId })
+        }).catch(() => {});
+      }
       if (OneSignal.User?.PushSubscription?.addEventListener) {
         OneSignal.User.PushSubscription.addEventListener('change', (event: any) => {
           const newId = event?.current?.id || OneSignal.User?.PushSubscription?.id;
-          sendRegistration(newId);
+          if (newId && newId.length > 10) {
+            fetch('/api/register-admin-device', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ subscriptionId: newId })
+            }).catch(() => {});
+          }
         });
       }
     } catch (_) {}

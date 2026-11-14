@@ -26,7 +26,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="md:col-span-6 space-y-2.5">
             <TechBaseAxisLogo size="md" subtitle="SYSTEM ARCHITECTURE" />
             <p className="text-xs text-neutral-400 max-w-md leading-relaxed">
-              High-performance software engineering, responsive web applications, and scalable cloud systems architected by <span className="text-white font-semibold">{FOUNDER_INFO.name}</span> in Kolkata, West Bengal.
+              Obsidian-grade software engineering, scalable cloud infrastructure, and bespoke generative intelligence systems architected by <span className="text-white font-semibold">{FOUNDER_INFO.name}</span>.
             </p>
           </div>
 

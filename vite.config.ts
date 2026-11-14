@@ -11,9 +11,6 @@ import {
   sendOneSignalPushNotification, 
   registerAdminSubscription,
   getRecentNotifications,
-  getNotificationAttempts,
-  getNotificationDiagnosticInfo,
-  getTargetAdminPlayerId,
   AdminNotificationEvent 
 } from './server/onesignalService';
 import {
@@ -495,25 +492,32 @@ function onesignalDevApiPlugin(): Plugin {
       });
       // Diagnostic status
       server.middlewares.use('/api/notification-status', (_req, res) => {
+        const hasKey = Boolean(process.env.ONESIGNAL_REST_API_KEY || process.env.ONESIGNAL_API_KEY);
+        const appId = process.env.ONESIGNAL_APP_ID ? `${process.env.ONESIGNAL_APP_ID.slice(0, 8)}...` : 'default';
+        const targetId = process.env.ONESIGNAL_ADMIN_PLAYER_ID || '99a86c9f-366e-4625-9506-5af191a0297d';
+
         res.setHeader('Content-Type', 'application/json');
-        res.setHeader('Cache-Control', 'no-store');
         res.statusCode = 200;
-        res.end(JSON.stringify(getNotificationDiagnosticInfo()));
+        res.end(JSON.stringify({
+          onesignalReady: hasKey,
+          appIdPreview: appId,
+          targetAdminPlayerId: targetId,
+          timestamp: new Date().toISOString()
+        }));
       });
 
-      // Recent notifications & attempt audit log endpoint for admin real-time alerts
+      // Recent notifications endpoint for admin real-time alerts
       server.middlewares.use('/api/notifications/recent', (_req, res) => {
         try {
           const list = getRecentNotifications();
-          const attempts = getNotificationAttempts(50);
           res.setHeader('Content-Type', 'application/json');
           res.setHeader('Cache-Control', 'no-store');
           res.statusCode = 200;
-          res.end(JSON.stringify({ success: true, notifications: list, attempts }));
+          res.end(JSON.stringify({ success: true, notifications: list }));
         } catch (err: any) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify({ error: err?.message || 'Failed to get notifications', notifications: [], attempts: [] }));
+          res.end(JSON.stringify({ error: err?.message || 'Failed to get notifications', notifications: [] }));
         }
       });
 
@@ -559,15 +563,10 @@ function onesignalDevApiPlugin(): Plugin {
         req.on('end', async () => {
           try {
             const eventData: AdminNotificationEvent = JSON.parse(body || '{}');
-            const normalizedEvent: AdminNotificationEvent = {
-              ...eventData,
-              clientName: eventData.clientName || (eventData.email ? eventData.email.split('@')[0] : 'Client'),
-              email: eventData.email || eventData.clientEmail || ''
-            };
             try {
-              recordInquiryFromNotification(normalizedEvent);
+              recordInquiryFromNotification(eventData);
             } catch (_) {}
-            const result = await sendAdminOneSignalNotification(normalizedEvent);
+            const result = await sendAdminOneSignalNotification(eventData);
             res.setHeader('Content-Type', 'application/json');
             res.statusCode = result.success ? 200 : 502;
             res.end(JSON.stringify(result));

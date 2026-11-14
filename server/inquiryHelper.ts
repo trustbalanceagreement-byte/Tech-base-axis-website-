@@ -297,26 +297,20 @@ export function recordInquiryFromNotification(eventData: any): ClientInquiry | n
   let projectType = eventData.service || eventData.websiteType || eventData.subject || eventData.packageName || 'Web Architecture';
 
   let scopeDetails = eventData.details || eventData.message || '';
-  if ((eventType === 'appointment' || eventType === 'appointment_booked' || eventType === 'book_appointment') && (eventData.date || eventData.appointmentDate)) {
+  if (eventType === 'appointment' && (eventData.date || eventData.appointmentDate)) {
     const d = eventData.date || eventData.appointmentDate;
     const t = eventData.time || eventData.appointmentTime || 'IST';
     if (!scopeDetails.includes(d)) {
       scopeDetails = `${scopeDetails ? scopeDetails + ' ' : ''}[Consultation requested for ${d} at ${t}]`;
     }
-  } else if (eventType === 'review_submitted' || eventType === 'review_message') {
+  } else if (eventType === 'review_submitted') {
     projectType = 'Client Review / Feedback';
     const stars = eventData.rating ? `${eventData.rating}/5 ⭐` : '5/5 ⭐';
     const text = eventData.reviewText || eventData.message || 'Client feedback submitted.';
     scopeDetails = `[${stars}] "${text}" (Role: ${eventData.reviewerRole || 'Client'})`;
-  } else if (eventType === 'account_created' || eventType === 'user_signup' || eventType === 'new_account') {
+  } else if (eventType === 'account_created' || eventType === 'user_signup') {
     projectType = 'New Account Created';
     scopeDetails = `New user profile registered on Tech Base Axis. Email: ${email}.`;
-  } else if (eventType === 'maintenance_message' || eventType === 'maintenance_alert' || eventType === 'maintenance_request') {
-    projectType = 'System Maintenance & Support';
-    scopeDetails = `[Maintenance Alert] ${eventData.details || eventData.message || 'Maintenance request or status update submitted'}`;
-  } else if (eventType === 'booking_confirmation' || eventType === 'package_booking') {
-    projectType = eventData.packageName || 'Architecture Package Booking';
-    scopeDetails = `[Booking Confirmed] ${eventData.packageName || 'Package'}${eventData.totalPrice ? ' (₹' + eventData.totalPrice + ')' : ''}. ${eventData.details || ''}`;
   }
 
   const { inquiry } = saveInquiry({

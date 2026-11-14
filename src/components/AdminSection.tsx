@@ -58,7 +58,7 @@ import {
 import { AdminContactInbox } from './AdminContactInbox';
 import { AdminPlanRequests } from './AdminPlanRequests';
 import { updateInquiryInCloud } from '../data/inquiryData';
-import { getOneSignalStatus, requestPushPermission, runWithOneSignal, syncAdminDeviceRegistration } from '../utils/onesignal';
+import { requestPushPermission, runWithOneSignal } from '../utils/onesignal';
 import { updatePackagesFromCloud, isSubscriptionPackage, isMaintenancePackage } from '../data/pricingData';
 
 interface AdminSectionProps {
@@ -628,8 +628,23 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   };
 
   // Automatically register this exact device/phone where Admin Console is open as the active admin device
-  const registerCurrentDeviceAsAdmin = () => {
-    syncAdminDeviceRegistration(user?.email || null);
+  const registerCurrentDeviceAsAdmin = (OneSignal: any) => {
+    try {
+      if (OneSignal.User?.addTag) {
+        OneSignal.User.addTag('role', 'admin');
+        OneSignal.User.addTag('is_active_admin', 'true');
+      }
+      const subId = OneSignal.User?.PushSubscription?.id;
+      if (subId) {
+        fetch('/api/register-admin-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId: subId })
+        }).catch(() => {});
+      }
+    } catch {
+      // Non-blocking
+    }
   };
 
   useEffect(() => {
@@ -637,30 +652,24 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
     // Merely opening the admin page (or being a client) must never register it.
     if (!isAdmin) return;
     runWithOneSignal((OneSignal) => {
-      const checkActive = () => {
-        const perm = Boolean(OneSignal.Notifications?.permission);
-        const optedIn = OneSignal.User?.PushSubscription?.optedIn !== false;
-        const active = perm && optedIn;
-        setPushPermission(active);
-        if (active) {
-          registerCurrentDeviceAsAdmin();
+      if (OneSignal.Notifications) {
+        const isGranted = Boolean(OneSignal.Notifications.permission);
+        setPushPermission(isGranted);
+        if (isGranted) {
+          registerCurrentDeviceAsAdmin(OneSignal);
         }
-      };
-
-      checkActive();
-
-      if (OneSignal.Notifications?.addEventListener) {
-        OneSignal.Notifications.addEventListener('permissionChange', () => {
-          checkActive();
-        });
+        if (OneSignal.Notifications.addEventListener) {
+          OneSignal.Notifications.addEventListener('permissionChange', (granted: boolean) => {
+            setPushPermission(Boolean(granted));
+            if (granted) {
+              registerCurrentDeviceAsAdmin(OneSignal);
+            }
+          });
+        }
       }
-      if (OneSignal.User?.PushSubscription?.addEventListener) {
-        OneSignal.User.PushSubscription.addEventListener('change', () => {
-          checkActive();
-        });
-      }
+      registerCurrentDeviceAsAdmin(OneSignal);
     });
-  }, [isAdmin, user?.email]);
+  }, [isAdmin]);
 
   const [testBusy, setTestBusy] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -687,11 +696,6 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
         return;
       }
 
-      const clientStatus = await getOneSignalStatus();
-      if (clientStatus.ready && clientStatus.permission && clientStatus.optedIn && clientStatus.subscriptionId) {
-        registerCurrentDeviceAsAdmin();
-      }
-
       const r = await fetch('/api/notify-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -706,26 +710,10 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
       });
       const data: any = await r.json().catch(() => ({}));
       if (data?.success) {
-        const deviceNote = !clientStatus.ready
-          ? ` (Note: this browser is on ${window.location.origin}, while OneSignal Web Push is registered to https://www.tbaonline.online, so alerts go to your subscribed device on www.tbaonline.online.)`
-          : !clientStatus.permission || !clientStatus.optedIn
-          ? ' (Warning: this browser has not enabled push notifications yet — click "Enable Push Alerts" to also receive alerts on this device.)'
-          : '';
-        setTestResult({
-          ok: true,
-          text: `Test alert delivered to ${data.recipients ?? 1} admin device(s) via OneSignal.${deviceNote}`
-        });
+        setTestResult({ ok: true, text: 'Test alert sent to OneSignal. It should appear on this admin device in a few seconds. If it does not, check the phone\'s notification settings for this browser.' });
       } else {
         const detail = JSON.stringify(data?.errors || data?.error || data).slice(0, 400);
-        const subHint = clientStatus.initError
-          ? ` Current host note: ${clientStatus.initError}.`
-          : !clientStatus.permission || !clientStatus.optedIn
-          ? ' This device is not subscribed yet — click "Enable Push Alerts" first.'
-          : '';
-        setTestResult({
-          ok: false,
-          text: `OneSignal did not deliver the alert: ${detail}.${subHint} Check that ONESIGNAL_APP_ID matches ONESIGNAL_REST_API_KEY in server environment.`
-        });
+        setTestResult({ ok: false, text: `OneSignal did not deliver the alert: ${detail}. Tip: sign in as admin on this device, allow notifications, reload and try again. Also check that ONESIGNAL_APP_ID matches the app the REST key belongs to.` });
       }
     } finally {
       setTestBusy(false);
@@ -735,25 +723,15 @@ export const AdminSection: React.FC<AdminSectionProps> = ({
   const handleEnablePush = async () => {
     setPushLoading(true);
     try {
-      const beforeStatus = await getOneSignalStatus();
-      if (!beforeStatus.ready) {
-        setPushPermission(false);
-        triggerToast(beforeStatus.initError || 'OneSignal only runs on https://www.tbaonline.online or localhost.');
-        return;
-      }
-      if (!beforeStatus.supported) {
-        setPushPermission(false);
-        triggerToast('Web Push is not supported in this browser. On iPhone/iPad, first Add to Home Screen.');
-        return;
-      }
-
       const granted = await requestPushPermission();
       setPushPermission(granted);
       if (granted) {
-        registerCurrentDeviceAsAdmin();
+        runWithOneSignal((OneSignal) => {
+          registerCurrentDeviceAsAdmin(OneSignal);
+        });
         triggerToast('Push notifications enabled for this admin device!');
       } else {
-        triggerToast('Notification permission dismissed or blocked in browser settings.');
+        triggerToast('Notification permission dismissed or denied.');
       }
     } finally {
       setPushLoading(false);

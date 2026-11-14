@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import React, { useState } from 'react';
+import { motion } from 'motion/react';
 import { NavSection, Project, ServicePackage } from '../types';
 import { FOUNDER_INFO, EDUCATION_DATA } from '../data/mockData';
 import founderImage from '../assets/images/bikram-ghosh-founder-web-developer.webp';
@@ -33,10 +33,7 @@ import {
   Radio,
   Flame,
   Workflow,
-  Star,
-  ExternalLink,
-  CheckCircle2,
-  X
+  Star
 } from 'lucide-react';
 
 
@@ -55,116 +52,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
 }) => {
   const { user } = useAuth();
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [showGoogleReviewThankYou, setShowGoogleReviewThankYou] = useState(false);
-  const leftPageForReviewRef = useRef(false);
-  const thankYouTimerRef = useRef<number | null>(null);
-  const hideThankYouTimerRef = useRef<number | null>(null);
-
-  const triggerGoogleReviewThankYou = useCallback(() => {
-    try {
-      localStorage.removeItem('tba_gbp_review_pending');
-      sessionStorage.removeItem('tba_gbp_review_left');
-    } catch {
-      // ignore storage errors
-    }
-    leftPageForReviewRef.current = false;
-
-    if (thankYouTimerRef.current !== null) {
-      window.clearTimeout(thankYouTimerRef.current);
-    }
-    if (hideThankYouTimerRef.current !== null) {
-      window.clearTimeout(hideThankYouTimerRef.current);
-    }
-
-    thankYouTimerRef.current = window.setTimeout(() => {
-      setShowGoogleReviewThankYou(true);
-      hideThankYouTimerRef.current = window.setTimeout(() => {
-        setShowGoogleReviewThankYou(false);
-      }, 7000);
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    // Check if returning/redirecting back to the page after clicking the Google Business Profile review link
-    try {
-      const pendingTs = localStorage.getItem('tba_gbp_review_pending');
-      if (pendingTs) {
-        const elapsed = Date.now() - Number(pendingTs);
-        if (!Number.isNaN(elapsed) && elapsed >= 0 && elapsed < 30 * 60 * 1000) {
-          triggerGoogleReviewThankYou();
-        } else {
-          localStorage.removeItem('tba_gbp_review_pending');
-          sessionStorage.removeItem('tba_gbp_review_left');
-        }
-      }
-    } catch {
-      // ignore storage errors
-    }
-
-    const markLeftPage = () => {
-      try {
-        if (localStorage.getItem('tba_gbp_review_pending')) {
-          leftPageForReviewRef.current = true;
-          sessionStorage.setItem('tba_gbp_review_left', '1');
-        }
-      } catch {
-        // ignore storage errors
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        markLeftPage();
-      } else if (document.visibilityState === 'visible') {
-        handleReturnToSite();
-      }
-    };
-
-    const handleReturnToSite = () => {
-      try {
-        const pendingTs = localStorage.getItem('tba_gbp_review_pending');
-        if (!pendingTs) return;
-        const elapsed = Date.now() - Number(pendingTs);
-        const hasLeft =
-          leftPageForReviewRef.current ||
-          sessionStorage.getItem('tba_gbp_review_left') === '1' ||
-          elapsed >= 1000;
-        if (hasLeft) {
-          triggerGoogleReviewThankYou();
-        }
-      } catch {
-        // ignore storage errors
-      }
-    };
-
-    window.addEventListener('blur', markLeftPage);
-    window.addEventListener('focus', handleReturnToSite);
-    window.addEventListener('pageshow', handleReturnToSite);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('blur', markLeftPage);
-      window.removeEventListener('focus', handleReturnToSite);
-      window.removeEventListener('pageshow', handleReturnToSite);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (thankYouTimerRef.current !== null) {
-        window.clearTimeout(thankYouTimerRef.current);
-      }
-      if (hideThankYouTimerRef.current !== null) {
-        window.clearTimeout(hideThankYouTimerRef.current);
-      }
-    };
-  }, [triggerGoogleReviewThankYou]);
-
-  const handleGoogleReviewClick = () => {
-    leftPageForReviewRef.current = false;
-    try {
-      localStorage.setItem('tba_gbp_review_pending', String(Date.now()));
-      sessionStorage.removeItem('tba_gbp_review_left');
-    } catch {
-      // ignore storage errors
-    }
-  };
   const [testimonialsList, setTestimonialsList] = useState<TestimonialItem[]>(() => {
     try {
       const saved = localStorage.getItem('techbase_client_reviews');
@@ -548,27 +435,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-6 sm:pt-8"
       >
         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-          {/* Google Business Profile Review Button */}
-          <div className="mb-5 flex justify-center">
-            <a
-              id="google-business-review-btn"
-              href="https://g.page/r/CWplRg0jq_l5EBM/review"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={handleGoogleReviewClick}
-              className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl bg-neutral-900/95 hover:bg-neutral-800 border border-neutral-700/80 hover:border-[#e61e2b]/60 text-white font-semibold text-xs sm:text-sm font-mono tracking-wide shadow-[0_4px_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_24px_rgba(230,30,43,0.3)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
-            >
-              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17Z" />
-                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24Z" />
-                <path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14Z" />
-                <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96Z" />
-              </svg>
-              <span>Google Business Profile Review</span>
-              <ExternalLink className="w-3.5 h-3.5 text-neutral-400" />
-            </a>
-          </div>
-
           <h2 className="font-display text-4xl sm:text-5xl md:text-6xl text-white font-black tracking-tight uppercase">
             Client Reviews
           </h2>
@@ -601,36 +467,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
         onClose={() => setIsReviewModalOpen(false)}
         onSubmitReview={handleAddReview}
       />
-
-      {/* Automatic Thank You Notification after returning from Google Business Profile Review */}
-      <AnimatePresence>
-        {showGoogleReviewThankYou && (
-          <motion.div
-            role="status"
-            aria-live="polite"
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-[#111116]/95 backdrop-blur-md border border-emerald-500/40 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] px-4 py-3.5 flex items-center gap-3"
-          >
-            <div className="w-9 h-9 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <p className="text-sm font-semibold text-white flex-1">
-              Thank you for the review
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowGoogleReviewThankYou(false)}
-              aria-label="Close thank you message"
-              className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800/80 transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
     </div>
   );

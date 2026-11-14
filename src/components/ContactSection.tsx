@@ -19,8 +19,7 @@ import {
   Lock,
   FileText,
   RotateCcw,
-  ArrowUpRight,
-  Wrench
+  ArrowUpRight
 } from 'lucide-react';
 import { OfficialGmailIcon, OfficialWhatsAppIcon, OfficialInstagramIcon } from './ui/SocialIcons';
 import { ContactGlobeBackdrop } from './ContactGlobeBackdrop';
@@ -43,7 +42,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   // Tomorrow's date formatted as YYYY-MM-DD for default appointment date
   const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
 
-  const [requestType, setRequestType] = useState<'appointment' | 'quote_request' | 'contact_enquiry' | 'maintenance_message'>('appointment');
+  const [requestType, setRequestType] = useState<'appointment' | 'quote_request' | 'contact_enquiry'>('appointment');
 
   const [formData, setFormData] = useState({
     clientName: '',
@@ -98,8 +97,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         ? `Selected Features: ${formData.selectedFeatures.join(', ')}`
         : 'Standard Architecture';
       scopeDetails = `[QUOTE REQUEST for ${formData.websiteType}] Est. Budget: ${formData.budgetRange}. ${featList}. ${formData.details ? 'Notes: ' + formData.details : ''}`;
-    } else if (requestType === 'maintenance_message') {
-      scopeDetails = `[MAINTENANCE REQUEST: ${formData.projectType}] ${formData.details ? 'Details: ' + formData.details : 'Priority system maintenance service requested.'}`;
     }
 
     const newInquiry: ClientInquiry = {
@@ -117,9 +114,9 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
       details: scopeDetails,
       createdAt: new Date().toISOString(),
       status: 'New',
-      priority: formData.timeline.includes('Urgent') || requestType === 'maintenance_message' ? 'High' : 'Normal',
+      priority: formData.timeline.includes('Urgent') ? 'High' : 'Normal',
       notes: `Mode: ${requestType}. Phone: ${formData.phone || 'N/A'}. Dispatched directly to Bikram Ghosh.`,
-      eventType: requestType === 'maintenance_message' ? 'maintenance_message' : requestType === 'contact_enquiry' ? 'inquiry_message' : requestType,
+      eventType: requestType,
       appointmentDate: requestType === 'appointment' ? formData.appointmentDate : undefined,
       appointmentTime: requestType === 'appointment' ? formData.appointmentTime : undefined
     };
@@ -132,7 +129,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
     // Call backend REST API to push notification directly to Bikram Ghosh's OneSignal device
     try {
       let payload: any = {
-        eventType: requestType === 'contact_enquiry' ? 'inquiry_message' : requestType,
+        eventType: requestType,
         clientId: newInquiry.id,
         clientName: newInquiry.clientName,
         clientEmail: newInquiry.email,
@@ -163,15 +160,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
           estimatedPrice: formData.budgetRange,
           details: newInquiry.details
         };
-      } else if (requestType === 'maintenance_message') {
-        payload = {
-          ...payload,
-          service: formData.projectType,
-          subject: `Maintenance Request: ${formData.projectType}`,
-          details: formData.details || 'Priority system maintenance service requested.',
-          message: formData.details || 'Priority system maintenance service requested.',
-          priority: 'High'
-        };
       } else {
         payload = {
           ...payload,
@@ -188,7 +176,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        keepalive: true,
         body: JSON.stringify(payload),
       })
         .then((response) => response.json())
@@ -399,8 +386,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   </p>
                 </div>
 
-                {/* Purpose Tabs: Appointment, Quote Request, Client Enquiry & Maintenance */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2 p-1 bg-black/40 rounded-xl border border-white/10">
+                {/* Purpose Tabs: Appointment, Quote Request & Client Enquiry */}
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 p-1 bg-black/40 rounded-xl border border-white/10">
                   <button
                     type="button"
                     onClick={() => setRequestType('appointment')}
@@ -437,20 +424,7 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                     }`}
                   >
                     <MessageSquare className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">Inquiry</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setRequestType('maintenance_message')}
-                    className={`py-2 px-2 sm:px-3 rounded-lg text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                      requestType === 'maintenance_message'
-                        ? 'bg-amber-600 text-white shadow-md shadow-amber-600/30'
-                        : 'text-neutral-400 hover:text-white hover:bg-neutral-800/60'
-                    }`}
-                  >
-                    <Wrench className="w-3.5 h-3.5 shrink-0" />
-                    <span className="truncate">Maintenance</span>
+                    <span className="truncate">Enquiry</span>
                   </button>
                 </div>
 
@@ -684,45 +658,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   </div>
                 )}
 
-                {/* FIELDS SPECIFIC TO MAINTENANCE REQUEST */}
-                {requestType === 'maintenance_message' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-mono text-neutral-300 mb-1.5 flex items-center gap-1">
-                        <Wrench className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Maintenance Category <span className="text-amber-400">*</span></span>
-                      </label>
-                      <select
-                        value={formData.projectType}
-                        onChange={(e) => setFormData({ ...formData, projectType: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-amber-500"
-                      >
-                        <option value="Urgent Bug Fix & Incident Triage">Urgent Bug Fix & Incident Triage</option>
-                        <option value="Server Downtime & Cloud Infrastructure">Server Downtime & Infrastructure</option>
-                        <option value="Security Audit & Zero-Day Patching">Security Audit & Zero-Day Patching</option>
-                        <option value="Database Performance & Query Tuning">Database Performance Tuning</option>
-                        <option value="API Upgrade & Dependency Modernization">API & Dependency Upgrades</option>
-                        <option value="Monthly Retainer Care & Monitoring">Monthly Retainer Care & Monitoring</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-mono text-neutral-300 mb-1.5">
-                        Urgency / Priority
-                      </label>
-                      <select
-                        value={formData.timeline}
-                        onChange={(e) => setFormData({ ...formData, timeline: e.target.value })}
-                        className="w-full px-3.5 py-2.5 bg-black/40 border border-white/10 rounded-xl text-xs font-mono text-white focus:outline-none focus:border-amber-500"
-                      >
-                        <option value="Urgent (Immediate SLA)">Critical / Production Down (&lt; 2 Hrs)</option>
-                        <option value="High (24-Hour Resolution)">High Priority (&lt; 24 Hrs)</option>
-                        <option value="Normal (Scheduled Sprint)">Normal (Scheduled Maintenance)</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
                 {/* Project Details */}
                 <div>
                   <label className="block text-xs font-mono text-neutral-300 mb-1.5">
@@ -730,8 +665,6 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                       ? 'Meeting Agenda & Topics to Discuss'
                       : requestType === 'quote_request'
                       ? 'Project Requirements & Feature Brief'
-                      : requestType === 'maintenance_message'
-                      ? 'System Issue Description & Error Details'
                       : 'Project Scope & Inquiry Message'}
                   </label>
                   <textarea

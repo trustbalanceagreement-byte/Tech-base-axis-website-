@@ -179,51 +179,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
-      (function () {
-        var host = window.location.hostname;
-        var isAllowedOneSignalHost =
-          host === 'www.tbaonline.online' ||
-          host === 'tbaonline.online' ||
-          host === 'localhost' ||
-          host === '127.0.0.1';
+      // Prevent unhandled promise rejection error banner when previewing outside https://www.tbaonline.online
+      window.addEventListener('unhandledrejection', function(event) {
+        var reason = event && (event.reason || '');
+        var msg = (typeof reason === 'string' ? reason : (reason.message || '')).toLowerCase();
+        if (msg.includes('tbaonline.online') || msg.includes('can only be used on')) {
+          console.warn('[OneSignal] Notice: Push notifications are tied to registered domain https://www.tbaonline.online.');
+          event.preventDefault();
+        }
+      });
 
-        window.__oneSignalReady = false;
-        window.__oneSignalInitPromise = new Promise(function (resolve) {
-          if (!isAllowedOneSignalHost) {
-            resolve(false);
-            return;
-          }
-
-          var sdkScript = document.createElement('script');
-          sdkScript.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-          sdkScript.defer = true;
-          sdkScript.onerror = function () {
-            window.__oneSignalReady = false;
-            resolve(false);
-          };
-          document.head.appendChild(sdkScript);
-
-          window.OneSignalDeferred = window.OneSignalDeferred || [];
-          window.OneSignalDeferred.push(async function (OneSignal) {
-            try {
-              await OneSignal.init({
-                appId: "f9cfc686-a78c-445f-a436-8b6bb2e6bdff",
-                safari_web_id: "web.onesignal.auto.365cbfbd-b203-4342-b6f2-394fa1a1712a",
-                notifyButton: {
-                  enable: true,
-                },
-                allowLocalhostAsSecureOrigin: true,
-              });
-              window.__oneSignalReady = true;
-              resolve(true);
-            } catch (error) {
-              window.__oneSignalReady = false;
-              resolve(false);
-            }
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(async function(OneSignal) {
+        try {
+          await OneSignal.init({
+            appId: "f9cfc686-a78c-445f-a436-8b6bb2e6bdff",
+            safari_web_id: "web.onesignal.auto.365cbfbd-b203-4342-b6f2-394fa1a1712a",
+            notifyButton: {
+              enable: true,
+            },
+            allowLocalhostAsSecureOrigin: true,
           });
-        });
-      })();
+        } catch (error) {
+          console.warn("[OneSignal] Initialization note (domain registered to https://www.tbaonline.online):", error && error.message ? error.message : error);
+        }
+      });
     </script>
     <!-- Razorpay Standard Web Checkout SDK -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>

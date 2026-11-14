@@ -1,28 +1,5 @@
 [
   {
-    "eventType": "account_created",
-    "clientName": "Sourav",
-    "email": "sourav@example.com",
-    "idempotencyKey": "signup_1794652898551",
-    "timestamp": "2026-11-14T10:41:38.552Z"
-  },
-  {
-    "eventType": "appointment",
-    "clientName": "Ananya",
-    "appointmentDate": "2026-11-20",
-    "appointmentTime": "11:00 AM IST",
-    "appointmentId": "appt_1794652898546",
-    "timestamp": "2026-11-14T10:41:38.546Z"
-  },
-  {
-    "eventType": "review_submitted",
-    "clientName": "Rohan",
-    "rating": 5,
-    "reviewText": "Great architecture!",
-    "idempotencyKey": "t1_1794652898522",
-    "timestamp": "2026-11-14T10:41:38.523Z"
-  },
-  {
     "eventType": "appointment",
     "clientName": "Bikram Test Client",
     "clientEmail": "test@techbaseaxis.com",
